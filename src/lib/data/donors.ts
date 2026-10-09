@@ -1,6 +1,6 @@
 import type { Campaign, ClientRecord, Contact, Donation, Donor, FundraisingClient, GiftFrequency, RecurringPlan } from "@/lib/types";
 import { countryName, feeToCover, nextMonthly } from "@/lib/fundraising";
-import { addActivity, listClients } from "./store";
+import { addActivity, createContact, listClients, listContacts, moveContactStage } from "./store";
 
 /*
  * Demo fundraising store: campaigns, donors, gifts and monthly plans for
@@ -93,20 +93,19 @@ export function recordGift(now: Date, input: GiftInput): GiftReceipt | null {
   let donor = data.donors.find((d) => d.contact.email?.toLowerCase() === email);
   const newDonor = !donor;
   if (!donor) {
-    const contact: Contact = {
-      id: `ct-${client.account.id}-${stamp}`,
-      accountId: client.account.id,
-      firstName: input.firstName.trim(),
-      lastName: input.lastName.trim(),
-      email,
-      tags: ["Donor"],
-      source: "donation-page",
-      stageId: "donor",
-      valueCents: 0,
-      doNotContact: { email: false, sms: false, call: false },
-      createdAt: at,
-      lastActivityAt: at,
-    };
+    // Donors are contacts: reuse the CRM record when the email is known, else open one.
+    const contact =
+      listContacts(now, client.account.id).find((c) => c.email?.toLowerCase() === email) ??
+      createContact(now, {
+        accountId: client.account.id,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email,
+        tags: ["Donor"],
+        source: "donation-page",
+        stageId: input.frequency === "monthly" ? "monthly" : "first",
+      });
+    if (!contact) return null;
     donor = {
       id: `dn-${client.account.id}-${stamp}`,
       accountId: client.account.id,
@@ -152,15 +151,24 @@ export function recordGift(now: Date, input: GiftInput): GiftReceipt | null {
   };
   data.donations.push(donation);
 
-  donor.contact.valueCents += input.amountCents;
-  donor.contact.lastActivityAt = at;
-  if (plan) donor.contact.recurring = true;
-  addActivity(now, donor.contact.id, {
+  // Seeded demo donors live only here; a contact the CRM knows gets the activity and stage.
+  const inCrm = Boolean(addActivity(now, donor.contact.id, {
     kind: "donation",
     title: `${input.frequency === "monthly" ? "Started a monthly gift" : "Gave"} to ${campaign.title}`,
     body: input.designation,
+    by: "System",
     amountCents: input.amountCents,
-  });
+  }));
+  if (!inCrm) {
+    donor.contact.valueCents += input.amountCents;
+    donor.contact.lastActivityAt = at;
+  }
+  if (plan) {
+    donor.contact.recurring = true;
+    if (inCrm) moveContactStage(now, donor.contact.id, "monthly", "System");
+  } else if (inCrm && donor.contact.stageId === "first" && !newDonor) {
+    moveContactStage(now, donor.contact.id, "repeat", "System");
+  }
 
   return {
     donationId: donation.id,

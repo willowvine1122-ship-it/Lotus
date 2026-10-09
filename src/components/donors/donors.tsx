@@ -27,6 +27,15 @@ interface Sort {
   dir: "asc" | "desc";
 }
 
+/** timeAgo for the table: months and years past 60 days, so a lapse reads as a lapse. */
+function ago(iso: string, now: Date) {
+  const days = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
+  if (days < 60) return timeAgo(iso, now);
+  if (days < 365) return `${Math.round(days / 30.4)} months ago`;
+  const y = Math.floor(days / 365);
+  return y === 1 ? "1 year ago" : `${y} years ago`;
+}
+
 const healthOrder: Record<Health, number> = { red: 0, amber: 1, green: 2 };
 
 function sortValue(r: DonorRow, key: SortKey): number | string {
@@ -150,7 +159,7 @@ export function Donors({
   ];
 
   const meta = (
-    <span className="num">
+    <span className="num whitespace-nowrap">
       {formatCount(scoped.length)} donors{single ? "" : ` across ${clients.length} clients`}
       {counts.failed > 0 && <span className="text-[#ff8a95]"> · {counts.failed} failed payment{counts.failed === 1 ? "" : "s"}</span>}
       {counts.lapsed > 0 && <span className="text-[#ffc46b]"> · {counts.lapsed} lapsed</span>}
@@ -166,7 +175,7 @@ export function Donors({
           meta={meta}
           actions={
             <div className="flex flex-wrap items-center gap-2">
-              <label className="relative w-full sm:w-[220px]">
+              <label className={cn("relative w-full", single ? "sm:w-[180px]" : "sm:w-[220px]")}>
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-rail-fg-2" strokeWidth={1.75} />
                 <input
                   type="search"
@@ -197,7 +206,7 @@ export function Donors({
                 ))}
               </select>
               {singleClient && (
-                <ButtonLink href={`/donate/${singleClient.slug}`} className="shrink-0">
+                <ButtonLink href={`/donate/${singleClient.slug}`} className="shrink-0 whitespace-nowrap">
                   <ExternalLink className="size-4" strokeWidth={2} />
                   Donation page
                 </ButtonLink>
@@ -327,7 +336,7 @@ export function Donors({
                             {r.state === "past_due" && <Tag tone="neutral">Payment failed</Tag>}
                             {r.state === "lapsed" && <Tag>Lapsed</Tag>}
                             {r.state === "new" && <Tag tone="neutral">New</Tag>}
-                            {r.major && <Tag tone="neutral">Major</Tag>}
+                            {r.major && <span className="inline-flex h-5 items-center rounded-[4px] border border-line-strong px-1.5 text-2xs font-medium text-fg-2">Major</span>}
                           </div>
                           <div className="truncate text-2xs text-fg-3">{r.email}</div>
                         </div>
@@ -348,7 +357,7 @@ export function Donors({
                     </td>
                     <td className="hidden px-3 py-2 text-right sm:table-cell">
                       <div className="num">{r.lastGiftAt ? formatDollars(r.lastGiftCents) : "–"}</div>
-                      <div className={cn("num whitespace-nowrap text-2xs", r.state === "lapsed" ? "text-amber" : "text-fg-3")}>{r.lastGiftAt ? timeAgo(r.lastGiftAt, now) : "Never"}</div>
+                      <div className={cn("num whitespace-nowrap text-2xs", r.state === "lapsed" ? "text-amber" : "text-fg-3")}>{r.lastGiftAt ? ago(r.lastGiftAt, now) : "Never"}</div>
                     </td>
                     <td className="hidden px-3 py-2 text-right md:table-cell">
                       {plan ? (

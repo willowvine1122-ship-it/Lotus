@@ -64,7 +64,7 @@ export function DonorPanel({
         <div className="mt-2 flex flex-wrap gap-1.5">
           <Tag tone={row.state === "lapsed" ? "amber" : "neutral"}>{donorStateLabel[row.state]}</Tag>
           {livePlan && <Tag tone="neutral">Monthly donor</Tag>}
-          {row.major && <Tag tone="neutral">Major donor</Tag>}
+          {row.major && <span className="inline-flex h-5 items-center rounded-[4px] border border-line-strong px-1.5 text-2xs font-medium text-fg-2">Major donor</span>}
           {row.anonymous && <Tag tone="neutral">Gives anonymously</Tag>}
         </div>
         <div className="mt-2.5 flex flex-col gap-1 text-xs text-fg-2">

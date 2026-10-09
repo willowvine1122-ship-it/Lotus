@@ -394,3 +394,19 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 ### Rules
 - Stage colour never encodes progress; the column position and the word do.
 - Logging a call, text or email records it; sending arrives with the Inbox and the form says so.
+
+## Revision 5: fundraising checkout and donors (2026-10-09)
+
+The public donation page is the first Lotus surface a client's own supporters see; the donor CRM is the fundraising twin of the Daily Diagnostic. Both reuse the frame and components above; nothing new in colour.
+
+### Components, added
+- **Donation page** (`/donate/[slug]`): the client's ink band (initial mark in `rail-2`, name, "Secure donation") over paper; a 1120px column, story left at a 60ch measure (campaign title at headline size, summary, raised figure with an ink progress bar and "funded · donors · monthly" line, "Why it matters", recent gifts as a hairline list), the checkout right at 420px, sticky. The footer names the demo state.
+- **Checkout card**: white, `line` border, three steps on a three-segment ink progress rule; a back arrow and the chosen amount in the step header. Give once | Monthly as a 40px paper segmented control (ink when active); six amount tiles 48px tall in a 3×2 grid (ink when chosen); an "Other amount" money input; a `surface-2` impact line that names what the chosen amount does; the designation select; one violet primary button 44px tall whose label is the gift ("Give $50 monthly"). Details are the Revision 3 fields at 40px; payment is a cover-fees chip, a three-line ledger (gift, fees, total), a dashed card-form placeholder and the donate button. The thank-you keeps the card: a green check disc, the headline "Thank you, {name}.", a receipt ledger, share and give-again actions.
+- **Donors board** (`/agency/donors`): the Revision 2 top bar (title, counts with failed payments in red and lapsed in amber, search, client select, a "Donation page" primary link when one client is chosen); KPI strip (Raised 12 months, Active donors, Monthly giving with failed count in red, Lapsed donors in amber); a Campaigns table (title over client, raised, goal bar in `chart-1`, donors, monthly, open-page arrow) beside Raised by country (the Revision 2 bar list, donors in the label); the donor table with an All | Monthly | Lapsed | New paper segmented filter and 50-row paging. Columns: Donor (status dot, name, tags, email), Client, Country (code in muted then name), Lifetime with gift count, Last gift with time ago (amber when lapsed), Monthly with plan state, Since.
+- **Donor state**: the three signals mean payment failed (red), lapsed (amber), active or new (green). Lapsed is no gift in 365 days with no live plan; major is $5,000 lifetime. State words are neutral tags except Lapsed, which is amber.
+- **Donor panel**: sticky header (dot, name, state tags, email and city with icons, client and "Donor since"), a red or amber diagnosis box for a declined card or a lapse, four tiles (Lifetime, Last 12 months, Average gift, Last gift), a Recurring card (amount a month, state, started, next gift or retry, designation, campaign), then Giving history: date, campaign over frequency and designation, amount with fees covered or Declined beneath.
+
+### Rules
+- Ink, not violet, marks the chosen amount, frequency and selected row; violet is the one donate button.
+- The donation page never shows internal data: no donor emails, no notes, only first name and last initial on recent gifts, and nothing for anonymous donors.
+- Fees are recomputed on the server; the figure the browser shows is a preview.
