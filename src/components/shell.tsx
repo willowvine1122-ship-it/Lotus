@@ -4,12 +4,15 @@ import {
   CalendarDays,
   CheckSquare,
   HeartHandshake,
+
+  FileBarChart,
   Inbox,
   Layers,
 
   Mail,
   LayoutGrid,
   Settings,
+  Star,
   Users,
   Wrench,
   ClipboardList,
@@ -37,6 +40,9 @@ const nav = [
   { href: "/agency/invoices", label: "Invoices", icon: Receipt },
 
   { href: "/agency/automations", label: "Automations", icon: Workflow },
+
+  { href: "/agency/reputation", label: "Reputation", icon: Star },
+  { href: "/agency/reports", label: "Reports", icon: FileBarChart },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 

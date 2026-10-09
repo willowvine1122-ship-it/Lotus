@@ -720,4 +720,78 @@ export interface WorkflowRun {
   /** Step ids still to run, in order. A branch replaces itself with its chosen lane. */
   pending: string[];
   steps: RunStep[];
+
+/* Reputation: reviews, review requests, per-client settings            */
+/* ------------------------------------------------------------------ */
+
+export type ReviewSource = "google" | "facebook";
+
+export interface Review {
+  id: string;
+  accountId: string;
+  source: ReviewSource;
+  rating: 1 | 2 | 3 | 4 | 5;
+  author: string;
+  body: string;
+  at: string;
+  /** The client's (or the agency's, on their behalf) public reply. */
+  reply?: { body: string; by: string; at: string };
+  contactId?: string;
+}
+
+export type ReviewRequestChannel = "sms" | "email";
+export type ReviewRequestTrigger = "job" | "appointment" | "donation" | "manual";
+export type ReviewRequestStatus = "sent" | "opened" | "reviewed";
+
+export interface ReviewRequest {
+  id: string;
+  accountId: string;
+  contactId: string;
+  contactName: string;
+  channel: ReviewRequestChannel;
+  trigger: ReviewRequestTrigger;
+  status: ReviewRequestStatus;
+  sentAt: string;
+  reviewId?: string;
+}
+
+export interface ReputationSettings {
+  accountId: string;
+  /** Send a request automatically after these events. */
+  autoAfter: { job: boolean; appointment: boolean; donation: boolean };
+  channel: ReviewRequestChannel;
+  delayHours: number;
+  googleUrl?: string;
+  facebookUrl?: string;
+  /** Message template; {first} and {client} are filled in. */
+  message: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Reporting: per-client report config and the sends it produced        */
+/* ------------------------------------------------------------------ */
+
+export type ReportSectionId = "summary" | "performance" | "volume" | "months" | "countries" | "reviews" | "note";
+export type ReportRange = 7 | 30 | 90;
+
+export interface ReportConfig {
+  accountId: string;
+  enabled: boolean;
+  range: ReportRange;
+  sections: ReportSectionId[];
+  recipients: string[];
+  /** Weekly send: 0 = Sunday … 6 = Saturday, hour in the client's time zone. */
+  weekday: number;
+  hour: number;
+  note?: string;
+}
+
+export interface ReportSend {
+  id: string;
+  accountId: string;
+  at: string;
+  recipients: string[];
+  range: ReportRange;
+  /** "schedule" for the weekly run, "manual" for Send now. */
+  kind: "schedule" | "manual";
 }
