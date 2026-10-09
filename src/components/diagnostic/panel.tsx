@@ -169,7 +169,7 @@ export function NotesFeed({ notes, now }: { notes: DiagnosticNote[]; now: Date }
     const key = n.createdAt.slice(0, 10);
     groups.set(key, [...(groups.get(key) ?? []), n]);
   }
-  const tone = (name: string) => (name === "Afza" ? "bg-brand text-white" : name === "Mahad" ? "bg-chart-2 text-white" : "bg-[#0f8f8a] text-white");
+  const tone = (name: string) => (name === "Afza" ? "bg-brand text-white" : name === "Mahad" ? "bg-chart-2 text-white" : "bg-chart-1 text-white");
   return (
     <section className="flex flex-col gap-3">
       <SectionTitle sub="Internal only. Read in the client meeting.">Notes</SectionTitle>
