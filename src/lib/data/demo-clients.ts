@@ -5,6 +5,7 @@ import type {
   FundraisingClient,
   FundraisingDay,
   MarketingClient,
+  Member,
   MarketingDay,
   Task,
 } from "@/lib/types";
@@ -48,6 +49,8 @@ interface MarketingSpec {
   id: string;
   name: string;
   slug: string;
+  industry: string;
+  website?: string;
   location: string;
   timeZone: string;
   tags: string[];
@@ -66,27 +69,29 @@ interface MarketingSpec {
 }
 
 const marketingSpecs: MarketingSpec[] = [
-  { id: "acc-1", name: "Brightside Dental", slug: "brightside-dental", location: "Austin, TX", timeZone: "America/Chicago", tags: ["Implants offer"], assignees: [afza, mahad], startedDaysAgo: 210, dailyBudget: 420, cpl: 31, bookRate: 0.42, showRate: 0.8, closeRate: 0.45, avgJob: 2400, drift: -0.001 },
-  { id: "acc-2", name: "Summit Roofing Co.", slug: "summit-roofing", location: "Denver, CO", timeZone: "America/Denver", tags: ["Storm season"], assignees: [mahad], startedDaysAgo: 96, dailyBudget: 480, cpl: 68, bookRate: 0.3, showRate: 0.75, closeRate: 0.35, avgJob: 9800, drift: 0.0005, shock: { fromDaysAgo: 5, spend: 2.0, cpl: 2.6 },
+  { id: "acc-1", name: "Brightside Dental", industry: "Dental", slug: "brightside-dental", location: "Austin, TX", timeZone: "America/Chicago", tags: ["Implants offer"], assignees: [afza, mahad], startedDaysAgo: 210, dailyBudget: 420, cpl: 31, bookRate: 0.42, showRate: 0.8, closeRate: 0.45, avgJob: 2400, drift: -0.001 },
+  { id: "acc-2", name: "Summit Roofing Co.", industry: "Roofing", slug: "summit-roofing", location: "Denver, CO", timeZone: "America/Denver", tags: ["Storm season"], assignees: [mahad], startedDaysAgo: 96, dailyBudget: 480, cpl: 68, bookRate: 0.3, showRate: 0.75, closeRate: 0.35, avgJob: 9800, drift: 0.0005, shock: { fromDaysAgo: 5, spend: 2.0, cpl: 2.6 },
     summary: "Spend doubled after the \"Storm Season v2\" ad set launched, but leads fell. Cost per lead is nearly three times the prior week. Pause the ad set and restore last week's budget." },
-  { id: "acc-5", name: "Air Pro HVAC", slug: "air-pro-hvac", location: "San Diego, CA", timeZone: "America/Los_Angeles", tags: ["Shoulder season"], assignees: [afza, sara], startedDaysAgo: 15, dailyBudget: 85, cpl: 17, bookRate: 0.18, showRate: 0.85, closeRate: 0.5, avgJob: 7600, drift: -0.004 },
-  { id: "acc-6", name: "Harbor Plumbing", slug: "harbor-plumbing", location: "Tampa, FL", timeZone: "America/New_York", tags: [], assignees: [mahad], startedDaysAgo: 400, dailyBudget: 300, cpl: 44, bookRate: 0.36, showRate: 0.8, closeRate: 0.55, avgJob: 1900, drift: 0 },
-  { id: "acc-7", name: "Northwind Solar", slug: "northwind-solar", location: "Phoenix, AZ", timeZone: "America/Phoenix", tags: ["Rebate push"], assignees: [afza], startedDaysAgo: 150, dailyBudget: 900, cpl: 110, bookRate: 0.22, showRate: 0.7, closeRate: 0.3, avgJob: 24000, drift: 0.002, shock: { fromDaysAgo: 9, spend: 1.0, cpl: 1.3 },
+  { id: "acc-5", name: "Air Pro HVAC", industry: "HVAC", slug: "air-pro-hvac", location: "San Diego, CA", timeZone: "America/Los_Angeles", tags: ["Shoulder season"], assignees: [afza, sara], startedDaysAgo: 15, dailyBudget: 85, cpl: 17, bookRate: 0.18, showRate: 0.85, closeRate: 0.5, avgJob: 7600, drift: -0.004 },
+  { id: "acc-6", name: "Harbor Plumbing", industry: "Plumbing", slug: "harbor-plumbing", location: "Tampa, FL", timeZone: "America/New_York", tags: [], assignees: [mahad], startedDaysAgo: 400, dailyBudget: 300, cpl: 44, bookRate: 0.36, showRate: 0.8, closeRate: 0.55, avgJob: 1900, drift: 0 },
+  { id: "acc-7", name: "Northwind Solar", industry: "Solar", slug: "northwind-solar", location: "Phoenix, AZ", timeZone: "America/Phoenix", tags: ["Rebate push"], assignees: [afza], startedDaysAgo: 150, dailyBudget: 900, cpl: 110, bookRate: 0.22, showRate: 0.7, closeRate: 0.3, avgJob: 24000, drift: 0.002, shock: { fromDaysAgo: 9, spend: 1.0, cpl: 1.3 },
     summary: "Lead cost has crept up for nine days while spend is flat. Search impression share is the likely cause after a competitor entered the auction. Review bids on the top three keywords." },
-  { id: "acc-8", name: "Maple Lane Orthodontics", slug: "maple-lane-ortho", location: "Columbus, OH", timeZone: "America/New_York", tags: ["Back to school"], assignees: [sara], startedDaysAgo: 320, dailyBudget: 260, cpl: 52, bookRate: 0.4, showRate: 0.82, closeRate: 0.6, avgJob: 5200, drift: -0.0015 },
-  { id: "acc-9", name: "Keystone Garage Doors", slug: "keystone-garage", location: "Pittsburgh, PA", timeZone: "America/New_York", tags: [], assignees: [mahad, sara], startedDaysAgo: 60, dailyBudget: 180, cpl: 38, bookRate: 0.33, showRate: 0.78, closeRate: 0.5, avgJob: 1400, drift: 0 },
-  { id: "acc-10", name: "Clearwater Pools", slug: "clearwater-pools", location: "Orlando, FL", timeZone: "America/New_York", tags: ["Off season"], assignees: [afza], startedDaysAgo: 500, dailyBudget: 150, cpl: 95, bookRate: 0.25, showRate: 0.7, closeRate: 0.4, avgJob: 38000, drift: 0.001, shock: { fromDaysAgo: 20, spend: 0.45, cpl: 1.0 },
+  { id: "acc-8", name: "Maple Lane Orthodontics", industry: "Orthodontics", slug: "maple-lane-ortho", location: "Columbus, OH", timeZone: "America/New_York", tags: ["Back to school"], assignees: [sara], startedDaysAgo: 320, dailyBudget: 260, cpl: 52, bookRate: 0.4, showRate: 0.82, closeRate: 0.6, avgJob: 5200, drift: -0.0015 },
+  { id: "acc-9", name: "Keystone Garage Doors", industry: "Garage doors", slug: "keystone-garage", location: "Pittsburgh, PA", timeZone: "America/New_York", tags: [], assignees: [mahad, sara], startedDaysAgo: 60, dailyBudget: 180, cpl: 38, bookRate: 0.33, showRate: 0.78, closeRate: 0.5, avgJob: 1400, drift: 0 },
+  { id: "acc-10", name: "Clearwater Pools", industry: "Pools", slug: "clearwater-pools", location: "Orlando, FL", timeZone: "America/New_York", tags: ["Off season"], assignees: [afza], startedDaysAgo: 500, dailyBudget: 150, cpl: 95, bookRate: 0.25, showRate: 0.7, closeRate: 0.4, avgJob: 38000, drift: 0.001, shock: { fromDaysAgo: 20, spend: 0.45, cpl: 1.0 },
     summary: "Budget was cut for the off season on purpose, so underspend against the monthly budget is expected. Lower the budget in settings so pacing stops flagging it." },
-  { id: "acc-11", name: "Evergreen Landscaping", slug: "evergreen-landscaping", location: "Portland, OR", timeZone: "America/Los_Angeles", tags: [], assignees: [sara], startedDaysAgo: 240, dailyBudget: 220, cpl: 29, bookRate: 0.38, showRate: 0.8, closeRate: 0.48, avgJob: 3100, drift: -0.0005 },
-  { id: "acc-12", name: "Redwood Movers", slug: "redwood-movers", location: "Sacramento, CA", timeZone: "America/Los_Angeles", tags: ["Peak season"], assignees: [mahad], startedDaysAgo: 180, dailyBudget: 350, cpl: 24, bookRate: 0.45, showRate: 0.9, closeRate: 0.6, avgJob: 1800, drift: -0.002 },
-  { id: "acc-13", name: "Lakeside Vet Clinic", slug: "lakeside-vet", location: "Madison, WI", timeZone: "America/Chicago", tags: [], assignees: [afza], startedDaysAgo: 120, dailyBudget: 120, cpl: 21, bookRate: 0.5, showRate: 0.88, closeRate: 0.7, avgJob: 420, drift: 0 },
-  { id: "acc-14", name: "Ironclad Fencing", slug: "ironclad-fencing", location: "Nashville, TN", timeZone: "America/Chicago", tags: [], assignees: [mahad, afza], startedDaysAgo: 75, dailyBudget: 200, cpl: 47, bookRate: 0.3, showRate: 0.75, closeRate: 0.45, avgJob: 6200, drift: 0.0008 },
+  { id: "acc-11", name: "Evergreen Landscaping", industry: "Landscaping", slug: "evergreen-landscaping", location: "Portland, OR", timeZone: "America/Los_Angeles", tags: [], assignees: [sara], startedDaysAgo: 240, dailyBudget: 220, cpl: 29, bookRate: 0.38, showRate: 0.8, closeRate: 0.48, avgJob: 3100, drift: -0.0005 },
+  { id: "acc-12", name: "Redwood Movers", industry: "Moving", slug: "redwood-movers", location: "Sacramento, CA", timeZone: "America/Los_Angeles", tags: ["Peak season"], assignees: [mahad], startedDaysAgo: 180, dailyBudget: 350, cpl: 24, bookRate: 0.45, showRate: 0.9, closeRate: 0.6, avgJob: 1800, drift: -0.002 },
+  { id: "acc-13", name: "Lakeside Vet Clinic", industry: "Veterinary", slug: "lakeside-vet", location: "Madison, WI", timeZone: "America/Chicago", tags: [], assignees: [afza], startedDaysAgo: 120, dailyBudget: 120, cpl: 21, bookRate: 0.5, showRate: 0.88, closeRate: 0.7, avgJob: 420, drift: 0 },
+  { id: "acc-14", name: "Ironclad Fencing", industry: "Fencing", slug: "ironclad-fencing", location: "Nashville, TN", timeZone: "America/Chicago", tags: [], assignees: [mahad, afza], startedDaysAgo: 75, dailyBudget: 200, cpl: 47, bookRate: 0.3, showRate: 0.75, closeRate: 0.45, avgJob: 6200, drift: 0.0008 },
 ];
 
 interface FundraisingSpec {
   id: string;
   name: string;
   slug: string;
+  industry: string;
+  website?: string;
   location: string;
   timeZone: string;
   tags: string[];
@@ -104,14 +109,14 @@ interface FundraisingSpec {
 }
 
 const fundraisingSpecs: FundraisingSpec[] = [
-  { id: "acc-3", name: "Hope Harbor Foundation", slug: "hope-harbor", location: "Boston, MA", timeZone: "America/New_York", tags: ["Winter shelter"], assignees: [mahad, afza], startedDaysAgo: 300, dailyRaised: 9200, avgGift: 180, recurringShare: 0.12, newDonorShare: 0.3, drift: 0.004, monthlyGoal: 300000, countries: [["US", "United States", 0.62], ["CA", "Canada", 0.14], ["GB", "United Kingdom", 0.11], ["AU", "Australia", 0.06], ["DE", "Germany", 0.04], ["AE", "United Arab Emirates", 0.03]] },
-  { id: "acc-4", name: "Riverside Animal Rescue", slug: "riverside-rescue", location: "Minneapolis, MN", timeZone: "America/Chicago", tags: [], assignees: [afza], startedDaysAgo: 200, dailyRaised: 3600, avgGift: 65, recurringShare: 0.2, newDonorShare: 0.25, drift: 0, monthlyGoal: 110000, countries: [["US", "United States", 0.9], ["CA", "Canada", 0.08], ["GB", "United Kingdom", 0.02]], shock: { fromDaysAgo: 6, raised: 0.5, gift: 0.9 },
+  { id: "acc-3", name: "Hope Harbor Foundation", industry: "Homelessness", slug: "hope-harbor", location: "Boston, MA", timeZone: "America/New_York", tags: ["Winter shelter"], assignees: [mahad, afza], startedDaysAgo: 300, dailyRaised: 9200, avgGift: 180, recurringShare: 0.12, newDonorShare: 0.3, drift: 0.004, monthlyGoal: 300000, countries: [["US", "United States", 0.62], ["CA", "Canada", 0.14], ["GB", "United Kingdom", 0.11], ["AU", "Australia", 0.06], ["DE", "Germany", 0.04], ["AE", "United Arab Emirates", 0.03]] },
+  { id: "acc-4", name: "Riverside Animal Rescue", industry: "Animal welfare", slug: "riverside-rescue", location: "Minneapolis, MN", timeZone: "America/Chicago", tags: [], assignees: [afza], startedDaysAgo: 200, dailyRaised: 3600, avgGift: 65, recurringShare: 0.2, newDonorShare: 0.25, drift: 0, monthlyGoal: 110000, countries: [["US", "United States", 0.9], ["CA", "Canada", 0.08], ["GB", "United Kingdom", 0.02]], shock: { fromDaysAgo: 6, raised: 0.5, gift: 0.9 },
     summary: "Six straight days of decline on flat traffic, so this is a conversion problem. The donation page conversion rate halved after Tuesday's hero edit. Revert the hero section." },
-  { id: "acc-15", name: "Bright Futures Scholars", slug: "bright-futures", location: "Chicago, IL", timeZone: "America/Chicago", tags: ["Fall appeal"], assignees: [sara], startedDaysAgo: 420, dailyRaised: 5400, avgGift: 240, recurringShare: 0.08, newDonorShare: 0.35, drift: 0.002, monthlyGoal: 170000, countries: [["US", "United States", 0.8], ["GB", "United Kingdom", 0.08], ["IN", "India", 0.07], ["CA", "Canada", 0.05]] },
-  { id: "acc-16", name: "Clean Water Collective", slug: "clean-water", location: "Seattle, WA", timeZone: "America/Los_Angeles", tags: ["Matching gift"], assignees: [mahad], startedDaysAgo: 90, dailyRaised: 7100, avgGift: 95, recurringShare: 0.3, newDonorShare: 0.4, drift: 0.006, monthlyGoal: 200000, countries: [["US", "United States", 0.48], ["GB", "United Kingdom", 0.17], ["DE", "Germany", 0.1], ["NL", "Netherlands", 0.08], ["SE", "Sweden", 0.07], ["KE", "Kenya", 0.05], ["CA", "Canada", 0.05]] },
-  { id: "acc-17", name: "Shelter First", slug: "shelter-first", location: "Toronto, ON", timeZone: "America/Toronto", tags: [], assignees: [afza, sara], startedDaysAgo: 260, dailyRaised: 2900, avgGift: 72, recurringShare: 0.25, newDonorShare: 0.2, drift: -0.001, monthlyGoal: 120000, countries: [["CA", "Canada", 0.84], ["US", "United States", 0.12], ["GB", "United Kingdom", 0.04]], shock: { fromDaysAgo: 30, raised: 0.8, gift: 1.0 },
+  { id: "acc-15", name: "Bright Futures Scholars", industry: "Education", slug: "bright-futures", location: "Chicago, IL", timeZone: "America/Chicago", tags: ["Fall appeal"], assignees: [sara], startedDaysAgo: 420, dailyRaised: 5400, avgGift: 240, recurringShare: 0.08, newDonorShare: 0.35, drift: 0.002, monthlyGoal: 170000, countries: [["US", "United States", 0.8], ["GB", "United Kingdom", 0.08], ["IN", "India", 0.07], ["CA", "Canada", 0.05]] },
+  { id: "acc-16", name: "Clean Water Collective", industry: "Water & sanitation", slug: "clean-water", location: "Seattle, WA", timeZone: "America/Los_Angeles", tags: ["Matching gift"], assignees: [mahad], startedDaysAgo: 90, dailyRaised: 7100, avgGift: 95, recurringShare: 0.3, newDonorShare: 0.4, drift: 0.006, monthlyGoal: 200000, countries: [["US", "United States", 0.48], ["GB", "United Kingdom", 0.17], ["DE", "Germany", 0.1], ["NL", "Netherlands", 0.08], ["SE", "Sweden", 0.07], ["KE", "Kenya", 0.05], ["CA", "Canada", 0.05]] },
+  { id: "acc-17", name: "Shelter First", industry: "Housing", slug: "shelter-first", location: "Toronto, ON", timeZone: "America/Toronto", tags: [], assignees: [afza, sara], startedDaysAgo: 260, dailyRaised: 2900, avgGift: 72, recurringShare: 0.25, newDonorShare: 0.2, drift: -0.001, monthlyGoal: 120000, countries: [["CA", "Canada", 0.84], ["US", "United States", 0.12], ["GB", "United Kingdom", 0.04]], shock: { fromDaysAgo: 30, raised: 0.8, gift: 1.0 },
     summary: "Running well behind the monthly goal. Volume is down since the spring campaign ended and nothing has replaced it. A fall appeal is due for planning." },
-  { id: "acc-18", name: "Open Hands Food Bank", slug: "open-hands", location: "Atlanta, GA", timeZone: "America/New_York", tags: ["Thanksgiving drive"], assignees: [mahad], startedDaysAgo: 140, dailyRaised: 4300, avgGift: 54, recurringShare: 0.18, newDonorShare: 0.3, drift: 0.003, monthlyGoal: 140000, countries: [["US", "United States", 0.95], ["CA", "Canada", 0.05]] },
+  { id: "acc-18", name: "Open Hands Food Bank", industry: "Food security", slug: "open-hands", location: "Atlanta, GA", timeZone: "America/New_York", tags: ["Thanksgiving drive"], assignees: [mahad], startedDaysAgo: 140, dailyRaised: 4300, avgGift: 54, recurringShare: 0.18, newDonorShare: 0.3, drift: 0.003, monthlyGoal: 140000, countries: [["US", "United States", 0.95], ["CA", "Canada", 0.05]] },
 ];
 
 /** Round to an integer with probability equal to the fraction, so small daily rates survive. */
@@ -216,6 +221,23 @@ function tasksFor(now: Date): Task[] {
   ];
 }
 
+const firstNames = ["Mike", "Dana", "Priya", "Jordan", "Elena", "Sam", "Noor", "Chris", "Maya", "Luis", "Grace", "Tom", "Hannah", "Omar", "Ivy", "Ben", "Rosa", "Kai"];
+
+/** One or two client-side logins per sub-account. */
+function clientMembersFor(id: string, companyName: string): Member[] {
+  const n = Number(id.replace("acc-", ""));
+  const domain = companyName.toLowerCase().replace(/[^a-z]+/g, "") + ".example.com";
+  const first = firstNames[n % firstNames.length];
+  const members: Member[] = [
+    { id: `${id}-m1`, name: `${first} ${companyName.split(" ")[0]}`, email: `${first.toLowerCase()}@${domain}`, role: "client", initials: first[0] + companyName[0], tone: "ink" },
+  ];
+  if (n % 3 === 0) {
+    const second = firstNames[(n + 5) % firstNames.length];
+    members.push({ id: `${id}-m2`, name: `${second} Patel`, email: `${second.toLowerCase()}@${domain}`, role: "client", initials: second[0] + "P", tone: "teal", invitedAt: new Date(Date.now() - 2 * 86400000).toISOString() });
+  }
+  return members;
+}
+
 let cache: { key: string; records: ClientRecord[] } | null = null;
 
 /** Deterministic for a given calendar day, so the board is stable across requests. */
@@ -231,6 +253,10 @@ export function demoClients(now: Date): ClientRecord[] {
     const base: Omit<MarketingClient, "health" | "alerts"> = {
       mode: "marketing",
       account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "marketing" },
+      status: s.startedDaysAgo <= 30 ? "onboarding" : "active",
+      industry: s.industry,
+      website: s.website ?? `https://${s.slug.replace(/-/g, "")}.example.com`,
+      clientMembers: clientMembersFor(s.id, s.name),
       location: s.location,
       timeZone: s.timeZone,
       tags: s.tags,
@@ -252,6 +278,10 @@ export function demoClients(now: Date): ClientRecord[] {
     const base: Omit<FundraisingClient, "health" | "alerts"> = {
       mode: "fundraising",
       account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "fundraising" },
+      status: s.startedDaysAgo <= 30 ? "onboarding" : "active",
+      industry: s.industry,
+      website: s.website ?? `https://${s.slug.replace(/-/g, "")}.example.org`,
+      clientMembers: clientMembersFor(s.id, s.name),
       location: s.location,
       timeZone: s.timeZone,
       tags: s.tags,

@@ -107,8 +107,24 @@ export interface CountryRaised {
   raisedCents: number;
 }
 
+export type ClientStatus = "onboarding" | "active" | "paused";
+
+/** A person with access: agency staff on the client, or the client's own logins. */
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: "owner" | "admin" | "member" | "client";
+  initials: string;
+  tone: Assignee["tone"];
+  invitedAt?: string; // set until the invite is accepted
+}
+
 interface ClientBase {
   account: Account;
+  status: ClientStatus;
+  industry: string;
+  website?: string;
   location: string;
   timeZone: string;
   tags: string[];
@@ -119,6 +135,8 @@ interface ClientBase {
   summary: string | null;
   notes: DiagnosticNote[];
   tasks: Task[];
+  /** The client's own logins (sub-account members). */
+  clientMembers: Member[];
 }
 
 export interface MarketingClient extends ClientBase {
