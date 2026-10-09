@@ -1,11 +1,50 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { DiagnosticCard } from "@/components/diagnostic-card";
+import { AlertTriangle, ArrowLeft, Check } from "lucide-react";
+import { Button, PageHeader } from "@/components/page-header";
+import { Shell } from "@/components/shell";
+import { Delta, StatusChip, TrendStrip, healthLabel } from "@/components/status";
 import { getClientDetail } from "@/lib/data/agency";
-import { cn } from "@/lib/utils";
+import type { DiagnosticMetrics, Task } from "@/lib/types";
+import { cn, formatMoney, trendDelta } from "@/lib/utils";
 
-const statusLabel = { todo: "To do", in_progress: "In progress", done: "Done" } as const;
+function metricRows(m: DiagnosticMetrics): { label: string; value: string; delta?: number; goodWhenUp?: boolean }[] {
+  if (m.mode === "marketing") {
+    const t = m.today;
+    const cpl = t.leads ? t.spendCents / t.leads : null;
+    const cpb = t.bookedAppointments ? t.spendCents / t.bookedAppointments : null;
+    return [
+      { label: "Ad spend", value: formatMoney(t.spendCents) },
+      { label: "Leads", value: String(t.leads), delta: trendDelta(m.trend7d) },
+      { label: "Cost per lead", value: cpl === null ? "–" : formatMoney(cpl), goodWhenUp: false },
+      { label: "Booked appointments", value: String(t.bookedAppointments) },
+      { label: "Cost per booking", value: cpb === null ? "–" : formatMoney(cpb), goodWhenUp: false },
+      { label: "Showed", value: String(t.showed) },
+      { label: "Closed", value: String(t.closed) },
+    ];
+  }
+  const t = m.today;
+  return [
+    { label: "Raised", value: formatMoney(t.raisedCents), delta: trendDelta(m.trend7d) },
+    { label: "Donations", value: String(t.donations) },
+    { label: "Average gift", value: formatMoney(t.averageGiftCents) },
+    { label: "New donors", value: String(t.newDonors) },
+    { label: "New monthly donors", value: String(t.newRecurring) },
+  ];
+}
+
+const taskStatus: Record<Task["status"], string> = { todo: "To do", in_progress: "In progress", done: "Done" };
+
+function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between border-b border-line pb-2">
+      <h2 className="text-sm font-semibold">{children}</h2>
+      {aside && <span className="text-xs text-fg-3">{aside}</span>}
+    </div>
+  );
+}
 
 async function ClientDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,68 +53,148 @@ async function ClientDetail({ params }: { params: Promise<{ slug: string }> }) {
   if (!detail) notFound();
   const { account, diagnostics, notes, tasks } = detail;
   const today = diagnostics[0] ?? null;
+  const open = tasks.filter((t) => t.status !== "done");
+  const done = tasks.filter((t) => t.status === "done");
 
   return (
     <>
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{account.name}</h1>
-        <p className="mt-1 text-sm text-muted">
-          {account.mode === "marketing" ? "Digital marketing" : "Digital fundraising"} sub-account
-        </p>
-      </header>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-3">
+            {account.name}
+            {today && <StatusChip health={today.health} />}
+          </span>
+        }
+        meta={
+          <span className="flex items-center gap-3">
+            <Link href="/agency" className="inline-flex items-center gap-1 text-fg-2 hover:underline">
+              <ArrowLeft className="size-3.5" strokeWidth={2} />
+              Daily Diagnostic
+            </Link>
+            <span aria-hidden>·</span>
+            <span>{account.mode === "marketing" ? "Digital marketing" : "Digital fundraising"}</span>
+          </span>
+        }
+        actions={<Button variant="secondary">Open client workspace</Button>}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-6">
-          <DiagnosticCard
-            overview={{
-              account,
-              diagnostic: today,
-              latestNote: notes[0] ?? null,
-              openTasks: tasks.filter((t) => t.status !== "done").length,
-            }}
-          />
+      <div className="grid gap-x-10 gap-y-8 px-5 py-6 md:px-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="flex flex-col gap-8">
+          {today ? (
+            <section>
+              <SectionTitle aside={`Yesterday · ${healthLabel[today.health]}`}>Diagnostic</SectionTitle>
+
+              {(today.alerts.length > 0 || today.summary) && (
+                <div
+                  className={cn(
+                    "mt-3 flex gap-3 rounded border px-4 py-3 text-sm",
+                    today.health === "red"
+                      ? "border-red/20 bg-red-soft/60"
+                      : today.health === "amber"
+                        ? "border-amber/20 bg-amber-soft/60"
+                        : "border-line bg-surface-2",
+                  )}
+                >
+                  {today.health !== "green" && (
+                    <AlertTriangle
+                      className={cn("mt-0.5 size-4 shrink-0", today.health === "red" ? "text-red" : "text-amber")}
+                      strokeWidth={1.75}
+                    />
+                  )}
+                  <p className="max-w-[72ch] leading-relaxed text-fg-2">
+                    {today.alerts.length > 0 && (
+                      <span className={cn("font-medium", today.health === "red" ? "text-red" : "text-amber")}>
+                        {today.alerts.join(" · ")}.{" "}
+                      </span>
+                    )}
+                    {today.summary}
+                  </p>
+                </div>
+              )}
+
+              <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2">
+                {metricRows(today.metrics).map((r) => (
+                  <div
+                    key={r.label}
+                    className="flex items-baseline justify-between gap-4 border-b border-line py-2.5 sm:odd:pr-6 sm:even:pl-6"
+                  >
+                    <dt className="text-sm text-fg-2">{r.label}</dt>
+                    <dd className="flex items-baseline gap-2">
+                      {r.delta !== undefined && <Delta value={r.delta} goodWhenUp={r.goodWhenUp} />}
+                      <span className="num text-base font-medium">{r.value}</span>
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-4 py-2.5 sm:col-span-2">
+                  <dt className="text-sm text-fg-2">
+                    Last 7 days, {today.metrics.mode === "marketing" ? "leads" : "raised"}
+                  </dt>
+                  <dd className="flex items-center gap-3">
+                    <TrendStrip values={today.metrics.trend7d} health={today.health} />
+                    <Delta value={trendDelta(today.metrics.trend7d)} />
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          ) : (
+            <section>
+              <SectionTitle>Diagnostic</SectionTitle>
+              <p className="mt-3 text-sm text-fg-3">No diagnostic has run for this client yet. The first one appears tomorrow morning.</p>
+            </section>
+          )}
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Notes</h2>
-            <ul className="flex flex-col gap-3">
-              {notes.length === 0 && <li className="text-sm text-muted">No notes yet.</li>}
-              {notes.map((n) => (
-                <li key={n.id} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="mb-1 flex items-center justify-between text-xs text-muted">
-                    <span className="font-medium text-foreground">{n.authorName}</span>
-                    <span>
-                      {new Date(n.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                      {n.internalOnly && " · internal"}
-                    </span>
-                  </div>
-                  <p className="text-sm leading-relaxed">{n.body}</p>
-                </li>
-              ))}
-            </ul>
+            <SectionTitle aside={`${notes.length} note${notes.length === 1 ? "" : "s"}`}>Notes</SectionTitle>
+            {notes.length === 0 ? (
+              <p className="mt-3 text-sm text-fg-3">No notes yet. Call notes left here show up on the Daily Diagnostic board.</p>
+            ) : (
+              <ol>
+                {notes.map((n) => (
+                  <li key={n.id} className="grid gap-x-6 gap-y-1 border-b border-line py-3 sm:grid-cols-[140px_minmax(0,1fr)]">
+                    <div className="text-xs text-fg-3">
+                      <div className="font-medium text-fg">{n.authorName}</div>
+                      <div className="num">
+                        {new Date(n.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </div>
+                      {n.internalOnly && <div>Internal</div>}
+                    </div>
+                    <p className="max-w-[72ch] text-sm leading-relaxed text-fg-2">{n.body}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </div>
 
         <aside>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Tasks</h2>
-          <ul className="flex flex-col gap-2">
-            {tasks.length === 0 && <li className="text-sm text-muted">No tasks.</li>}
-            {tasks.map((t) => (
-              <li
-                key={t.id}
-                className={cn(
-                  "rounded-lg border border-border bg-surface px-3 py-2 text-sm",
-                  t.status === "done" && "text-muted line-through",
-                )}
-              >
-                <div>{t.title}</div>
-                <div className="mt-0.5 text-xs text-muted">
-                  {statusLabel[t.status]}
-                  {t.assigneeName && ` · ${t.assigneeName}`}
-                  {t.dueOn && ` · due ${t.dueOn}`}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <SectionTitle aside={`${open.length} open`}>Tasks</SectionTitle>
+          {tasks.length === 0 ? (
+            <p className="mt-3 text-sm text-fg-3">No tasks for this client.</p>
+          ) : (
+            <ul>
+              {[...open, ...done].map((t) => (
+                <li key={t.id} className="flex gap-3 border-b border-line py-2.5">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-0.5 grid size-4 shrink-0 place-items-center rounded-[3px] border",
+                      t.status === "done" ? "border-green bg-green text-white" : "border-line-strong bg-surface",
+                    )}
+                  >
+                    {t.status === "done" && <Check className="size-3" strokeWidth={3} />}
+                  </span>
+                  <div className="min-w-0">
+                    <div className={cn("text-sm", t.status === "done" && "text-fg-3 line-through")}>{t.title}</div>
+                    <div className="text-xs text-fg-3">
+                      {taskStatus[t.status]}
+                      {t.assigneeName && ` · ${t.assigneeName}`}
+                      {t.dueOn && t.status !== "done" && ` · due ${t.dueOn}`}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </aside>
       </div>
     </>
@@ -84,10 +203,10 @@ async function ClientDetail({ params }: { params: Promise<{ slug: string }> }) {
 
 export default function ClientPage({ params }: { params: Promise<{ slug: string }> }) {
   return (
-    <div className="mx-auto max-w-6xl">
-      <Suspense fallback={<p className="text-sm text-muted">Loading…</p>}>
+    <Shell current="/agency/clients">
+      <Suspense fallback={<PageHeader title="Client" meta={<span className="text-fg-3">Loading…</span>} />}>
         <ClientDetail params={params} />
       </Suspense>
-    </div>
+    </Shell>
   );
 }

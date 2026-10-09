@@ -1,59 +1,69 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { DiagnosticCard } from "@/components/diagnostic-card";
+import { Plus } from "lucide-react";
+import { Board } from "@/components/board";
+import { Button, PageHeader } from "@/components/page-header";
+import { Shell } from "@/components/shell";
 import { getClientOverviews } from "@/lib/data/agency";
 
 export const metadata = { title: "Daily Diagnostic" };
 
-async function Board() {
+const order = { red: 0, amber: 1, green: 2 } as const;
+
+async function Diagnostic() {
   await connection();
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-  const overviews = await getClientOverviews();
-  const needsAction = overviews.filter((o) => o.diagnostic?.health === "red").length;
-  const watch = overviews.filter((o) => o.diagnostic?.health === "amber").length;
+  const now = new Date();
+  const date = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const overviews = (await getClientOverviews())
+    .slice()
+    .sort((a, b) => (a.diagnostic ? order[a.diagnostic.health] : 3) - (b.diagnostic ? order[b.diagnostic.health] : 3));
+  const red = overviews.filter((o) => o.diagnostic?.health === "red").length;
+  const amber = overviews.filter((o) => o.diagnostic?.health === "amber").length;
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap gap-3 text-sm text-muted">
-        <span>{today}</span>
-        <span>·</span>
-        <span>{overviews.length} clients</span>
-        <span>·</span>
-        <span className={needsAction ? "text-red" : ""}>{needsAction} need action</span>
-        <span>·</span>
-        <span className={watch ? "text-amber" : ""}>{watch} to watch</span>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {overviews
-          .slice()
-          .sort((a, b) => rank(a) - rank(b))
-          .map((o) => (
-            <DiagnosticCard key={o.account.id} overview={o} />
-          ))}
-      </div>
+      <PageHeader
+        title="Daily Diagnostic"
+        meta={
+          <span className="flex flex-wrap gap-x-3">
+            <span>{date}</span>
+            <span aria-hidden>·</span>
+            <span className="num">{overviews.length} clients</span>
+            <span aria-hidden>·</span>
+            <span className={red ? "font-medium text-red" : ""}>
+              <span className="num">{red}</span> need{red === 1 ? "s" : ""} action
+            </span>
+            <span aria-hidden>·</span>
+            <span className={amber ? "font-medium text-amber" : ""}>
+              <span className="num">{amber}</span> to watch
+            </span>
+          </span>
+        }
+        actions={
+          <Button>
+            <Plus className="size-4" strokeWidth={2} />
+            Add client
+          </Button>
+        }
+      />
+      <Board rows={overviews} />
+      <p className="px-5 py-4 text-xs text-fg-3 md:px-8">
+        Yesterday&apos;s numbers. Clients are listed by status, then by name. Demo data.
+      </p>
     </>
   );
 }
 
-const order = { red: 0, amber: 1, green: 2 } as const;
-function rank(o: Awaited<ReturnType<typeof getClientOverviews>>[number]) {
-  return o.diagnostic ? order[o.diagnostic.health] : 3;
-}
-
 export default function AgencyHome() {
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Daily Diagnostic</h1>
-        <p className="mt-1 text-sm text-muted">Every client, yesterday&apos;s numbers, what needs attention.</p>
-      </header>
-      <Suspense fallback={<p className="text-sm text-muted">Loading clients…</p>}>
-        <Board />
+    <Shell current="/agency">
+      <Suspense
+        fallback={
+          <PageHeader title="Daily Diagnostic" meta={<span className="text-fg-3">Loading clients…</span>} />
+        }
+      >
+        <Diagnostic />
       </Suspense>
-    </div>
+    </Shell>
   );
 }
