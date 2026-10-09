@@ -200,7 +200,7 @@ export interface Contact {
   lastActivityAt: string;
 }
 
-export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
+export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task" | "job" | "estimate" | "invoice" | "payment";
 
 export interface ContactActivity {
   id: string;
@@ -212,4 +212,109 @@ export interface ContactActivity {
   by?: string;
   amountCents?: number;
   at: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Field service: technicians, jobs, estimates, invoices, payments       */
+/* ------------------------------------------------------------------ */
+
+/** Someone on the client's crew who can be dispatched to a job. */
+export interface Technician extends Assignee {
+  id: string;
+  accountId: string;
+  role: string;
+  phone?: string;
+}
+
+export type JobStatus = "unscheduled" | "scheduled" | "en_route" | "in_progress" | "completed" | "canceled";
+
+/** A priced row on a job, estimate option or invoice. */
+export interface LineItem {
+  id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitCents: number;
+}
+
+export interface Job {
+  id: string;
+  number: string;
+  accountId: string;
+  contactId: string;
+  title: string;
+  address: string;
+  status: JobStatus;
+  technicianIds: string[];
+  /** Wall-clock time in the client's time zone, "YYYY-MM-DDTHH:mm". Unset while unscheduled. */
+  start?: string;
+  durationMin: number;
+  lineItems: LineItem[];
+  notes?: string;
+  estimateId?: string;
+  invoiceId?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export type EstimateStatus = "draft" | "sent" | "approved" | "declined";
+
+/** Good, better, best: each option is priced on its own and the customer picks one. */
+export interface EstimateOption {
+  id: string;
+  name: string;
+  lineItems: LineItem[];
+}
+
+export interface Estimate {
+  id: string;
+  number: string;
+  accountId: string;
+  contactId: string;
+  title: string;
+  address: string;
+  status: EstimateStatus;
+  options: EstimateOption[];
+  approvedOptionId?: string;
+  taxRateBps: number;
+  message?: string;
+  createdAt: string;
+  sentAt?: string;
+  decidedAt?: string;
+  expiresOn: string;
+  jobId?: string;
+}
+
+/** Stored state. "Overdue" and "Partly paid" are derived from dates and payments. */
+export type InvoiceStatus = "draft" | "sent" | "paid" | "void";
+
+export type PaymentMethod = "card" | "ach" | "cash" | "check";
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amountCents: number;
+  method: PaymentMethod;
+  at: string;
+  /** Processor reference; demo payments carry a stubbed Stripe id. */
+  reference?: string;
+}
+
+export interface Invoice {
+  id: string;
+  number: string;
+  accountId: string;
+  contactId: string;
+  jobId?: string;
+  estimateId?: string;
+  title: string;
+  lineItems: LineItem[];
+  taxRateBps: number;
+  status: InvoiceStatus;
+  issuedOn: string;
+  dueOn: string;
+  sentAt?: string;
+  payments: Payment[];
+  memo?: string;
+  createdAt: string;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useTransition } from "react";
-import { Ban, Calendar, CircleDollarSign, FileText, Mail, MessageSquare, Pencil, Phone, Sparkles, SquareArrowOutUpRight, StickyNote, X, type LucideIcon } from "lucide-react";
+import { Ban, Calendar, CircleDollarSign, CreditCard, FileText, Receipt, Wrench, ClipboardList, Mail, MessageSquare, Pencil, Phone, Sparkles, SquareArrowOutUpRight, StickyNote, X, type LucideIcon } from "lucide-react";
 import { Field, FormNotice, Select, SubmitButton, Textarea } from "@/components/form";
 import { Avatar, SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import type { ActionState } from "@/app/agency/contacts/actions";
@@ -32,6 +32,10 @@ const kindIcon: Record<ActivityKind, LucideIcon> = {
   note: StickyNote,
   stage: Sparkles,
   task: FileText,
+  job: Wrench,
+  estimate: ClipboardList,
+  invoice: Receipt,
+  payment: CreditCard,
 };
 
 export function StageSelect({ contact, pipeline, moveStage, className }: { contact: Contact; pipeline: Pipeline; moveStage: ContactActions["moveStage"]; className?: string }) {
