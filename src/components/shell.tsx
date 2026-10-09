@@ -3,6 +3,7 @@ import {
   Activity,
   CheckSquare,
   Inbox,
+  Mail,
   LayoutGrid,
   Settings,
   Users,
@@ -15,6 +16,7 @@ const nav = [
   { href: "/agency/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
+  { href: "/agency/email", label: "Email", icon: Mail },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 
