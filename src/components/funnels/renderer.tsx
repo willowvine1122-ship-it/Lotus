@@ -29,29 +29,30 @@ function Button({ children, href, className }: { children: React.ReactNode; href
   );
 }
 
-export function Block({ block, formAction, preview }: { block: FunnelBlock; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean }) {
+export function Block({ block, formAction, preview, aside }: { block: FunnelBlock; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean; aside?: React.ReactNode }) {
   switch (block.type) {
     case "hero":
       return (
-        <section className={cn("px-6 pb-16 pt-20 md:pb-24 md:pt-28", block.align === "center" ? "text-center" : "")}>
-          <div className={cn("mx-auto", block.align === "center" ? "max-w-[760px]" : "max-w-[1040px]")}>
+        <section className={cn("px-6 pb-16 pt-14 @md:pb-24 @md:pt-20", block.align === "center" ? "text-center" : "")}>
+          <div className={cn("mx-auto", block.align === "center" ? "max-w-[760px]" : "max-w-[1040px]", block.align === "split" && aside && "grid gap-10 @md:grid-cols-[minmax(0,1fr)_420px] @md:items-start")}>
             <div className={block.align === "center" ? "" : "max-w-[640px]"}>
-            {block.eyebrow && <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[var(--fb)]">{block.eyebrow}</p>}
-            <h1 className="mt-3 text-4xl font-semibold leading-[1.1] tracking-tight text-[#0f1221] md:text-5xl">{block.headline}</h1>
-            {block.subhead && <p className="mt-5 text-lg leading-relaxed text-[#4b4f63] md:text-xl">{block.subhead}</p>}
+            {block.eyebrow && <p className="text-[15px] font-medium text-[#4b4f63]">{block.eyebrow}</p>}
+            <h1 className="mt-3 text-balance text-4xl font-semibold leading-[1.1] tracking-tight text-[#0f1221] @md:text-5xl">{block.headline}</h1>
+            {block.subhead && <p className="mt-5 text-lg leading-relaxed text-[#4b4f63] @md:text-xl">{block.subhead}</p>}
             {block.buttonLabel && (
               <div className="mt-8">
                 <Button href={block.buttonHref || "#form"}>{block.buttonLabel}</Button>
               </div>
             )}
             </div>
+            {block.align === "split" && aside}
           </div>
         </section>
       );
     case "stats":
       return (
         <section className="border-y border-[#e9e7e1] bg-white px-6 py-10">
-          <dl className="mx-auto grid max-w-[900px] grid-cols-1 gap-8 text-center sm:grid-cols-3">
+          <dl className="mx-auto grid max-w-[900px] grid-cols-1 gap-8 text-center @md:grid-cols-3">
             {block.items.map((it, i) => (
               <div key={i}>
                 <dd className="text-4xl font-semibold tracking-tight text-[#0f1221]" style={{ fontVariantNumeric: "tabular-nums" }}>{it.value}</dd>
@@ -63,10 +64,10 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
       );
     case "features":
       return (
-        <section className="px-6 py-16 md:py-20">
+        <section className="px-6 py-16 @md:py-20">
           <div className="mx-auto max-w-[960px]">
-            {block.headline && <h2 className="text-2xl font-semibold tracking-tight text-[#0f1221] md:text-3xl">{block.headline}</h2>}
-            <div className={cn("grid gap-8 sm:grid-cols-3", block.headline && "mt-10")}>
+            {block.headline && <h2 className="text-2xl font-semibold tracking-tight text-[#0f1221] @md:text-3xl">{block.headline}</h2>}
+            <div className={cn("grid gap-8 @md:grid-cols-3", block.headline && "mt-10")}>
               {block.items.map((it, i) => (
                 <div key={i} className="border-t-2 border-[var(--fb)] pt-4">
                   <h3 className="text-base font-semibold text-[#0f1221]">{it.title}</h3>
@@ -81,7 +82,7 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
       return (
         <section className="bg-white px-6 py-16">
           <figure className="mx-auto max-w-[760px] text-center">
-            <blockquote className="text-2xl font-medium leading-snug tracking-tight text-[#0f1221] md:text-3xl">“{block.quote}”</blockquote>
+            <blockquote className="text-balance text-2xl font-medium leading-snug tracking-tight text-[#0f1221] @md:text-3xl">“{block.quote}”</blockquote>
             <figcaption className="mt-5 text-sm text-[#6b6f83]">
               <span className="font-semibold text-[#0f1221]">{block.name}</span>
               {block.detail && ` · ${block.detail}`}
@@ -94,7 +95,7 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
         <section className="px-6 py-14">
           <div className="mx-auto max-w-[680px]">
             {block.headline && <h2 className="text-2xl font-semibold tracking-tight text-[#0f1221]">{block.headline}</h2>}
-            <p className="mt-4 text-base leading-relaxed text-[#4b4f63] md:text-lg">{block.body}</p>
+            <p className="mt-4 text-base leading-relaxed text-[#4b4f63] @md:text-lg">{block.body}</p>
           </div>
         </section>
       );
@@ -118,7 +119,7 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
       return (
         <section className="px-6 py-16">
           <div className="mx-auto max-w-[760px] rounded-xl bg-[#0f1221] px-8 py-12 text-center text-white">
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{block.headline}</h2>
+            <h2 className="text-balance text-2xl font-semibold tracking-tight @md:text-3xl">{block.headline}</h2>
             {block.body && <p className="mt-3 text-base text-white/75">{block.body}</p>}
             <div className="mt-7">
               <Button href={block.buttonHref || "#form"}>{block.buttonLabel}</Button>
@@ -128,8 +129,27 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
       );
     case "form":
       return (
-        <section id="form" className="px-6 py-16 md:py-20">
-          <div className="mx-auto max-w-[560px] rounded-xl border border-[#e9e7e1] bg-white p-6 shadow-[0_1px_2px_rgba(15,18,33,0.04),0_8px_24px_rgba(15,18,33,0.06)] md:p-8">
+        <section id="form" className="px-6 py-16 @md:py-20">
+          <FormCard block={block} formAction={formAction} preview={preview} className="mx-auto max-w-[560px]" />
+        </section>
+      );
+    case "footer":
+      return (
+        <footer className="px-6 py-10 text-center text-sm text-[#6b6f83]">
+          {block.text}
+          <span className="mx-2">·</span>
+          <span>Built with Lotus</span>
+        </footer>
+      );
+  }
+}
+
+function FormCard({ block, formAction, preview, className }: { block: Extract<FunnelBlock, { type: "form" }>; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean; className?: string }) {
+  return (
+    <div className={cn("rounded-xl border border-[#e9e7e1] bg-white p-6 shadow-[0_1px_2px_rgba(15,18,33,0.04),0_8px_24px_rgba(15,18,33,0.06)] @md:p-8", className)}>
+      {(() => {
+        return (
+          <>
             <h2 className="text-2xl font-semibold tracking-tight text-[#0f1221]">{block.headline}</h2>
             {block.subhead && <p className="mt-1.5 text-sm text-[#6b6f83]">{block.subhead}</p>}
             <form action={preview ? undefined : formAction} className="mt-6 flex flex-col gap-4">
@@ -158,22 +178,16 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
               <Button className="mt-2 w-full">{block.buttonLabel}</Button>
               {block.note && <p className="text-center text-xs text-[#6b6f83]">{block.note}</p>}
             </form>
-          </div>
-        </section>
-      );
-    case "footer":
-      return (
-        <footer className="px-6 py-10 text-center text-sm text-[#6b6f83]">
-          {block.text}
-          <span className="mx-2">·</span>
-          <span>Built with Lotus</span>
-        </footer>
-      );
-  }
+          </>
+        );
+      })()}
+    </div>
+  );
 }
 
 export function FunnelPage({
   funnel,
+  brand,
   step,
   formAction,
   preview,
@@ -182,6 +196,8 @@ export function FunnelPage({
   className,
 }: {
   funnel: Pick<Funnel, "brandColor" | "name">;
+  /** The client's name, shown as a wordmark in a slim header. */
+  brand?: string;
   step: FunnelStep;
   formAction?: (fd: FormData) => void | Promise<void>;
   preview?: boolean;
@@ -190,9 +206,17 @@ export function FunnelPage({
   onSelectBlock?: (id: string) => void;
   className?: string;
 }) {
+  const hero = step.blocks[0];
+  const splitForm = hero?.type === "hero" && hero.align === "split" ? step.blocks.find((b) => b.type === "form") : undefined;
+  const aside = splitForm && splitForm.type === "form" ? <FormCard block={splitForm} formAction={formAction} preview={preview} /> : undefined;
   return (
-    <div className={cn("min-h-full bg-[#faf9f6] font-sans text-[#0f1221] antialiased", className)} style={{ ["--fb" as string]: funnel.brandColor }}>
-      {step.blocks.map((b) =>
+    <div className={cn("@container min-h-full bg-[#faf9f6] font-sans text-[#0f1221] antialiased", className)} style={{ ["--fb" as string]: funnel.brandColor }}>
+      {brand && (
+        <header className="flex h-14 items-center border-b border-[#e9e7e1] px-6">
+          <span className="text-[15px] font-semibold tracking-tight text-[#0f1221]">{brand}</span>
+        </header>
+      )}
+      {step.blocks.filter((b) => b !== splitForm).map((b) =>
         onSelectBlock ? (
           <div
             key={b.id}
@@ -200,10 +224,10 @@ export function FunnelPage({
             onClick={() => onSelectBlock(b.id)}
             className={cn("relative cursor-pointer outline-offset-[-2px] transition-[outline-color] duration-100", selectedId === b.id ? "outline outline-2 outline-[#7c3aed]" : "hover:outline hover:outline-2 hover:outline-[#7c3aed]/40")}
           >
-            <Block block={b} formAction={formAction} preview={preview} />
+            <Block block={b} formAction={formAction} preview={preview} aside={aside} />
           </div>
         ) : (
-          <Block key={b.id} block={b} formAction={formAction} preview={preview} />
+          <Block key={b.id} block={b} formAction={formAction} preview={preview} aside={aside} />
         ),
       )}
       {step.blocks.length === 0 && <p className="px-6 py-20 text-center text-sm text-[#6b6f83]">This page has no blocks yet.</p>}

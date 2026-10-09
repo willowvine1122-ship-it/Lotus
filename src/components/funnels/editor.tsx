@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Loader2, Plus, Settings2, Trash2 } from "lucide-react";
+import { useWidth } from "@/components/charts";
 import { Field, Input, Select, Textarea, controlClass } from "@/components/form";
 import { Button } from "@/components/page-header";
 import { Segmented, Tag } from "@/components/diagnostic/primitives";
@@ -108,15 +109,16 @@ function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: Fu
     case "hero":
       return (
         <>
-          {text("Eyebrow", "eyebrow", block.eyebrow, { hint: "Small line above the headline. Optional." })}
+          {text("Line above the headline", "eyebrow", block.eyebrow, { hint: "Optional. Who this is for, or where you are." })}
           {text("Headline", "headline", block.headline)}
           {text("Subhead", "subhead", block.subhead, { long: true })}
           {text("Button label", "buttonLabel", block.buttonLabel, { hint: "Leave empty for no button." })}
           {text("Button goes to", "buttonHref", block.buttonHref, { placeholder: "#form", hint: "#form scrolls to the form on this page." })}
           <Field label="Alignment" htmlFor="f-align">
-            <Select id="f-align" value={block.align ?? "center"} onChange={(e) => set({ align: e.target.value as "left" | "center" })}>
+            <Select id="f-align" value={block.align ?? "center"} onChange={(e) => set({ align: e.target.value as "left" | "center" | "split" })}>
               <option value="center">Centred</option>
               <option value="left">Left</option>
+              <option value="split">Beside the form</option>
             </Select>
           </Field>
         </>
@@ -171,7 +173,7 @@ function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: Fu
         <>
           {text("Headline", "headline", block.headline)}
           {text("Subhead", "subhead", block.subhead, { hint: "Optional." })}
-          <Field label="Fields" hint="Name is always asked. Every submission becomes a contact.">
+          <Field label="Fields" hint={block.fields.includes("amount") ? "Payments arrive with the fundraising module; until then a gift amount records a pledge." : "Every submission becomes a contact on the client's pipeline."}>
             <div className="flex flex-wrap gap-1.5">
               {formFields.map((f) => {
                 const on = block.fields.includes(f.key);
@@ -196,6 +198,33 @@ function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: Fu
     case "footer":
       return text("Text", "text", block.text);
   }
+}
+
+/* ------------------------------ preview ------------------------------ */
+
+/** Renders the page at its real width (desktop or phone) and scales it to fit the column, so the preview is the page. */
+function ScaledPreview({ width, children }: { width: number; children: React.ReactNode }) {
+  const [outer, outerWidth] = useWidth<HTMLDivElement>();
+  const inner = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  const scale = outerWidth > 0 ? Math.min(1, outerWidth / width) : 1;
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    setHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={outer} className="mx-auto w-full" style={{ maxWidth: width }}>
+      <div className="overflow-hidden rounded-md border border-line bg-white shadow-1" style={{ height: height * scale || undefined }}>
+        <div ref={inner} style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ------------------------------- editor ------------------------------ */
@@ -328,10 +357,14 @@ export function FunnelEditor({ funnel, client, nowIso, actions }: { funnel: Funn
             <span className="hidden sm:inline">Settings</span>
           </RailButton>
           <StatusButton funnel={funnel} setStatus={actions.setStatus} className={funnel.status === "live" ? "border-rail-line bg-rail-2 text-rail-fg hover:bg-rail-line" : "border-rail-fg bg-rail-fg text-rail hover:bg-rail-fg/90"} />
-          <Button onClick={save} disabled={!unsaved || saving} className="h-7 px-3 text-xs">
-            {saving && <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />}
-            {saving ? "Saving" : unsaved ? "Save" : "Saved"}
-          </Button>
+          {unsaved || saving ? (
+            <Button onClick={save} disabled={saving} className="h-7 px-3 text-xs">
+              {saving && <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />}
+              {saving ? "Saving" : "Save"}
+            </Button>
+          ) : (
+            <span className="px-1 text-xs text-rail-fg-2">Saved</span>
+          )}
         </div>
       </header>
 
@@ -479,9 +512,9 @@ export function FunnelEditor({ funnel, client, nowIso, actions }: { funnel: Funn
             />
           </div>
           <div className="flex-1 overflow-auto p-4 md:p-6">
-            <div className={cn("mx-auto overflow-hidden rounded-md border border-line bg-white shadow-1 transition-[max-width] duration-200", device === "phone" ? "max-w-[390px]" : "max-w-[1200px]")}>
-              <FunnelPage funnel={previewFunnel} step={step} preview selectedId={blockId} onSelectBlock={(id) => { setBlockId(id); setPane("block"); }} />
-            </div>
+            <ScaledPreview width={device === "phone" ? 390 : 1200}>
+              <FunnelPage funnel={previewFunnel} brand={client.name} step={step} preview selectedId={blockId} onSelectBlock={(id) => { setBlockId(id); setPane("block"); }} />
+            </ScaledPreview>
           </div>
         </section>
 

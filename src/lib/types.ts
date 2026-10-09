@@ -221,7 +221,7 @@ export interface ContactActivity {
 export type FunnelStatus = "draft" | "live";
 
 export type FunnelBlock =
-  | { id: string; type: "hero"; eyebrow?: string; headline: string; subhead?: string; buttonLabel?: string; buttonHref?: string; align?: "left" | "center" }
+  | { id: string; type: "hero"; eyebrow?: string; headline: string; subhead?: string; buttonLabel?: string; buttonHref?: string; align?: "left" | "center" | "split" }
   | { id: string; type: "form"; headline: string; subhead?: string; fields: ("name" | "email" | "phone" | "address" | "message" | "amount")[]; buttonLabel: string; note?: string }
   | { id: string; type: "features"; headline?: string; items: { title: string; body: string }[] }
   | { id: string; type: "stats"; items: { value: string; label: string }[] }

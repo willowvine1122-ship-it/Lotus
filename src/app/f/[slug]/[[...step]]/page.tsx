@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { FunnelPage } from "@/components/funnels/renderer";
-import { findFunnel } from "@/lib/data/store";
+import { findClient, findFunnel } from "@/lib/data/store";
 import { submitFunnelAction } from "@/app/agency/funnels/actions";
 
 /* Public funnel pages: /f/<funnel-slug>/<step-path>. The first step is the root. */
@@ -16,7 +16,8 @@ async function Page({ params }: { params: Promise<{ slug: string; step?: string[
   const path = (stepParts ?? []).join("/");
   const step = funnel.steps.find((s) => s.path === path) ?? (path === "" ? funnel.steps[0] : undefined);
   if (!step) notFound();
-  return <FunnelPage funnel={funnel} step={step} formAction={submitFunnelAction.bind(null, funnel.id, step.id)} />;
+  const client = findClient(now, funnel.accountId);
+  return <FunnelPage funnel={funnel} brand={client?.account.name} step={step} formAction={submitFunnelAction.bind(null, funnel.id, step.id)} />;
 }
 
 export default function PublicFunnelPage({ params }: { params: Promise<{ slug: string; step?: string[] }> }) {

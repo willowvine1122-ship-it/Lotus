@@ -21,9 +21,9 @@ interface Sort { key: Key; dir: "asc" | "desc" }
 const columns: { key: Key; label: string; className?: string; align?: "right"; defaultDir?: "asc" | "desc" }[] = [
   { key: "name", label: "Funnel", className: "min-w-[180px]" },
   { key: "client", label: "Client", className: "hidden md:table-cell" },
-  { key: "status", label: "Status" },
+  { key: "status", label: "Status", className: "hidden sm:table-cell" },
   { key: "visitors", label: "Visitors 7d", align: "right", className: "hidden sm:table-cell", defaultDir: "desc" },
-  { key: "leads", label: "Leads 7d", align: "right", className: "hidden sm:table-cell", defaultDir: "desc" },
+  { key: "leads", label: "Leads 7d", align: "right", defaultDir: "desc" },
   { key: "rate", label: "Conv.", align: "right", className: "hidden md:table-cell", defaultDir: "desc" },
   { key: "updated", label: "Updated", className: "hidden 2xl:table-cell", defaultDir: "desc" },
 ];
@@ -219,11 +219,11 @@ export function FunnelsBoard({
                       <span className="num block truncate text-xs text-fg-3">{publicPath(f)}</span>
                     </td>
                     <td className="hidden max-w-[180px] truncate whitespace-nowrap px-3 py-1.5 text-fg-2 md:table-cell">{client?.name}</td>
-                    <td className="px-3 py-1.5">
+                    <td className="hidden px-3 py-1.5 sm:table-cell">
                       <Tag tone="neutral">{f.status === "live" ? "Live" : "Draft"}</Tag>
                     </td>
                     <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{f.status === "live" ? formatCount(s.visitors) : <span className="text-fg-3">–</span>}</td>
-                    <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{f.status === "live" ? formatCount(s.leads) : <span className="text-fg-3">–</span>}</td>
+                    <td className="num px-3 py-1.5 text-right">{f.status === "live" ? formatCount(s.leads) : <span className="text-fg-3">–</span>}</td>
                     <td className="num hidden px-3 py-1.5 text-right md:table-cell">{s.rate === null ? <span className="text-fg-3">–</span> : formatRate(s.rate, 1)}</td>
                     <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 2xl:table-cell">{timeAgo(f.updatedAt, now)}</td>
                     <td className="hidden px-3 py-1.5 pr-5 md:table-cell md:pr-6">

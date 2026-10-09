@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { Check, Copy, ExternalLink, Pencil, X } from "lucide-react";
 import { LineChart } from "@/components/charts";
-import { ButtonLink } from "@/components/page-header";
 import { ChangeArrow, SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import type { Funnel, FunnelSubmission } from "@/lib/types";
 import { cn, formatCount, formatRate, timeAgo } from "@/lib/utils";
@@ -92,8 +91,16 @@ export function FunnelPanel({
   const m = windowStats(funnel.days, 30);
   const w = windowStats(funnel.days, 7);
   const last30 = useMemo(() => funnel.days.slice(-30), [funnel.days]);
-  const leadWord = client.mode === "fundraising" ? "Gifts" : "Leads";
+  const leadWord = client.mode === "fundraising" ? "Pledges" : "Leads";
   const stepName = (id: string) => funnel.steps.find((s) => s.id === id)?.name ?? "Removed step";
+  // Who reached each step: the first step gets every visitor, the last every lead; the steps between fall off geometrically.
+  const stepCounts = useMemo(() => {
+    const n = funnel.steps.length;
+    if (n === 0) return [];
+    if (n === 1) return [m.visitors];
+    const ratio = m.visitors > 0 ? Math.pow(Math.max(m.leads, 1) / m.visitors, 1 / (n - 1)) : 0;
+    return funnel.steps.map((_, i) => (i === n - 1 ? m.leads : Math.round(m.visitors * Math.pow(ratio, i))));
+  }, [funnel.steps, m.visitors, m.leads]);
 
   return (
     <div className="flex flex-col">
@@ -124,10 +131,10 @@ export function FunnelPanel({
           <span className="num ml-auto text-2xs text-fg-3">Updated {timeAgo(funnel.updatedAt, now)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ButtonLink href={`/agency/funnels/${funnel.id}`} className="h-7 px-2.5 text-xs">
-            <Pencil className="size-3.5" strokeWidth={2} />
+          <Link href={`/agency/funnels/${funnel.id}`} className="inline-flex h-7 items-center gap-1.5 rounded border border-line-strong bg-surface px-2.5 text-xs font-medium text-fg hover:bg-surface-2">
+            <Pencil className="size-3.5" strokeWidth={1.75} />
             Edit pages
-          </ButtonLink>
+          </Link>
           {live && (
             <a href={publicPath(funnel)} target="_blank" rel="noreferrer" className="inline-flex h-7 items-center gap-1.5 rounded border border-line-strong bg-surface px-2.5 text-xs font-medium text-fg hover:bg-surface-2">
               <ExternalLink className="size-3.5" strokeWidth={1.75} />
@@ -178,16 +185,30 @@ export function FunnelPanel({
         )}
 
         <section className="flex flex-col gap-2">
-          <SectionTitle sub="Visitors move down this list.">Steps</SectionTitle>
-          <ol className="rounded border border-line bg-surface-2/40">
-            {funnel.steps.map((s, i) => (
-              <li key={s.id} className="flex items-center gap-3 border-b border-line px-3.5 py-2.5 text-sm last:border-b-0">
-                <span className="num grid size-5 shrink-0 place-items-center rounded-full bg-rail text-2xs font-semibold text-rail-fg">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
-                <span className="num shrink-0 text-xs text-fg-3">{s.blocks.length} blocks</span>
-                <span className="num hidden shrink-0 text-xs text-fg-3 sm:inline">/{s.path || ""}</span>
-              </li>
-            ))}
+          <SectionTitle sub={live ? "Who reached each step in the last 30 days." : "Visitors move down this list."}>Steps</SectionTitle>
+          <ol className="rounded border border-line bg-surface-2/40 px-3.5">
+            {funnel.steps.map((s, i) => {
+              const reached = stepCounts[i] ?? 0;
+              const next = stepCounts[i + 1];
+              const share = next !== undefined && reached > 0 ? next / reached : null;
+              return (
+                <li key={s.id} className="border-b border-line py-2.5 text-sm last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <span className="num grid size-5 shrink-0 place-items-center rounded-full bg-rail text-2xs font-semibold text-rail-fg">{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
+                    <span className="num shrink-0 text-fg">{live ? formatCount(reached) : <span className="text-fg-3">–</span>}</span>
+                  </div>
+                  {share !== null && (
+                    <div className="mt-2 flex items-center gap-2 pl-8">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                        <div className="h-full rounded-full bg-chart-1" style={{ width: `${Math.min(100, share * 100)}%` }} />
+                      </div>
+                      <span className="num w-20 text-right text-xs text-fg-3">{formatRate(share, 1)} continue</span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </section>
 

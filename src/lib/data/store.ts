@@ -395,7 +395,7 @@ export function createFunnel(now: Date, input: { accountId: string; name: string
     slug,
     status: "draft",
     template: t.id,
-    brandColor: c.account.brandColor ?? "#6d28d9",
+    brandColor: c.account.brandColor ?? "#0f1221",
     steps: t.steps({ name: c.account.name, industry: c.industry, location: c.location }),
     days: [],
     createdAt: now.toISOString(),
