@@ -7,7 +7,7 @@ import type {
   Task,
   ClientRecord,
 } from "@/lib/types";
-import { demoClients } from "./demo-clients";
+import { findClient, listClients } from "./store";
 import {
   demoAccounts,
   demoDiagnostics,
@@ -116,10 +116,15 @@ function mapDiagnostic(d: any): DailyDiagnostic {
 }
 
 /**
- * Full client records with daily history for the Daily Diagnostic.
- * The Supabase path needs a daily-metrics table that does not exist yet,
- * so this always serves the synthetic set for now.
+ * Full client records with daily history for the Daily Diagnostic and the
+ * client pages. The Supabase path needs the daily_metrics table from
+ * migration 0002 to be populated by the ad and donation feeds, which do
+ * not exist yet, so this always serves the in-memory demo store for now.
  */
 export async function getClientRecords(now: Date): Promise<ClientRecord[]> {
-  return demoClients(now);
+  return listClients(now);
+}
+
+export async function getClientRecord(now: Date, idOrSlug: string): Promise<ClientRecord | null> {
+  return findClient(now, idOrSlug) ?? null;
 }

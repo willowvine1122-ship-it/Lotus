@@ -79,6 +79,14 @@ function Tooltip({
 
 /* ----------------------------- line chart --------------------------- */
 
+function EmptyChart({ height, label }: { height: number; label: string }) {
+  return (
+    <div style={{ height }} className="grid place-items-center rounded border border-dashed border-line-strong text-xs text-fg-3">
+      {label}
+    </div>
+  );
+}
+
 export function LineChart({
   labels,
   series,
@@ -132,6 +140,8 @@ export function LineChart({
     const i = Math.round((px / Math.max(1, innerW)) * (n - 1));
     setHover(Math.min(n - 1, Math.max(0, i)));
   };
+
+  if (n === 0) return <EmptyChart height={height} label="No data yet" />;
 
   return (
     <div ref={ref} className={cn("relative", className)}>
@@ -246,6 +256,8 @@ export function ColumnChart({
     const px = e.clientX - rect.left - pad.left;
     setHover(Math.min(n - 1, Math.max(0, Math.floor(px / Math.max(1, slot)))));
   };
+
+  if (n === 0) return <EmptyChart height={height} label="No data yet" />;
 
   return (
     <div ref={ref} className={cn("relative", className)}>

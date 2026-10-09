@@ -125,6 +125,9 @@ function MetricsTable<T extends { day: string }>({
       >
         Performance metrics
       </SectionTitle>
+      {cols.length === 0 ? (
+        <p className="rounded border border-dashed border-line-strong px-3.5 py-4 text-center text-xs text-fg-3">No history yet. The first numbers land after the first full day.</p>
+      ) : (
       <div className="overflow-x-auto rounded border border-line">
         <table className="w-full border-collapse text-xs">
           <thead>
@@ -155,11 +158,12 @@ function MetricsTable<T extends { day: string }>({
           </tbody>
         </table>
       </div>
+      )}
     </section>
   );
 }
 
-function NotesFeed({ notes, now }: { notes: DiagnosticNote[]; now: Date }) {
+export function NotesFeed({ notes, now }: { notes: DiagnosticNote[]; now: Date }) {
   const groups = new Map<string, DiagnosticNote[]>();
   for (const n of notes) {
     const key = n.createdAt.slice(0, 10);
@@ -198,7 +202,7 @@ function NotesFeed({ notes, now }: { notes: DiagnosticNote[]; now: Date }) {
   );
 }
 
-function PanelHeader({ client, now, onClose }: { client: ClientRecord; now: Date; onClose?: () => void }) {
+export function PanelHeader({ client, now, onClose }: { client: ClientRecord; now: Date; onClose?: () => void }) {
   const localTime = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: client.timeZone, timeZoneName: "short" }).format(now);
   const active = Math.round((now.getTime() - new Date(`${client.startedOn}T12:00:00`).getTime()) / 86400000);
   return (
@@ -249,7 +253,7 @@ function PanelHeader({ client, now, onClose }: { client: ClientRecord; now: Date
   );
 }
 
-function Diagnosis({ client }: { client: ClientRecord }) {
+export function Diagnosis({ client }: { client: ClientRecord }) {
   if (client.alerts.length === 0 && !client.summary) return null;
   return (
     <div className={cn("rounded border px-3.5 py-3 text-sm", client.health === "red" ? "border-red/25 bg-red-soft/50" : client.health === "amber" ? "border-amber/25 bg-amber-soft/50" : "border-line bg-surface-2/50")}>
@@ -261,7 +265,7 @@ function Diagnosis({ client }: { client: ClientRecord }) {
 
 /* ---------------------------- marketing ---------------------------- */
 
-function MarketingPanel({ row, now }: { row: MarketingRow; now: Date }) {
+export function MarketingPanel({ row, now }: { row: MarketingRow; now: Date }) {
   const c = row.client;
   const [perf, setPerf] = useState<"both" | "leads" | "apts">("both");
   const [perfRange, setPerfRange] = useState<ChartRange>("14");
@@ -276,7 +280,7 @@ function MarketingPanel({ row, now }: { row: MarketingRow; now: Date }) {
       <div className="grid grid-cols-2 gap-2.5">
         <Tile label="Leads" value={formatCount(cur.leads)} />
         <Tile label="Lead cost" value={cur.leadCostCents === null ? "–" : formatDollarsExact(cur.leadCostCents)} />
-        <Tile label="Appointments" value={formatCount(cur.appointments)} sub={`${formatRate(cur.bookRate, 1)} book rate`} />
+        <Tile label="Appointments" value={formatCount(cur.appointments)} sub={cur.bookRate === null ? undefined : `${formatRate(cur.bookRate, 1)} book rate`} />
         <Tile label="Apt cost" value={cur.aptCostCents === null ? "–" : formatDollarsExact(cur.aptCostCents)} />
       </div>
       <div className="flex flex-col gap-2">
@@ -286,7 +290,7 @@ function MarketingPanel({ row, now }: { row: MarketingRow; now: Date }) {
         <LedgerRow
           label={
             <>
-              Pacing <span className={cn("ml-1 normal-case tracking-normal", healthText[pacingTone(pacing.pct)])}>{Math.round(pacing.pct * 100)}%</span>
+              Pacing <span className={cn("ml-1 normal-case tracking-normal", c.days.length === 0 ? "text-fg-3" : healthText[pacingTone(pacing.pct)])}>{Math.round(pacing.pct * 100)}%</span>
             </>
           }
         >
@@ -411,7 +415,7 @@ function YearOverYear({ now }: { now: Date }) {
 
 /* --------------------------- fundraising --------------------------- */
 
-function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
+export function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
   const c = row.client;
   // Raised per day and average gift are two orders of magnitude apart, so one series at a time.
   const [perf, setPerf] = useState<"raised" | "gift">("raised");
@@ -435,7 +439,7 @@ function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
         <LedgerRow
           label={
             <>
-              Goal pacing <span className={cn("ml-1 normal-case tracking-normal", healthText[pacingTone(pacing.pct, "goal")])}>{Math.round(pacing.pct * 100)}%</span>
+              Goal pacing <span className={cn("ml-1 normal-case tracking-normal", c.days.length === 0 ? "text-fg-3" : healthText[pacingTone(pacing.pct, "goal")])}>{Math.round(pacing.pct * 100)}%</span>
             </>
           }
         >

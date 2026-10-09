@@ -361,3 +361,20 @@ The founder supplied a reference Daily Diagnostic (workfuel; copies in the proje
 - **Do** give every chart a legend when it has two series, a tooltip, and one axis.
 - **Don't** use `chart-1` or `chart-2` for anything that is not a mark.
 - **Don't** colour text in a series colour; identity comes from the swatch beside it.
+
+## Revision 3: clients and sub-accounts (2026-10-09)
+
+The client roster, the add-client form, the client page and the client's own view use the frame and the components above. Nothing new in colour; these are the layout rules the screens follow.
+
+### Components, added
+- **Form** (`src/components/form.tsx`): 36px controls, 1px `line-strong` border, 6px radius, violet focus ring; a 13px/500 label above, a 12px muted hint or a red error below; money inputs with a muted "$" prefix. **Form section**: a 220px label column (title 14px/600, 12px muted explanation) beside the fields, sections separated by a hairline, 32px apart. Primary action bottom-left with a text "Cancel" beside it. **Mode picker**: two bordered tiles, the chosen one in `brand-soft` with a violet border. **Checkbox chip**: 32px bordered chip with a native checkbox; checked gets the violet border and `brand-soft` fill.
+- **Client page header**: the ink header carries the status dot, the name at 24px, a status tag (Onboarding in brand, Active neutral, Paused amber), a 13px meta line (back link · mode · industry · location · local time · health) and, on the right, the assignee avatars and a secondary "Client view" button. **Tabs** sit at the bottom of the ink band: 36px tall, 13px, a 2px white underline on the current tab, counts in a `rail-2` pill.
+- **Work area layouts**: overview is the panel sections at 640px beside a 360px notes column; notes, tasks and team are a 640px list beside a 320px form card (white, `line` border, 16px padding); settings is the full form.
+- **Task row**: 16px square checkbox (green when done), title 13px, a 12px muted line with state · assignee · due (amber "due today", red "overdue since …").
+- **Member row**: 32px avatar, name with an amber "Invited … ago" tag while pending, email muted, role on the right, a trash icon that turns red on hover.
+- **Client view** (`/c/[slug]`): the client's own header (initial mark in violet, client name, "Powered by Lotus", a Sign in button) over a 960px column: "Your results" at 24px with a meta line, then the same panel sections the agency sees, beside a "Your team" card. No notes, tasks, diagnosis text or internal tags.
+- **Sign in**: ink left half with the mark and a 24px claim, paper right half with a 360px form; the demo-mode notice is an amber-soft box.
+
+### Rules
+- A client with no numbers yet shows "–" for rates, "No data yet" dashed boxes for charts, and a neutral pacing figure; red is never shown for the absence of data.
+- Internal notes, tasks and the diagnosis never render under `/c/`.
