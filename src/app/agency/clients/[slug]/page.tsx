@@ -8,10 +8,10 @@ import { ClientOverview } from "@/components/clients/client-overview";
 import { NotesTab, TasksTab, TeamTab } from "@/components/clients/client-tabs";
 import { statusLabel, statusTone } from "@/components/clients/status";
 import { buildRow } from "@/components/diagnostic/model";
-import { AvatarStack, StatusDot, Tag } from "@/components/diagnostic/primitives";
+import { AvatarStack, Tag } from "@/components/diagnostic/primitives";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { healthLabel } from "@/components/status";
+import { StatusChip } from "@/components/status";
 import { getClientRecord } from "@/lib/data/agency";
 import { teamDirectory } from "@/lib/data/store";
 import { cn } from "@/lib/utils";
@@ -47,9 +47,8 @@ async function ClientDetail({ params, searchParams }: { params: Promise<{ slug: 
         className="pb-0"
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <StatusDot health={client.health} className="size-2.5" />
             {client.account.name}
-            <Tag tone={statusTone[client.status]}>{statusLabel[client.status]}</Tag>
+            <StatusChip health={client.health} />
           </span>
         }
         meta={
@@ -58,6 +57,12 @@ async function ClientDetail({ params, searchParams }: { params: Promise<{ slug: 
               <ArrowLeft className="size-3.5" strokeWidth={2} />
               Clients
             </Link>
+            {client.status !== "active" && (
+              <>
+                <span aria-hidden>·</span>
+                <Tag tone={statusTone[client.status]}>{statusLabel[client.status]}</Tag>
+              </>
+            )}
             <span aria-hidden>·</span>
             <span>{client.mode === "marketing" ? "Digital marketing" : "Digital fundraising"}</span>
             <span aria-hidden>·</span>
@@ -71,8 +76,6 @@ async function ClientDetail({ params, searchParams }: { params: Promise<{ slug: 
               <Clock className="size-3.5" strokeWidth={1.75} />
               <span className="num">{localTime}</span>
             </span>
-            <span aria-hidden>·</span>
-            <span>{healthLabel[client.health]}</span>
           </span>
         }
         actions={

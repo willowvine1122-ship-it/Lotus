@@ -31,7 +31,7 @@ function ModePicker({ value, onChange }: { value: AccountMode; onChange: (m: Acc
           key={o.value}
           className={cn(
             "cursor-pointer rounded border px-4 py-3 transition-colors duration-150",
-            value === o.value ? "border-brand bg-brand-soft/40" : "border-line-strong bg-surface hover:border-fg-3",
+            value === o.value ? "border-fg bg-surface-2" : "border-line-strong bg-surface hover:border-fg-3",
           )}
         >
           <input type="radio" name="mode" value={o.value} checked={value === o.value} onChange={() => onChange(o.value)} className="sr-only" />
@@ -59,7 +59,7 @@ export function ClientForm({
   const monthly = client ? (client.mode === "marketing" ? client.monthlyBudgetCents : client.monthlyGoalCents) / 100 : "";
 
   return (
-    <form action={formAction} className="px-5 md:px-8">
+    <form action={formAction} className="max-w-[880px] px-5 md:px-8">
       <FormSection title="About the client" description="How the client appears across Lotus and in their own view.">
         <Field label="Client name" htmlFor="name" error={e.name} className="sm:col-span-2">
           <Input id="name" name="name" defaultValue={client?.account.name} placeholder="Summit Roofing Co." autoFocus={!client} aria-invalid={!!e.name} />
@@ -137,11 +137,9 @@ export function ClientForm({
 
       <div className="flex flex-wrap items-center gap-3 py-6">
         <SubmitButton pendingLabel={client ? "Saving…" : "Creating…"}>{client ? "Save changes" : "Create client"}</SubmitButton>
-        {!client && (
-          <Link href="/agency/clients" className="text-sm text-fg-2 hover:underline">
-            Cancel
-          </Link>
-        )}
+        <Link href={client ? `/agency/clients/${client.account.slug}` : "/agency/clients"} className="text-sm text-fg-2 hover:underline">
+          Cancel
+        </Link>
         <FormNotice state={state} />
       </div>
     </form>

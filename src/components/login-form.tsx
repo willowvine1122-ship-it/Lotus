@@ -27,7 +27,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
   return (
     <form action={submit} className="flex flex-col gap-4">
       {!configured && (
-        <p className="rounded border border-amber/30 bg-amber-soft/60 px-3 py-2 text-xs text-fg-2">
+        <p className="rounded border border-line bg-surface-2 px-3 py-2 text-xs text-fg-2">
           Demo mode. Supabase is not connected, so any email opens the demo workspace. Set the two keys in .env to turn on real sign-in.
         </p>
       )}

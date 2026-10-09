@@ -3,7 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { AvatarStack, Segmented, StatusDot, Tag } from "@/components/diagnostic/primitives";
+import { ButtonLink, PageHeader } from "@/components/page-header";
+import { StatusChip } from "@/components/status";
 import type { ClientRecord, ClientStatus, Health } from "@/lib/types";
 import { cn, timeAgo } from "@/lib/utils";
 
@@ -13,7 +16,6 @@ import { cn, timeAgo } from "@/lib/utils";
  */
 
 import { statusLabel, statusTone } from "./status";
-const healthLabel: Record<Health, string> = { red: "Needs action", amber: "Watch", green: "On track" };
 const healthOrder: Record<Health, number> = { red: 0, amber: 1, green: 2 };
 const statusOrder: Record<ClientStatus, number> = { onboarding: 0, active: 1, paused: 2 };
 
@@ -22,11 +24,11 @@ interface Sort { key: Key; dir: "asc" | "desc" }
 
 const columns: { key: Key; label: string; className?: string; align?: "right"; defaultDir?: "asc" | "desc" }[] = [
   { key: "name", label: "Client", className: "min-w-[220px]" },
-  { key: "mode", label: "Mode", className: "hidden md:table-cell" },
-  { key: "status", label: "Status" },
-  { key: "health", label: "Today", className: "hidden sm:table-cell" },
+  { key: "health", label: "Today" },
   { key: "tasks", label: "Open tasks", align: "right", className: "hidden md:table-cell", defaultDir: "desc" },
   { key: "note", label: "Latest note", className: "hidden lg:table-cell min-w-[240px]" },
+  { key: "mode", label: "Mode", className: "hidden md:table-cell" },
+  { key: "status", label: "Status", className: "hidden sm:table-cell" },
   { key: "since", label: "Client since", className: "hidden md:table-cell", defaultDir: "desc" },
 ];
 
@@ -42,11 +44,11 @@ function value(c: ClientRecord, key: Key): string | number {
   }
 }
 
-export function ClientsTable({ clients, nowIso }: { clients: ClientRecord[]; nowIso: string }) {
+export function ClientsTable({ clients, nowIso, meta }: { clients: ClientRecord[]; nowIso: string; meta: string }) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"all" | "marketing" | "fundraising">("all");
-  const [sort, setSort] = useState<Sort>({ key: "status", dir: "asc" });
+  const [sort, setSort] = useState<Sort>({ key: "health", dir: "asc" });
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,32 +66,44 @@ export function ClientsTable({ clients, nowIso }: { clients: ClientRecord[]; now
 
   return (
     <div className="bg-surface">
-      <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3 md:px-8">
-        <label className="relative w-full sm:w-[280px]">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" strokeWidth={1.75} />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search clients, industries, tags, people"
-            className="h-8 w-full rounded border border-line-strong bg-surface pl-8 pr-3 text-sm placeholder:text-fg-3 focus:border-brand focus:outline-none"
-          />
-        </label>
-        <Segmented
-          tone="paper"
-          label="Mode"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "all", label: "All" },
-            { value: "marketing", label: "Marketing" },
-            { value: "fundraising", label: "Fundraising" },
-          ]}
-        />
-        <span className="num ml-auto text-xs text-fg-3">
-          {rows.length} of {clients.length}
-        </span>
-      </div>
+      <PageHeader
+        className="items-center pb-3 pt-3 md:flex-nowrap"
+        title={<span className="text-lg leading-6">Clients</span>}
+        meta={
+          <span className="num">
+            {rows.length === clients.length ? meta : `${rows.length} of ${clients.length} · ${meta}`}
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative w-full sm:w-[240px]">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-rail-fg-2" strokeWidth={1.75} />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search clients, tags, people"
+                className="h-8 w-full rounded border border-rail-line bg-rail-2 pl-8 pr-3 text-sm text-rail-fg placeholder:text-rail-fg-2/80 focus:border-rail-fg-2 focus:outline-none"
+              />
+            </label>
+            <Segmented
+              tone="ink"
+              label="Mode"
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: "all", label: "All" },
+                { value: "marketing", label: "Marketing" },
+                { value: "fundraising", label: "Fundraising" },
+              ]}
+            />
+            <ButtonLink href="/agency/clients/new" className="shrink-0">
+              <Plus className="size-4" strokeWidth={2} />
+              <span className="hidden sm:inline">Add client</span>
+            </ButtonLink>
+          </div>
+        }
+      />
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -134,11 +148,9 @@ export function ClientsTable({ clients, nowIso }: { clients: ClientRecord[]; now
                       </span>
                     </Link>
                   </td>
-                  <td className="hidden px-3 py-2 text-fg-2 md:table-cell">{c.mode === "marketing" ? "Marketing" : "Fundraising"}</td>
                   <td className="px-3 py-2">
-                    <Tag tone={statusTone[c.status]}>{statusLabel[c.status]}</Tag>
+                    <StatusChip health={c.health} />
                   </td>
-                  <td className="hidden px-3 py-2 text-fg-2 sm:table-cell">{healthLabel[c.health]}</td>
                   <td className="num hidden px-3 py-2 text-right md:table-cell">{open || <span className="text-fg-3">0</span>}</td>
                   <td className="hidden px-3 py-2 lg:table-cell">
                     {note ? (
@@ -149,6 +161,10 @@ export function ClientsTable({ clients, nowIso }: { clients: ClientRecord[]; now
                     ) : (
                       <span className="text-fg-3">No notes</span>
                     )}
+                  </td>
+                  <td className="hidden px-3 py-2 text-fg-2 md:table-cell">{c.mode === "marketing" ? "Marketing" : "Fundraising"}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">
+                    <Tag tone={statusTone[c.status]}>{statusLabel[c.status]}</Tag>
                   </td>
                   <td className="num hidden px-3 py-2 pr-5 text-fg-2 md:table-cell md:pr-8">
                     <span className="flex items-center justify-between gap-3">

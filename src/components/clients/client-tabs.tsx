@@ -55,8 +55,8 @@ export function TasksTab({
   const due = (iso?: string) => {
     if (!iso) return null;
     const label = new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    if (iso === today) return <span className="font-medium text-amber">due today</span>;
-    if (iso < today) return <span className="font-medium text-red">overdue since {label}</span>;
+    if (iso === today) return <span className="font-medium text-fg">due today</span>;
+    if (iso < today) return <span className="font-medium text-fg">overdue since {label}</span>;
     return <span>due {label}</span>;
   };
   const Row = ({ t }: { t: Task }) => (

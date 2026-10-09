@@ -83,8 +83,8 @@ export function CheckboxChip({
   defaultChecked?: boolean;
 }) {
   return (
-    <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded border border-line-strong bg-surface px-2.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft/60">
-      <input type="checkbox" name={name} value={value} defaultChecked={defaultChecked} className="size-3.5 accent-[var(--brand)]" />
+    <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded border border-line-strong bg-surface px-2.5 text-sm has-[:checked]:border-rail has-[:checked]:bg-rail has-[:checked]:text-rail-fg">
+      <input type="checkbox" name={name} value={value} defaultChecked={defaultChecked} className="size-3.5 accent-[var(--rail)]" />
       {label}
     </label>
   );

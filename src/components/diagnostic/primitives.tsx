@@ -66,7 +66,7 @@ export function PacingGauge({ pct, budgetCents, kind = "budget" }: { pct: number
 const avatarTone: Record<Assignee["tone"], string> = {
   violet: "bg-brand text-white",
   orange: "bg-chart-2 text-white",
-  teal: "bg-[#0f8f8a] text-white",
+  teal: "bg-chart-1 text-white",
   ink: "bg-rail text-rail-fg",
 };
 

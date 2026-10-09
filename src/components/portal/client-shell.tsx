@@ -24,6 +24,7 @@ export function ClientShell({ client, children }: { client: ClientRecord; childr
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      <p className="px-5 py-4 text-xs text-fg-3 md:px-8">Demo data. Numbers are synthetic until live feeds are connected.</p>
     </div>
   );
 }
