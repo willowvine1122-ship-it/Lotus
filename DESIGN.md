@@ -458,3 +458,20 @@ Funnels reuse the board grammar for the agency side and introduce one new world:
 - The editor never auto-saves; unsaved steps carry a dot in the steps list.
 - Internal truths (pledges, modules not yet built) live in the agency UI, never in copy a visitor reads.
 - The public page never shows the agency frame, and the agency frame never shows a public page outside the preview.
+
+## Revision 6: Email marketing (2026-10-09)
+
+Campaigns, the editor, the report and audiences reuse the board grammar (ink top bar, KPI strip, table, right panel) and the form grammar. Nothing new in colour.
+
+### Components, added
+- **Campaign status tag**: Draft is a dashed `line-strong` outline in `fg-3`; Scheduled is `brand-soft`/`brand` (the same precedent as Onboarding); Sent is neutral `surface-2`.
+- **Merge token**: `{{first_name}}` and friends render in the team's views as a small `surface-2` token with a hairline ring and the plain label ("First name"); recipients only ever see the substituted text.
+- **Campaigns board**: KPIs cover the last 30 days (sent, open rate with change against the prior 30 days, click rate with click-to-open, unsubscribes with the rate, amber above 1%). Table: Campaign (name over client · subject), Status, When and to (date over count · audience), Opened and Clicked (rate over count, with a change against the client's own average once a send reaches 15 people), Unsubs at 2xl. Scheduled sends lead, soonest first.
+- **Email preview**: the inbox line (sender avatar, from, subject, preview text) above the message on its own white page inside a `surface-2` well. The message carries the client's identity: client name as the masthead, near-black buttons, a compliance footer with Unsubscribe. Violet never appears inside an email.
+- **Block editor**: one bordered list, a hairline between blocks; each block has its type label with move up, move down and remove on the same line, then its fields. "Add" chips below. Merge-tag chips insert at the caret of the last field touched.
+- **Send section**: Send now | Schedule tiles (the mode-picker pattern); sending asks for an inline confirmation naming the count; the reach line says who is skipped and why.
+- **Audience builder** (right panel): name, Segment | List, then rule groups (Stage, Tags, Source, Added) as toggle chips that turn ink when on, a live "can be emailed of total" count in the sticky header, and a sample of matching contacts.
+
+### Rules
+- Opted-out and address-less contacts are counted and named, never silently dropped.
+- Image blocks show a described placeholder until file storage lands; the description doubles as alt text.

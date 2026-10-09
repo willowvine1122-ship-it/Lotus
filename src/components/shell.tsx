@@ -6,6 +6,8 @@ import {
   HeartHandshake,
   Inbox,
   Layers,
+
+  Mail,
   LayoutGrid,
   Settings,
   Users,
@@ -22,6 +24,8 @@ const nav = [
   { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
 
   { href: "/agency/funnels", label: "Funnels", icon: Layers },
+
+  { href: "/agency/email", label: "Email", icon: Mail },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 
