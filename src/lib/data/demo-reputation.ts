@@ -65,13 +65,14 @@ export function demoReviewsFor(c: ClientRecord, now: Date): Review[] {
     const source: ReviewSource = r() < 0.72 ? "google" : "facebook";
     const at = iso(now, daysAgo, 8 + Math.floor(r() * 12), Math.floor(r() * 60));
     const replied = daysAgo > 7 ? r() < (rating <= 3 ? 0.95 : 0.85) : daysAgo > 2 ? r() < 0.55 : r() < 0.15;
-    const replyBody = rating >= 4 ? `Thank you, ${authors[i % authors.length].split(" ")[0]}. It was a pleasure, and we're glad it went smoothly.` : `Thanks for telling us. That is not the experience we want. We've reached out directly to put it right.`;
+    const author = authors[(i * 7 + Math.floor(r() * 3)) % authors.length]!;
+    const replyBody = rating >= 4 ? `Thank you, ${author.split(" ")[0]}. It was a pleasure, and we're glad it went smoothly.` : `Thanks for telling us. That is not the experience we want. We've reached out directly to put it right.`;
     out.push({
       id: `${c.account.id}-rv${i}`,
       accountId: c.account.id,
       source,
       rating,
-      author: authors[(i * 7 + Math.floor(r() * 3)) % authors.length]!,
+      author,
       body: pool[Math.floor(r() * pool.length)]!,
       at,
       reply: replied ? { body: replyBody, by: c.assignees[0]?.name ?? "Afza", at: iso(now, Math.max(0, daysAgo - 1), 9 + Math.floor(r() * 8)) } : undefined,

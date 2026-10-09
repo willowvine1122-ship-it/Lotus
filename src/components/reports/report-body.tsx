@@ -20,7 +20,7 @@ import { sectionLabel } from "./model";
 function Tile({ label, value, change, goodWhenUp = true, sub }: { label: string; value: string; change?: number | null; goodWhenUp?: boolean; sub?: string }) {
   return (
     <div className="rounded border border-line bg-surface px-4 py-3">
-      <div className="text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
+      <div className="truncate whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
       <div className="mt-0.5 flex items-baseline gap-2">
         <span className="num text-xl font-semibold leading-7">{value}</span>
         {change !== undefined && <ChangeArrow value={change} goodWhenUp={goodWhenUp} />}
@@ -37,7 +37,7 @@ function Summary({ row }: { row: Row }) {
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Tile label="Leads" value={formatCount(cur.leads)} change={row.leadsChange} sub={`${formatDollars(cur.leadCostCents ?? 0)} each`} />
         <Tile label="Appointments" value={formatCount(cur.appointments)} sub={`${formatRate(cur.bookRate)} of leads booked`} />
-        <Tile label="Cost per appointment" value={cur.aptCostCents === null ? "–" : formatDollars(cur.aptCostCents)} change={row.aptCostChange} goodWhenUp={false} sub={`${formatDollarsCompact(cur.spendCents)} spent`} />
+        <Tile label="Per appointment" value={cur.aptCostCents === null ? "–" : formatDollars(cur.aptCostCents)} change={row.aptCostChange} goodWhenUp={false} sub={`${formatDollarsCompact(cur.spendCents)} spent`} />
         <Tile label="Est. revenue" value={formatDollarsCompact(cur.estRevenueCents)} sub={`${formatMultiple(cur.roi)} return on spend`} />
       </div>
     );
@@ -48,7 +48,7 @@ function Summary({ row }: { row: Row }) {
       <Tile label="Raised" value={formatDollarsCompact(cur.raisedCents)} change={row.raisedChange} sub={`${formatDollarsCompact(cur.raisedPerDayCents)} a day`} />
       <Tile label="Gifts" value={formatCount(cur.donations)} change={row.donationsChange} sub={`${formatDollars(cur.avgGiftCents ?? 0)} average`} />
       <Tile label="New donors" value={formatCount(cur.newDonors)} />
-      <Tile label="New monthly donors" value={formatCount(cur.newRecurring)} sub={`${formatRate(cur.recurringShare)} of gifts`} />
+      <Tile label="New monthly" value={formatCount(cur.newRecurring)} sub={`${formatRate(cur.recurringShare)} of gifts`} />
     </div>
   );
 }
@@ -60,7 +60,7 @@ function Performance({ row, range }: { row: Row; range: number }) {
   // Marketing: both costs share a scale. Fundraising: raised per day and average gift do not, so they get a chart each.
   const charts =
     row.mode === "marketing"
-      ? [[{ key: "lead", label: "Cost per lead", color: "var(--chart-1)", values: series.a }, { key: "apt", label: "Cost per appointment", color: "var(--chart-2)", values: series.b }]]
+      ? [[{ key: "lead", label: "Cost per lead", color: "var(--chart-2)", values: series.a }, { key: "apt", label: "Cost per appointment", color: "var(--chart-1)", values: series.b }]]
       : [[{ key: "raised", label: "Raised per day", color: "var(--chart-1)", values: series.a }], [{ key: "gift", label: "Average gift", color: "var(--chart-2)", values: series.b }]];
   return (
     <>
@@ -80,7 +80,7 @@ function Performance({ row, range }: { row: Row; range: number }) {
 function Volume({ row, range }: { row: Row; range: number }) {
   if (row.mode === "marketing") {
     const days = lastN(row.client.days, range);
-    return <ColumnChart labels={days.map((d) => d.day)} values={days.map((d) => d.leads)} color="var(--chart-1)" label="Leads per day" format={(v) => formatCount(v)} height={160} />;
+    return <ColumnChart labels={days.map((d) => d.day)} values={days.map((d) => d.leads)} color="var(--chart-2)" label="Leads per day" format={(v) => formatCount(v)} height={160} />;
   }
   const days = lastN(row.client.days, range);
   return <ColumnChart labels={days.map((d) => d.day)} values={days.map((d) => d.raisedCents)} color="var(--chart-1)" label="Raised per day" format={formatDollarsCompact} height={160} />;
