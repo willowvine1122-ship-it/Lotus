@@ -62,6 +62,8 @@ export function BookingPanel({
     .filter((h) => h.id !== a.id && h.accountId === a.accountId && h.contact.email.toLowerCase() === a.contact.email.toLowerCase())
     .sort((x, y) => (x.startsAt < y.startsAt ? 1 : -1));
 
+  // Seeded walk-ins carry a calendar-scoped id; everyone else is a CRM contact.
+  const inCrm = !a.contact.id.startsWith("cal-");
   const set = (status: AppointmentStatus) => startTransition(() => setStatusAction(a.id, status));
 
   const actions: { label: string; status: AppointmentStatus; strong?: boolean }[] = [];
@@ -151,7 +153,17 @@ export function BookingPanel({
         </section>
 
         <section className="flex flex-col gap-2">
-          <SectionTitle>Contact</SectionTitle>
+          <SectionTitle
+            aside={
+              inCrm ? (
+                <Link href={`/agency/contacts/${a.contact.id}`} className="text-xs text-fg-2 hover:text-fg hover:underline">
+                  Open contact
+                </Link>
+              ) : undefined
+            }
+          >
+            Contact
+          </SectionTitle>
           <a href={`mailto:${a.contact.email}`} className="inline-flex min-w-0 items-center gap-2 text-sm hover:underline">
             <Mail className="size-4 shrink-0 text-fg-3" strokeWidth={1.75} />
             <span className="truncate">{a.contact.email}</span>

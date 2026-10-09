@@ -1,6 +1,6 @@
 import type { Appointment, AppointmentSource, AppointmentStatus, AppointmentType, Calendar, ClientRecord, ContactRef, MeetingLocation } from "@/lib/types";
 import { addDays, busyFrom, dayIn, isSlotOpen, slotsFor, zonedTime } from "@/lib/calendars";
-import { addActivity, listClients, slugify } from "./store";
+import { addActivity, createContact, listClients, listContacts, slugify } from "./store";
 
 /*
  * Demo calendars and bookings. Same arrangement as the client store: kept
@@ -31,7 +31,7 @@ const presets: Record<string, { name: string; owner: string; types: TypeSeed[]; 
   "clearwater-pools": { name: "Design consultations", owner: "Rachel Kim", hours: [9 * 60, 17 * 60], types: [["Pool design consultation", 90, "in_person", "A designer walks the yard and sketches options and budgets."]] },
   "evergreen-landscaping": { name: "Site visits", owner: "Owen Price", hours: [8 * 60, 16 * 60], types: [["Landscape site visit", 60, "in_person", "We walk the property and talk through ideas and budget."]] },
   "redwood-movers": { name: "Move estimates", owner: "Carla Diaz", hours: [8 * 60, 18 * 60], saturday: [9 * 60, 14 * 60], types: [["Video walkthrough estimate", 30, "video", "Show us the rooms on a call and get a fixed quote."], ["In-home estimate", 45, "in_person", "An estimator visits and quotes on the spot."]] },
-  "lakeside-vet": { name: "Appointments", owner: "the Lakeside care team", office: true, hours: [8 * 60, 18 * 60], saturday: [9 * 60, 13 * 60], types: [["Wellness exam", 30, "in_person", "Annual exam and vaccines."], ["New pet visit", 45, "in_person", "First visit for a new puppy, kitten or rescue."]] },
+  "lakeside-vet": { name: "Appointments", owner: "Lakeside care team", office: true, hours: [8 * 60, 18 * 60], saturday: [9 * 60, 13 * 60], types: [["Wellness exam", 30, "in_person", "Annual exam and vaccines."], ["New pet visit", 45, "in_person", "First visit for a new puppy, kitten or rescue."]] },
   "ironclad-fencing": { name: "Fence estimates", owner: "Luis Moreno", hours: [8 * 60, 17 * 60], types: [["On-site fence estimate", 45, "in_person", "We measure the line and quote materials and install."]] },
   "hope-harbor": { name: "Donor conversations", owner: "Grace Holloway", office: true, hours: [10 * 60, 16 * 60], types: [["Major gift conversation", 30, "video", "A conversation with our development director about the winter shelter."], ["Shelter tour", 60, "in_person", "Visit the shelter and meet the team."]] },
   "clean-water": { name: "Partner calls", owner: "Amara Osei", hours: [9 * 60, 15 * 60], types: [["Matching gift call", 30, "video", "For companies and foundations matching gifts this season."]] },
@@ -118,6 +118,9 @@ function seedAppointments(cal: Calendar, client: ClientRecord, now: Date): Appoi
   const domain = ["gmail.com", "yahoo.com", "outlook.com", "icloud.com"];
   // Seed with a fixed "now" far in the past so min-notice rules do not block history.
   const past = new Date(now.getTime() - 40 * 86400000);
+  // Most bookings come from people already in the client's CRM, so the
+  // booking panel can open their contact and their history lines up.
+  const pool = listContacts(now, cal.accountId).filter((c) => c.email);
   for (let off = -21; off <= 13; off++) {
     const day = addDays(today, off);
     const n = Math.round(perDay * (0.5 + r()));
@@ -145,9 +148,11 @@ function seedAppointments(cal: Calendar, client: ClientRecord, now: Date): Appoi
       const source: AppointmentSource = sourceRoll < 0.68 ? "booking_page" : sourceRoll < 0.88 ? "ads" : "manual";
       const leadDays = 1 + Math.floor(r() * 9);
       const created = new Date(Math.min(start.getTime() - leadDays * 86400000 + Math.floor(r() * 36000000), now.getTime() - 3600000 * (1 + r() * 30)));
-      const contactId = `${cal.id}-c${out.length + 1}`;
-      const contact: ContactRef = {
-        id: contactId,
+      const known = pool.length && r() < 0.75 ? pool[Math.floor(r() * pool.length)] : undefined;
+      const contact: ContactRef = known
+        ? { id: known.id, accountId: known.accountId, name: `${known.firstName} ${known.lastName}`.trim(), email: known.email!, phone: known.phone }
+        : {
+        id: `${cal.id}-c${out.length + 1}`,
         accountId: cal.accountId,
         name: `${first} ${last}`,
         email: `${first.toLowerCase()}.${last.toLowerCase()}@${domain[Math.floor(r() * domain.length)]}`,
@@ -304,10 +309,23 @@ export function bookAppointment(now: Date, input: BookingInput): BookingResult {
   const start = new Date(input.startsAt);
   if (Number.isNaN(start.getTime()) || !isSlotOpen(cal, type, busyFrom(s.appointments, cal.id), start, now)) return { ok: false, reason: "slot_taken" };
   const email = input.email.trim().toLowerCase();
-  const prior = s.appointments.find((a) => a.accountId === cal.accountId && a.contact.email.toLowerCase() === email)?.contact;
-  const contact: ContactRef = prior
-    ? { ...prior, name: input.name.trim(), phone: input.phone?.trim() || prior.phone }
-    : { id: uid("new-contact"), accountId: cal.accountId, name: input.name.trim(), email, phone: input.phone?.trim() || undefined };
+  const name = input.name.trim();
+  const phone = input.phone?.trim() || undefined;
+  // Match the CRM contact by email, or add the lead to the CRM.
+  const crm =
+    listContacts(now, cal.accountId).find((c) => c.email?.toLowerCase() === email) ??
+    createContact(now, {
+      accountId: cal.accountId,
+      firstName: name.split(/\s+/)[0],
+      lastName: name.split(/\s+/).slice(1).join(" "),
+      email,
+      phone,
+      tags: [],
+      source: "website",
+    });
+  const contact: ContactRef = crm
+    ? { id: crm.id, accountId: cal.accountId, name, email, phone: phone ?? crm.phone }
+    : { id: uid("new-contact"), accountId: cal.accountId, name, email, phone };
   const appointment: Appointment = {
     id: uid("new-appt"),
     calendarId: cal.id,

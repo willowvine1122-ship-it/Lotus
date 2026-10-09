@@ -156,6 +156,64 @@ export interface FundraisingClient extends ClientBase {
 export type ClientRecord = MarketingClient | FundraisingClient;
 
 /* ------------------------------------------------------------------ */
+/* CRM: contacts, pipeline stages, activity                              */
+/* ------------------------------------------------------------------ */
+
+export type ContactSource = "meta" | "google" | "website" | "referral" | "donation-page" | "import" | "manual";
+
+/** One pipeline per client; marketing and fundraising clients use different stage sets. */
+export interface PipelineStage {
+  id: string;
+  name: string;
+  /** Terminal stages: a won deal or a recurring donor is "won", a lost deal or lapsed donor is "lost". */
+  outcome?: "won" | "lost";
+}
+
+export interface Pipeline {
+  id: string;
+  accountId: string;
+  name: string;
+  stages: PipelineStage[];
+}
+
+export interface Contact {
+  id: string;
+  accountId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  city?: string;
+  tags: string[];
+  source: ContactSource;
+  /** Stage id within the client's pipeline. */
+  stageId: string;
+  /** Agency or client person who owns the relationship. */
+  ownerName?: string;
+  /** Marketing: estimated or won job value. Fundraising: lifetime donated. */
+  valueCents: number;
+  /** Fundraising only: active monthly giving. */
+  recurring?: boolean;
+  doNotContact: { email: boolean; sms: boolean; call: boolean };
+  createdAt: string;
+  lastActivityAt: string;
+}
+
+export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
+
+export interface ContactActivity {
+  id: string;
+  contactId: string;
+  kind: ActivityKind;
+  title: string;
+  body?: string;
+  /** Person who did it (agency member) or "System" for automated events. */
+  by?: string;
+  amountCents?: number;
+  at: string;
+}
+
 /* Calendars and booking                                               */
 /* ------------------------------------------------------------------ */
 
@@ -227,15 +285,3 @@ export interface Appointment {
   notes?: string;
   createdAt: string;
 }
-
-/* ------------------------------------------------------------------ */
-/* Contacts (shape owned by the contacts module; copied here so the     */
-/* booking flow can log an activity before that module lands)          */
-/* ------------------------------------------------------------------ */
-
-export type ContactSource = "meta" | "google" | "website" | "referral" | "donation-page" | "import" | "manual";
-export interface PipelineStage { id: string; name: string; outcome?: "won" | "lost" }
-export interface Pipeline { id: string; accountId: string; name: string; stages: PipelineStage[] }
-export interface Contact { id: string; accountId: string; firstName: string; lastName: string; email?: string; phone?: string; company?: string; city?: string; tags: string[]; source: ContactSource; stageId: string; ownerName?: string; valueCents: number; recurring?: boolean; doNotContact: { email: boolean; sms: boolean; call: boolean }; createdAt: string; lastActivityAt: string; }
-export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
-export interface ContactActivity { id: string; contactId: string; kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number; at: string }

@@ -295,7 +295,7 @@ function BookingsTable({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-line">
-            <th scope="col" className={cn(thClass, "w-[112px]")}>Time</th>
+            <th scope="col" className={cn(thClass, "sm:w-[112px]")}>Time</th>
             <th scope="col" className={thClass}>Contact</th>
             <th scope="col" className={cn(thClass, "hidden sm:table-cell")}>Client</th>
             <th scope="col" className={cn(thClass, "hidden md:table-cell")}>Appointment</th>
@@ -336,10 +336,11 @@ function BookingsTable({
                   <td className="whitespace-nowrap px-3 py-2 pl-5 md:pl-6">
                     <div className={cn("num font-medium", cancelled && "text-fg-3 line-through")}>{formatTime(start, tz)}</div>
                     <div className="num text-xs text-fg-3">
-                      {tzAbbr(start, tz)} · {formatDuration(type?.durationMinutes ?? Math.round((new Date(a.endsAt).getTime() - start.getTime()) / 60000))}
+                      {tzAbbr(start, tz)}
+                      <span className="hidden sm:inline"> · {formatDuration(type?.durationMinutes ?? Math.round((new Date(a.endsAt).getTime() - start.getTime()) / 60000))}</span>
                     </div>
                   </td>
-                  <td className="max-w-[220px] px-3 py-2">
+                  <td className="max-w-[140px] px-2 py-2 sm:max-w-[220px] sm:px-3">
                     <button type="button" className="block max-w-full truncate text-left font-medium hover:underline" onClick={() => onSelect(a.id)}>
                       {a.contact.name}
                     </button>
@@ -357,7 +358,7 @@ function BookingsTable({
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-2 pr-5 sm:px-3 md:pr-3">
                     <BookingStatus appointment={a} now={now} />
                   </td>
                   <td className="hidden whitespace-nowrap px-3 py-2 pr-5 text-right text-xs text-fg-3 md:pr-6 2xl:table-cell">{timeAgo(a.createdAt, now)}</td>
