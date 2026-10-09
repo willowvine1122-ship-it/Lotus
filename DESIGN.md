@@ -411,3 +411,16 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 - **Contact panel**: 300px from 1400px wide (340px from 2xl), otherwise a right sheet behind the info button; header with 40px avatar, name 18px/600, city and since date, neutral tags; then Contact (dl rows, "–" for a missing phone or email), Client (hairline rows with the health dot and link; "Only this client" in the section aside), Channels used with counts and last time, Assigned.
 - **New message**: one searchable "To" combobox over every CRM contact (name, phone, email, client; the client shows as a muted caption with its health dot), channel chips that disable what the contact cannot receive with the reasons in the hint, subject for email, the message, and Send.
 - **Phone**: the list is the page; a thread opens over it with a back arrow, and the contact opens as a sheet.
+
+## Revision 5: calendars and booking (2026-10-09)
+
+`/agency/calendars` answers "what is the one table, what are the four numbers, what goes in the panel" for bookings. Nothing new in colour.
+
+### Components, added
+- **Calendars top bar**: the Daily Diagnostic ink bar (title, date meta with an amber "needs an outcome" count, search, client select, New calendar) with Bookings | Calendars tabs at its foot, counts in `rail-2` pills.
+- **Booking KPIs**: next 7 days (amber aside for unconfirmed), booked this week (share self-booked), 30-day show rate (no-shows), needs outcome (amber aside when non-zero).
+- **Booking timeline**: one `<table>` of every client's appointments, sorted by time and broken by day rows (`bg` fill, uppercase 11px date with "Today", "Tomorrow" or "Yesterday" in `fg`, count right). Time cell is 13px/500 tabular with the client's time-zone abbreviation and length beneath. Selection is `surface-2` with a 2px ink inset bar; no violet.
+- **Booking status chip**: the 24px chip in the three signals. Unconfirmed and Needs outcome (past, not marked) are amber; No-show red; Showed green; Confirmed neutral `surface-2`; Cancelled outlined muted with the time struck through.
+- **Booking panel**: contact name and chip, the time at 22px/600 with the long zone name and "in 3 hr"; ink-filled primary panel action (Mark confirmed, Showed) beside a bordered secondary; a ledger `dl`; contact links; the lead's note on `surface-2`; history of their other bookings with the client.
+- **Calendar settings**: types list with an on-page checkbox, weekly hours as one row per day (checkbox, two 112px selects), days off as removable date chips, rules as selects, all in Form sections.
+- **Public booking page** (`/book/[slug]`): client ink band with "Booking by Lotus", one bordered white surface on paper in three columns at lg (320px details and type choice, month grid, 232px time list) stacking on mobile. Open days are `surface-2` squares, the chosen day is solid ink, closed days muted; today carries a 4px dot. Time buttons are 40px bordered. The details step swaps the grid for the form; the violet button is the page's one primary action and names the time. Confirmation: a green-soft check square, "You're booked, {first name}.", the time at 22px, and an ink "Add to my calendar" (.ics).

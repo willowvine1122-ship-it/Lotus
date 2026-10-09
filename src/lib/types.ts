@@ -250,4 +250,75 @@ export interface InboxThread extends Conversation {
   /** The contact's pipeline stage name, for the contact panel. */
   stageName?: string;
   client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
+
+/* Calendars and booking                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The slice of a contact that booking needs. A stub until the contacts
+ * module lands; a booking creates or matches a contact by email.
+ */
+export interface ContactRef {
+  id: string;
+  accountId: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+export type MeetingLocation = "phone" | "video" | "in_person";
+
+export interface AppointmentType {
+  id: string;
+  calendarId: string;
+  name: string;
+  durationMinutes: number;
+  description?: string;
+  location: MeetingLocation;
+  locationDetail?: string;
+  active: boolean;
+}
+
+/** One bookable window inside a day, in minutes from midnight (calendar time zone). */
+export interface AvailabilityWindow {
+  start: number;
+  end: number;
+}
+
+export interface Calendar {
+  id: string;
+  accountId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  ownerName: string;
+  timeZone: string;
+  /** Index 0 is Sunday. An empty list means closed that day. */
+  weekly: AvailabilityWindow[][];
+  blockedDates: string[]; // YYYY-MM-DD in the calendar's time zone
+  bufferMinutes: number;
+  minNoticeHours: number;
+  maxDaysAhead: number;
+  slotStepMinutes: number;
+  bookingEnabled: boolean;
+  types: AppointmentType[];
+  createdAt: string;
+}
+
+/** booked = the lead booked but has not confirmed; confirmed = reminder answered. */
+export type AppointmentStatus = "booked" | "confirmed" | "showed" | "no_show" | "cancelled";
+export type AppointmentSource = "booking_page" | "manual" | "ads";
+
+export interface Appointment {
+  id: string;
+  calendarId: string;
+  accountId: string;
+  typeId: string;
+  contact: ContactRef;
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
+  source: AppointmentSource;
+  notes?: string;
+  createdAt: string;
 }

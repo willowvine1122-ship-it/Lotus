@@ -5,7 +5,7 @@ import { Plus, Search } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import type { RangeDays } from "@/lib/diagnostic";
 import type { AccountMode, ClientRecord } from "@/lib/types";
-import { formatCount, formatDollars, formatDollarsCompact, formatDollarsExact, formatMultiple, formatRate } from "@/lib/utils";
+import { cn, formatCount, formatDollars, formatDollarsCompact, formatDollarsExact, formatMultiple, formatRate } from "@/lib/utils";
 import { buildRow, type Row } from "./model";
 import { ClientPanel } from "./panel";
 import { Segmented } from "./primitives";
@@ -22,14 +22,14 @@ const ranges: { value: RangeDays; label: string }[] = [
   { value: 90, label: "Last 90 days" },
 ];
 
-function Kpi({ label, value, aside }: { label: string; value: string; aside?: string }) {
+export function Kpi({ label, value, aside, asideClassName }: { label: string; value: string; aside?: string; asideClassName?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded border border-line bg-surface px-4 py-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-3">
       <div className="min-w-0">
         <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
         <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
       </div>
-      {aside && <div className="num whitespace-nowrap text-xs text-fg-3 sm:ml-auto sm:text-right">{aside}</div>}
+      {aside && <div className={cn("num whitespace-nowrap text-xs text-fg-3 sm:ml-auto sm:text-right", asideClassName)}>{aside}</div>}
     </div>
   );
 }
