@@ -321,7 +321,7 @@ export function moveContactStage(now: Date, id: string, stageId: string, by: str
 export function addActivity(
   now: Date,
   contactId: string,
-  input: { kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number },
+  input: { kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number; at?: string },
 ): ContactActivity | undefined {
   const c = findContact(now, contactId);
   if (!c) return undefined;
@@ -333,10 +333,10 @@ export function addActivity(
     body: input.body?.trim() || undefined,
     by: input.by,
     amountCents: input.amountCents,
-    at: now.toISOString(),
+    at: input.at ?? now.toISOString(),
   };
   crm(now).activities.push(a);
-  c.lastActivityAt = a.at;
+  if (a.at > c.lastActivityAt) c.lastActivityAt = a.at;
   if (input.kind === "donation" && input.amountCents) c.valueCents += input.amountCents;
   return a;
 }

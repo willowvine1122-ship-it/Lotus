@@ -11,6 +11,9 @@ import {
   LayoutGrid,
   Settings,
   Users,
+  Wrench,
+  ClipboardList,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +29,10 @@ const nav = [
   { href: "/agency/funnels", label: "Funnels", icon: Layers },
 
   { href: "/agency/email", label: "Email", icon: Mail },
+
+  { href: "/agency/jobs", label: "Jobs", icon: Wrench },
+  { href: "/agency/estimates", label: "Estimates", icon: ClipboardList },
+  { href: "/agency/invoices", label: "Invoices", icon: Receipt },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -64,7 +71,7 @@ export function Shell({
 
         <nav
           aria-label="Primary"
-          className="ml-auto flex gap-1 overflow-x-auto md:ml-0 md:flex-col md:gap-0 md:px-3 md:py-3"
+          className="relative ml-auto flex min-w-0 gap-1 overflow-x-auto md:ml-0 md:flex-col md:gap-0 md:px-3 md:py-3"
         >
           {nav.map(({ href, label, icon: Icon }) => {
             const active = href === current;
