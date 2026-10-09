@@ -323,4 +323,70 @@ export interface Appointment {
   source: AppointmentSource;
   notes?: string;
   createdAt: string;
+
+/* Fundraising: donors, donations, recurring plans, campaigns           */
+/* ------------------------------------------------------------------ */
+
+export type GiftFrequency = "one_time" | "monthly";
+
+export interface Campaign {
+  id: string;
+  accountId: string;
+  slug: string; // public checkout lives at /donate/[slug]
+  title: string;
+  summary: string;
+  story: string[];
+  goalCents: number;
+  /** Suggested amounts in cents, per frequency; the middle one is preselected. */
+  amounts: Record<GiftFrequency, number[]>;
+  /** What a gift does, keyed by amount in cents; shown under the amount grid. */
+  impact: Record<number, string>;
+  defaultFrequency: GiftFrequency;
+  designations: string[];
+  status: "live" | "draft" | "ended";
+  createdAt: string;
+}
+
+export type DonationStatus = "succeeded" | "refunded" | "failed";
+
+export interface Donation {
+  id: string;
+  accountId: string;
+  donorId: string;
+  campaignId: string;
+  amountCents: number; // the gift itself
+  feeCoveredCents: number; // extra the donor added to cover processing
+  frequency: GiftFrequency;
+  recurringPlanId?: string;
+  designation: string;
+  countryCode: string;
+  status: DonationStatus;
+  paymentRef: string; // Stripe PaymentIntent id, or a demo ref
+  createdAt: string;
+}
+
+export type RecurringStatus = "active" | "past_due" | "paused" | "canceled";
+
+export interface RecurringPlan {
+  id: string;
+  accountId: string;
+  donorId: string;
+  campaignId: string;
+  amountCents: number;
+  feeCoveredCents: number;
+  designation: string;
+  status: RecurringStatus;
+  startedAt: string;
+  nextChargeOn: string | null; // YYYY-MM-DD
+  canceledAt?: string;
+}
+
+/** A contact who has given. Country comes from the donor's billing details. */
+export interface Donor {
+  id: string;
+  accountId: string;
+  contact: Contact;
+  countryCode: string;
+  countryName: string;
+  anonymous: boolean;
 }

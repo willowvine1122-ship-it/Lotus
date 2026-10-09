@@ -3,6 +3,7 @@ import {
   Activity,
   CalendarDays,
   CheckSquare,
+  HeartHandshake,
   Inbox,
   LayoutGrid,
   Settings,
@@ -17,6 +18,7 @@ const nav = [
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
   { href: "/agency/calendars", label: "Calendars", icon: CalendarDays },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
+  { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 
