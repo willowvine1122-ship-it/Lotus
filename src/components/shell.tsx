@@ -14,6 +14,8 @@ import {
   Wrench,
   ClipboardList,
   Receipt,
+
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +35,8 @@ const nav = [
   { href: "/agency/jobs", label: "Jobs", icon: Wrench },
   { href: "/agency/estimates", label: "Estimates", icon: ClipboardList },
   { href: "/agency/invoices", label: "Invoices", icon: Receipt },
+
+  { href: "/agency/automations", label: "Automations", icon: Workflow },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 

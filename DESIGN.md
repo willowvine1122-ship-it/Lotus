@@ -475,3 +475,23 @@ Campaigns, the editor, the report and audiences reuse the board grammar (ink top
 ### Rules
 - Opted-out and address-less contacts are counted and named, never silently dropped.
 - Image blocks show a described placeholder until file storage lands; the description doubles as alt text.
+
+## Revision 7: Automations (2026-10-09)
+
+The workflow list and run history reuse the board grammar (ink top bar, KPI strip, table, right panel). The builder is a single top-to-bottom column on paper with the editor in the right panel. Nothing new in colour.
+
+### Components, added
+- **Workflow status tag**: Active is neutral `surface-2` with a small green dot; Paused is amber (it is a signal: something stopped); Draft is the dashed outline shared with campaigns.
+- **Run status tag**: Waiting is `brand-soft`/`brand`; Completed neutral; Failed red; Stopped dashed outline.
+- **Workflow header**: the client-page ink band (back link · client, name with status tag, meta line) with Builder | Runs tabs on a 2px white underline. Actions sit on ink as `rail-2` buttons; the single violet button is the next state change (Turn on, or Save while there are edits).
+- **Builder canvas**: the trigger node, then each step as a white bordered row (step glyph, label, one-line summary with merge tokens, 30-day count on the right: "14 done · 4 skipped"). Waits are smaller `surface-2` chips on the line, not rows. The selected node gets an ink border. A "+" on every connector opens a grouped add menu (Messages, Contact, Team, Flow).
+- **If / else**: one level only. The node splits into Yes and No lanes with their counts and rejoins below; an empty lane reads "Nothing, carry on". On phones the lanes stack, Yes above No.
+- **Editor panel**: trigger editor (what starts it, filter, Once | Every time it happens), step editors with merge chips that insert at the caret, then Up, Down and Remove step. Test (pick a contact, skip waits, see each step's outcome) and Settings (name, duplicate, delete with confirmation) open in the same panel.
+- **Validation**: nothing is flagged until the first attempt to turn a workflow on; then each incomplete node shows a red line and the header says how many steps need finishing. Saving an active workflow with problems pauses it and says so.
+- **Run panel**: a ledger (contact, started, why it started), then the step timeline with a mark per step (done, skipped with reason, failed, waiting until) and the upcoming steps greyed below, with Stop run while it is waiting.
+- **New workflow**: client and name, then recipes as one bordered radio list; each recipe shows its shape as a row of step glyphs after the trigger chip. "Start from scratch" sits last.
+
+### Rules
+- Everything a workflow does lands on the contact's timeline, authored "Automation", so the CRM stays the record.
+- Skipped steps always carry a reason (no phone, opted out, already tagged) and are counted on the node.
+- Cmd/Ctrl+S saves; leaving with unsaved edits asks first.
