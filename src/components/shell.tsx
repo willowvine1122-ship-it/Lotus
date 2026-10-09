@@ -2,9 +2,11 @@ import Link from "next/link";
 import {
   Activity,
   CheckSquare,
+  FileBarChart,
   Inbox,
   LayoutGrid,
   Settings,
+  Star,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +17,8 @@ const nav = [
   { href: "/agency/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
+  { href: "/agency/reputation", label: "Reputation", icon: Star },
+  { href: "/agency/reports", label: "Reports", icon: FileBarChart },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 

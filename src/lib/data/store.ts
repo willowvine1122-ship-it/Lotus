@@ -346,3 +346,137 @@ export function deleteContact(now: Date, id: string) {
   s.contacts = s.contacts.filter((c) => c.id !== id);
   s.activities = s.activities.filter((a) => a.contactId !== id);
 }
+
+/* ------------------------ Reputation and reporting ------------------------ */
+
+import type { ReportConfig, ReportSend, ReputationSettings, Review, ReviewRequest, ReviewRequestChannel } from "@/lib/types";
+import { defaultReportConfig, defaultReputationSettings, demoReportSendsFor, demoRequestsFor, demoReviewsFor } from "./demo-reputation";
+
+interface ReputationStore {
+  seededFor: string;
+  reviews: Review[];
+  requests: ReviewRequest[];
+  settings: Record<string, ReputationSettings>;
+  reports: Record<string, ReportConfig>;
+  sends: ReportSend[];
+}
+
+const gr = globalThis as unknown as { __lotusReputation?: ReputationStore };
+
+function reputationStore(now: Date): ReputationStore {
+  const key = now.toISOString().slice(0, 10);
+  if (!gr.__lotusReputation || gr.__lotusReputation.seededFor !== key) {
+    const prev = gr.__lotusReputation;
+    const clients = listClients(now).filter((c) => !c.account.id.startsWith("new-"));
+    const reviews: Review[] = [];
+    const requests: ReviewRequest[] = [];
+    const settings: Record<string, ReputationSettings> = {};
+    const reports: Record<string, ReportConfig> = {};
+    const sends: ReportSend[] = [];
+    for (const c of clients) {
+      const rv = demoReviewsFor(c, now);
+      reviews.push(...rv);
+      requests.push(...demoRequestsFor(c, now, listContacts(now, c.account.id), rv));
+      settings[c.account.id] = prev?.settings[c.account.id] ?? defaultReputationSettings(c);
+      reports[c.account.id] = prev?.reports[c.account.id] ?? defaultReportConfig(c);
+      sends.push(...demoReportSendsFor(c, reports[c.account.id]!, now));
+    }
+    const keep = <T extends { id: string }>(xs: T[] | undefined) => xs?.filter((x) => x.id.startsWith("new-")) ?? [];
+    gr.__lotusReputation = {
+      seededFor: key,
+      reviews: [...reviews, ...keep(prev?.reviews)],
+      requests: [...keep(prev?.requests), ...requests],
+      settings: { ...settings, ...(prev?.settings ?? {}) },
+      reports: { ...reports, ...(prev?.reports ?? {}) },
+      sends: [...keep(prev?.sends), ...sends],
+    };
+  }
+  return gr.__lotusReputation;
+}
+
+export function listReviews(now: Date, accountId?: string): Review[] {
+  const all = reputationStore(now).reviews;
+  return (accountId ? all.filter((r) => r.accountId === accountId) : all).slice().sort((a, b) => b.at.localeCompare(a.at));
+}
+
+export function findReview(now: Date, id: string): Review | undefined {
+  return reputationStore(now).reviews.find((r) => r.id === id);
+}
+
+export function replyToReview(now: Date, id: string, body: string, by: string): Review | undefined {
+  const r = findReview(now, id);
+  if (!r) return undefined;
+  r.reply = { body: body.trim(), by, at: now.toISOString() };
+  return r;
+}
+
+export function listReviewRequests(now: Date, accountId?: string): ReviewRequest[] {
+  const all = reputationStore(now).requests;
+  return (accountId ? all.filter((r) => r.accountId === accountId) : all).slice().sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+}
+
+export function getReputationSettings(now: Date, accountId: string): ReputationSettings | undefined {
+  const s = reputationStore(now);
+  if (!s.settings[accountId]) {
+    const c = findClient(now, accountId);
+    if (!c) return undefined;
+    s.settings[accountId] = defaultReputationSettings(c);
+  }
+  return s.settings[accountId];
+}
+
+export function updateReputationSettings(now: Date, accountId: string, patch: Partial<Omit<ReputationSettings, "accountId">>): ReputationSettings | undefined {
+  const cur = getReputationSettings(now, accountId);
+  if (!cur) return undefined;
+  Object.assign(cur, patch);
+  return cur;
+}
+
+/** Send a review request to a contact: records the request and logs it on the contact. */
+export function sendReviewRequest(now: Date, accountId: string, contactId: string, channel: ReviewRequestChannel, by: string): ReviewRequest | undefined {
+  const contact = findContact(now, contactId);
+  if (!contact || contact.accountId !== accountId) return undefined;
+  const req: ReviewRequest = {
+    id: `new-rq-${Date.now().toString(36)}`,
+    accountId,
+    contactId,
+    contactName: `${contact.firstName} ${contact.lastName}`,
+    channel,
+    trigger: "manual",
+    status: "sent",
+    sentAt: now.toISOString(),
+  };
+  reputationStore(now).requests.unshift(req);
+  addActivity(now, contactId, { kind: channel === "sms" ? "sms" : "email", title: `Review request sent by ${channel === "sms" ? "text" : "email"}`, by });
+  return req;
+}
+
+export function getReportConfig(now: Date, accountId: string): ReportConfig | undefined {
+  const s = reputationStore(now);
+  if (!s.reports[accountId]) {
+    const c = findClient(now, accountId);
+    if (!c) return undefined;
+    s.reports[accountId] = defaultReportConfig(c);
+  }
+  return s.reports[accountId];
+}
+
+export function updateReportConfig(now: Date, accountId: string, patch: Partial<Omit<ReportConfig, "accountId">>): ReportConfig | undefined {
+  const cur = getReportConfig(now, accountId);
+  if (!cur) return undefined;
+  Object.assign(cur, patch);
+  return cur;
+}
+
+export function listReportSends(now: Date, accountId?: string): ReportSend[] {
+  const all = reputationStore(now).sends;
+  return (accountId ? all.filter((r) => r.accountId === accountId) : all).slice().sort((a, b) => b.at.localeCompare(a.at));
+}
+
+export function sendReportNow(now: Date, accountId: string): ReportSend | undefined {
+  const cfg = getReportConfig(now, accountId);
+  if (!cfg) return undefined;
+  const send: ReportSend = { id: `new-rs-${Date.now().toString(36)}`, accountId, at: now.toISOString(), recipients: cfg.recipients, range: cfg.range, kind: "manual" };
+  reputationStore(now).sends.unshift(send);
+  return send;
+}
