@@ -394,3 +394,57 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 ### Rules
 - Stage colour never encodes progress; the column position and the word do.
 - Logging a call, text or email records it; sending arrives with the Inbox and the form says so.
+
+## Revision 5: inbox (2026-10-09)
+
+`/agency/inbox` answers the three questions: the one table is the conversation list, the panel is the contact, and the work area between them is the thread. The ink top bar carries the counts (open, unread, unassigned), search, an All | Mine | Unassigned control and "New message" as the secondary ink button. The one violet action on the screen is Send in the composer, the action people repeat all day; "Add note" is solid ink.
+
+### Colors, added
+- **Ink wash** (`--ink-100`, #e6eaf2): the fill of the team's own messages in a thread. Ink is the agency's frame, so the team's words carry a pale tint of it; the contact's messages sit on white with a `line` border. Used nowhere else.
+- Channel identity is a monochrome glyph (Lucide `MessageSquare` and `Mail`; drawn WhatsApp and Facebook glyphs on the same 24px grid and 1.75 stroke) in the surrounding text colour. Brand greens and blues are never used: on paper they would read as signals.
+
+### Components, added
+- **Conversation row**: about 56px, two lines beside a 28px neutral initial avatar (`surface-2`, `line` border; colour is reserved for the team). Line 1: name 13px (600 when unread), a 6px health dot and the client in 12px muted, then on the right the assignee as a 16px team avatar (All view only) and the time 11px tabular. Line 2: channel glyph, the preview prefixed with who sent it ("You:" or the teammate's name), and an 18px ink count block when unread. A failed last send replaces the prefix with a red alert icon and "Not delivered". Selected row is `surface-2` with a 2px ink bar on the left (no violet for state). Hairline between rows.
+- **List filters**: client select (grouped Marketing / Fundraising) beside a paper Open | Unread | Closed segmented control; below, channel chips (28px, 4px radius; active is solid ink) with counts.
+- **Thread**: date dividers as in the notes feed; contact messages left, team messages right on the ink wash, both 6px radius, max 520px (email 600px with the subject in 600 over a hairline); an 11px meta line under each (glyph, channel, time, author, delivery state; "Not delivered" in red with a 20% red border on the message). Internal notes are full width to 600px, dashed `line-strong` border on white, a lock and "Internal note" label.
+- **Composer**: Reply | Internal note (paper segmented), "via" channel select that disables channels the contact cannot receive (no phone, no email, opted out, never wrote to the page), subject for email, a 76px textarea, a character and segment count for texts, and the violet Send. Note mode tints the composer `surface-2` and dashes the textarea. Ctrl or Cmd + Enter sends.
+- **Contact panel**: 300px from 1400px wide (340px from 2xl), otherwise a right sheet behind the info button; header with 40px avatar, name 18px/600, city and since date, neutral tags; then Contact (dl rows, "–" for a missing phone or email), Client (hairline rows with the health dot and link; "Only this client" in the section aside), Channels used with counts and last time, Assigned.
+- **New message**: one searchable "To" combobox over every CRM contact (name, phone, email, client; the client shows as a muted caption with its health dot), channel chips that disable what the contact cannot receive with the reasons in the hint, subject for email, the message, and Send.
+- **Phone**: the list is the page; a thread opens over it with a back arrow, and the contact opens as a sheet.
+
+## Revision 6: Email marketing (2026-10-09)
+
+Campaigns, the editor, the report and audiences reuse the board grammar (ink top bar, KPI strip, table, right panel) and the form grammar. Nothing new in colour.
+
+### Components, added
+- **Campaign status tag**: Draft is a dashed `line-strong` outline in `fg-3`; Scheduled is `brand-soft`/`brand` (the same precedent as Onboarding); Sent is neutral `surface-2`.
+- **Merge token**: `{{first_name}}` and friends render in the team's views as a small `surface-2` token with a hairline ring and the plain label ("First name"); recipients only ever see the substituted text.
+- **Campaigns board**: KPIs cover the last 30 days (sent, open rate with change against the prior 30 days, click rate with click-to-open, unsubscribes with the rate, amber above 1%). Table: Campaign (name over client · subject), Status, When and to (date over count · audience), Opened and Clicked (rate over count, with a change against the client's own average once a send reaches 15 people), Unsubs at 2xl. Scheduled sends lead, soonest first.
+- **Email preview**: the inbox line (sender avatar, from, subject, preview text) above the message on its own white page inside a `surface-2` well. The message carries the client's identity: client name as the masthead, near-black buttons, a compliance footer with Unsubscribe. Violet never appears inside an email.
+- **Block editor**: one bordered list, a hairline between blocks; each block has its type label with move up, move down and remove on the same line, then its fields. "Add" chips below. Merge-tag chips insert at the caret of the last field touched.
+- **Send section**: Send now | Schedule tiles (the mode-picker pattern); sending asks for an inline confirmation naming the count; the reach line says who is skipped and why.
+- **Audience builder** (right panel): name, Segment | List, then rule groups (Stage, Tags, Source, Added) as toggle chips that turn ink when on, a live "can be emailed of total" count in the sticky header, and a sample of matching contacts.
+
+### Rules
+- Opted-out and address-less contacts are counted and named, never silently dropped.
+- Image blocks show a described placeholder until file storage lands; the description doubles as alt text.
+
+## Revision 7: Automations (2026-10-09)
+
+The workflow list and run history reuse the board grammar (ink top bar, KPI strip, table, right panel). The builder is a single top-to-bottom column on paper with the editor in the right panel. Nothing new in colour.
+
+### Components, added
+- **Workflow status tag**: Active is neutral `surface-2` with a small green dot; Paused is amber (it is a signal: something stopped); Draft is the dashed outline shared with campaigns.
+- **Run status tag**: Waiting is `brand-soft`/`brand`; Completed neutral; Failed red; Stopped dashed outline.
+- **Workflow header**: the client-page ink band (back link · client, name with status tag, meta line) with Builder | Runs tabs on a 2px white underline. Actions sit on ink as `rail-2` buttons; the single violet button is the next state change (Turn on, or Save while there are edits).
+- **Builder canvas**: the trigger node, then each step as a white bordered row (step glyph, label, one-line summary with merge tokens, 30-day count on the right: "14 done · 4 skipped"). Waits are smaller `surface-2` chips on the line, not rows. The selected node gets an ink border. A "+" on every connector opens a grouped add menu (Messages, Contact, Team, Flow).
+- **If / else**: one level only. The node splits into Yes and No lanes with their counts and rejoins below; an empty lane reads "Nothing, carry on". On phones the lanes stack, Yes above No.
+- **Editor panel**: trigger editor (what starts it, filter, Once | Every time it happens), step editors with merge chips that insert at the caret, then Up, Down and Remove step. Test (pick a contact, skip waits, see each step's outcome) and Settings (name, duplicate, delete with confirmation) open in the same panel.
+- **Validation**: nothing is flagged until the first attempt to turn a workflow on; then each incomplete node shows a red line and the header says how many steps need finishing. Saving an active workflow with problems pauses it and says so.
+- **Run panel**: a ledger (contact, started, why it started), then the step timeline with a mark per step (done, skipped with reason, failed, waiting until) and the upcoming steps greyed below, with Stop run while it is waiting.
+- **New workflow**: client and name, then recipes as one bordered radio list; each recipe shows its shape as a row of step glyphs after the trigger chip. "Start from scratch" sits last.
+
+### Rules
+- Everything a workflow does lands on the contact's timeline, authored "Automation", so the CRM stays the record.
+- Skipped steps always carry a reason (no phone, opted out, already tagged) and are counted on the node.
+- Cmd/Ctrl+S saves; leaving with unsaved edits asks first.
