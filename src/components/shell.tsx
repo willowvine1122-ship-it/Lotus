@@ -78,11 +78,16 @@ export function Shell({
         </nav>
 
         <div className="hidden border-t border-rail-line px-5 py-4 text-xs text-rail-fg-2 md:block">
-          Lotus agency · demo data
+          Lotus agency
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="flex min-w-0 flex-1 flex-col">
+        <div className="flex-1">{children}</div>
+        <p className="px-5 py-4 text-xs text-fg-3 md:px-8">
+          Demo data. Client names, numbers and notes are synthetic until live feeds are connected.
+        </p>
+      </main>
     </div>
   );
 }

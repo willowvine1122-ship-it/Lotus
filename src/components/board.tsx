@@ -11,7 +11,7 @@ import { cn, formatMoney, trendDelta } from "@/lib/utils";
  */
 
 const columns =
-  "md:grid-cols-[112px_minmax(180px,1.4fr)_minmax(90px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,0.9fr)_112px_minmax(160px,1.6fr)_56px]";
+  "md:grid-cols-[112px_minmax(180px,1.4fr)_minmax(90px,0.8fr)_minmax(120px,0.7fr)_minmax(100px,0.9fr)_112px_minmax(160px,1.6fr)_56px]";
 
 function cells(m: DiagnosticMetrics) {
   if (m.mode === "marketing") {
@@ -23,7 +23,7 @@ function cells(m: DiagnosticMetrics) {
       count: String(t.leads),
       countLabel: "Leads",
       rate: cpb === null ? "–" : formatMoney(cpb),
-      rateLabel: "Cost / booking",
+      rateLabel: "Cost per booking",
       trendLabel: "leads",
     };
   }
@@ -56,8 +56,8 @@ export function Board({ rows }: { rows: ClientOverview[] }) {
         <span>Status</span>
         <span>Client</span>
         <span className="text-right">Spend / raised</span>
-        <span className="text-right">Leads / gifts</span>
-        <span className="text-right">Cost / avg gift</span>
+        <span className="text-right">Leads / donations</span>
+        <span className="text-right">Cost / gift</span>
         <span>7 days</span>
         <span>Latest note</span>
         <span className="text-right">Tasks</span>
@@ -87,18 +87,15 @@ function BoardRow({ overview }: { overview: ClientOverview }) {
           columns,
         )}
       >
-        <div className="col-span-2 flex items-center justify-between md:col-span-1 md:block">
+        <div className="col-span-2 md:col-span-1">
           {diagnostic ? <StatusChip health={diagnostic.health} /> : <span className="text-xs text-fg-3">No data</span>}
-          <span className="text-2xs uppercase tracking-[0.06em] text-fg-3 md:hidden">
-            {account.mode === "marketing" ? "Marketing" : "Fundraising"}
-          </span>
         </div>
 
         <div className="col-span-2 min-w-0 md:col-span-1">
           <Link href={href} className="text-base font-medium hover:underline">
             {account.name}
           </Link>
-          <div className="hidden text-xs text-fg-3 md:block">
+          <div className="text-xs text-fg-3">
             {account.mode === "marketing" ? "Digital marketing" : "Digital fundraising"}
           </div>
         </div>
@@ -125,9 +122,9 @@ function BoardRow({ overview }: { overview: ClientOverview }) {
           )}
         </div>
 
-        <div className="col-span-2 min-w-0 text-sm text-fg-2 md:col-span-1">
+        <div className={cn("col-span-2 min-w-0 text-sm text-fg-2 md:col-span-1", flagged && "hidden md:block")}>
           {latestNote ? (
-            <span className="block truncate">
+            <span className="block truncate" title={latestNote.body}>
               <span className="font-medium text-fg">{latestNote.authorName}</span>{" "}
               {latestNote.body}
             </span>
@@ -154,19 +151,27 @@ function BoardRow({ overview }: { overview: ClientOverview }) {
             )}
             strokeWidth={1.75}
           />
-          <p className="max-w-[72ch] leading-relaxed text-fg-2">
-            {diagnostic.alerts.length > 0 && (
-              <span
-                className={cn(
-                  "font-medium",
-                  diagnostic.health === "red" ? "text-red" : "text-amber",
-                )}
-              >
-                {diagnostic.alerts.join(" · ")}.{" "}
-              </span>
+          <div className="max-w-[72ch] leading-relaxed text-fg-2">
+            <p>
+              {diagnostic.alerts.length > 0 && (
+                <span
+                  className={cn(
+                    "font-medium",
+                    diagnostic.health === "red" ? "text-red" : "text-amber",
+                  )}
+                >
+                  {diagnostic.alerts.join(" · ")}.{" "}
+                </span>
+              )}
+              {diagnostic.summary}
+            </p>
+            {latestNote && (
+              <p className="mt-1.5">
+                <span className="font-medium text-fg">{latestNote.authorName}:</span>{" "}
+                {latestNote.body}
+              </p>
             )}
-            {diagnostic.summary}
-          </p>
+          </div>
         </div>
       )}
     </li>

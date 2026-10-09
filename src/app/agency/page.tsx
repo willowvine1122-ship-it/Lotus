@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { Plus } from "lucide-react";
 import { Board } from "@/components/board";
-import { Button, PageHeader } from "@/components/page-header";
+import { ButtonLink, PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { getClientOverviews } from "@/lib/data/agency";
 
@@ -26,7 +26,7 @@ async function Diagnostic() {
         title="Daily Diagnostic"
         meta={
           <span className="flex flex-wrap gap-x-3">
-            <span>{date}</span>
+            <span>{date}, yesterday&apos;s numbers</span>
             <span aria-hidden>·</span>
             <span className="num">{overviews.length} clients</span>
             <span aria-hidden>·</span>
@@ -40,16 +40,13 @@ async function Diagnostic() {
           </span>
         }
         actions={
-          <Button>
+          <ButtonLink href="/agency/clients/new">
             <Plus className="size-4" strokeWidth={2} />
             Add client
-          </Button>
+          </ButtonLink>
         }
       />
       <Board rows={overviews} />
-      <p className="px-5 py-4 text-xs text-fg-3 md:px-8">
-        Yesterday&apos;s numbers. Clients are listed by status, then by name. Demo data.
-      </p>
     </>
   );
 }

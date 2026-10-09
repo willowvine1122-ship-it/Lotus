@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { Plus } from "lucide-react";
-import { Button, PageHeader } from "@/components/page-header";
+import { ButtonLink, PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { StatusChip } from "@/components/status";
 import { getClientOverviews } from "@/lib/data/agency";
@@ -18,10 +18,10 @@ async function ClientList() {
         title="Clients"
         meta={<span className="num">{overviews.length} sub-accounts</span>}
         actions={
-          <Button>
+          <ButtonLink href="/agency/clients/new">
             <Plus className="size-4" strokeWidth={2} />
             Add client
-          </Button>
+          </ButtonLink>
         }
       />
       <div className="bg-surface">
