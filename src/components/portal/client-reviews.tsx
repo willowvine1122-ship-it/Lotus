@@ -54,7 +54,11 @@ export function ClientReviews({ reviews, nowIso }: { reviews: Review[]; nowIso: 
       <section className="mt-8 grid gap-8 md:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex flex-col gap-3">
           <SectionTitle sub="90-day average, by week">Rating trend</SectionTitle>
-          <LineChart labels={trend.map((t) => t.label)} format={(v) => v.toFixed(1)} height={180} series={[{ key: "avg", label: "Average rating", color: "var(--chart-1)", values: trend.map((t) => t.avg) }]} />
+          {trend.filter((t) => t.avg !== null).length >= 4 ? (
+            <LineChart labels={trend.map((t) => t.label)} format={(v) => v.toFixed(1)} height={180} series={[{ key: "avg", label: "Average rating", color: "var(--chart-1)", values: trend.map((t) => t.avg) }]} />
+          ) : (
+            <div className="grid h-24 place-items-center rounded border border-dashed border-line-strong text-xs text-fg-3">Not enough history yet. The trend starts after a month of reviews.</div>
+          )}
         </div>
         <div className="flex flex-col gap-3">
           <SectionTitle>By stars</SectionTitle>

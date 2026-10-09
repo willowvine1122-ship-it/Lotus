@@ -66,7 +66,7 @@ function ReplyForm({ review, reply }: { review: Review; reply: ReputationActions
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded border border-line bg-surface p-4">
       <Field label="Reply publicly" htmlFor="reply-body" error={state?.errors?.body} hint={`Posts to ${sourceLabel[review.source]} as the client. Keep it short and specific.`}>
-        <Textarea id="reply-body" name="body" placeholder={review.rating >= 4 ? "Thank you, Mike. Glad the crew took care of it." : "Thanks for telling us. We've called to put this right."} aria-invalid={!!state?.errors?.body} />
+        <Textarea id="reply-body" name="body" placeholder={review.rating >= 4 ? `Thank you, ${review.author.split(" ")[0]}. Glad it went smoothly.` : "Thanks for telling us. We've called to put this right."} aria-invalid={!!state?.errors?.body} />
       </Field>
       <div className="flex items-center gap-3">
         <SubmitButton pendingLabel="Posting…">Post reply</SubmitButton>
@@ -111,10 +111,10 @@ function RatingHistory({ reviews, now, client }: { reviews: Review[]; now: Date;
       </section>
       <section className="flex flex-col gap-3">
         <SectionTitle sub="90-day average, by week">Rating trend</SectionTitle>
-        {reviews.length >= 3 ? (
+        {trend.filter((t) => t.avg !== null).length >= 4 ? (
           <LineChart labels={trend.map((t) => t.label)} format={(v) => v.toFixed(1)} height={150} series={[{ key: "avg", label: "Average rating", color: "var(--chart-1)", values: trend.map((t) => t.avg) }]} />
         ) : (
-          <div className="grid h-20 place-items-center rounded border border-dashed border-line-strong text-xs text-fg-3">Not enough reviews yet</div>
+          <div className="grid h-20 place-items-center rounded border border-dashed border-line-strong text-xs text-fg-3">Not enough history yet. The trend starts after a month of reviews.</div>
         )}
       </section>
       <section className="flex flex-col gap-3">

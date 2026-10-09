@@ -7,7 +7,7 @@ import { CheckboxChip, Field, FormNotice, Select, SubmitButton, Textarea } from 
 import type { Row } from "@/components/diagnostic/model";
 import type { ActionState } from "@/app/agency/reports/actions";
 import type { ReportConfig, ReportRange, ReportSectionId, Review } from "@/lib/types";
-import { cn, formatCount } from "@/lib/utils";
+import { formatCount } from "@/lib/utils";
 import { allSections, hourLabel, nextSend, sectionLabel, weekdayLabel } from "./model";
 import { ReportBody } from "./report-body";
 
@@ -55,7 +55,7 @@ export function ReportBuilder({
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-semibold leading-6 tracking-tight">{client.name} report</h1>
           <p className="num text-xs text-rail-fg-2">
-            {enabled ? `${weekdayLabel[weekday]}s at ${hourLabel(hour)} · next ${next.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "Schedule off"} · {formatCount(sections.length)} sections
+            {enabled ? `${weekdayLabel[weekday]}s at ${hourLabel(hour)} · next ${next.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "Schedule off"} · {formatCount(sections.length)} sections · the preview is what the client gets
           </p>
         </div>
         <Link href={`/c/${client.slug}`} target="_blank" className="hidden h-7 items-center rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line sm:inline-flex">
@@ -126,10 +126,9 @@ export function ReportBuilder({
         </form>
 
         <div className="min-w-0 bg-surface-2/40 px-5 py-6 md:px-8">
-          <div className={cn("mx-auto max-w-[880px] rounded border border-line bg-surface px-5 py-6 shadow-1 md:px-8")}>
+          <div className="mx-auto max-w-[880px] rounded border border-line bg-surface px-5 py-6 md:px-8">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-line pb-5">
               <div>
-                <div className="text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">Preview</div>
                 <h2 className="mt-0.5 text-xl font-semibold tracking-tight">{client.name}: your results</h2>
                 <p className="mt-1 text-sm text-fg-3">
                   Last {range} days · prepared {now.toLocaleDateString("en-US", { month: "long", day: "numeric" })} by your Lotus team

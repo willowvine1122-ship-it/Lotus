@@ -39,17 +39,15 @@ const requestColumns: Column<QKey>[] = [
   { key: "sentAt", label: "Sent", className: "hidden md:table-cell", defaultDir: "desc" },
 ];
 
-function Kpi({ label, value, aside, children }: { label: string; value: string; aside?: string; children?: React.ReactNode }) {
+function Kpi({ label, value, aside, attention, children }: { label: string; value: string; aside?: string; attention?: "amber" | "red"; children?: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded border border-line bg-surface px-4 py-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-3">
-      <div className="min-w-0">
-        <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
-        <div className="num mt-0.5 flex items-center gap-2 text-xl font-semibold leading-7">
-          {value}
-          {children}
-        </div>
+    <div className="flex min-w-0 flex-col rounded border border-line bg-surface px-4 py-3">
+      <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
+      <div className="num mt-0.5 flex items-center gap-2 text-xl font-semibold leading-7">
+        {value}
+        {children}
       </div>
-      {aside && <div className="num whitespace-nowrap text-xs text-fg-3 sm:ml-auto sm:text-right">{aside}</div>}
+      <div className={cn("num mt-1 truncate text-xs", attention === "red" ? "font-medium text-red" : attention === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside ?? "\u00a0"}</div>
     </div>
   );
 }
@@ -75,7 +73,13 @@ function HeaderCell<K extends string>({ c, sort, onSort }: { c: Column<K>; sort:
   );
 }
 
-const rowClass = (selected: boolean) => cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", selected ? "bg-brand-soft/40" : "hover:bg-surface-2/60");
+const rowClass = (selected: boolean) => cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100 focus-visible:outline-none focus-visible:bg-surface-2", selected ? "bg-brand-soft/40" : "hover:bg-surface-2/60");
+const keyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    fn();
+  }
+};
 
 export function ReputationBoard({
   reviews,
@@ -173,6 +177,7 @@ export function ReputationBoard({
   const avg30 = averageRating(cur);
   const avgPrev = averageRating(prev);
   const needsReply = inClient.filter((r) => !r.reply);
+  const oldestNeedDays = needsReply.length ? daysBetween(needsReply[needsReply.length - 1]!.at, now) : 0;
   const thisMonth = inClient.filter((r) => new Date(r.at).getMonth() === now.getMonth() && new Date(r.at).getFullYear() === now.getFullYear());
   const sent30 = requestsInClient.filter((r) => daysBetween(r.sentAt, now) < 30);
   const reviewed30 = sent30.filter((r) => r.status === "reviewed").length;
@@ -191,7 +196,7 @@ export function ReputationBoard({
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:px-6 2xl:flex-nowrap">
           <div className="min-w-0 md:shrink-0">
             <h1 className="text-lg font-semibold leading-6 tracking-tight">Reputation</h1>
             <p className="num text-xs text-rail-fg-2 md:whitespace-nowrap">
@@ -199,7 +204,12 @@ export function ReputationBoard({
               {view === "reviews" ? (
                 <>
                   {formatCount(inClient.length)} reviews
-                  {needsReply.length > 0 && ` · ${formatCount(needsReply.length)} need a reply`}
+                  {needsReply.length > 0 && (
+                    <>
+                      {" · "}
+                      <span className={cn("font-medium", oldestNeedDays > 7 ? "text-red" : "text-amber")}>{formatCount(needsReply.length)} need a reply</span>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -235,7 +245,7 @@ export function ReputationBoard({
               className="h-8 w-full rounded border border-rail-line bg-rail-2 pl-8 pr-3 text-sm text-rail-fg placeholder:text-rail-fg-2/80 focus:border-rail-fg-2 focus:outline-none"
             />
           </label>
-          <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:shrink-0 md:flex-nowrap">
+          <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:shrink-0 2xl:flex-nowrap">
             <select
               aria-label="Client"
               value={clientId}
@@ -289,7 +299,7 @@ export function ReputationBoard({
             {avg30 !== null && <Stars rating={avg30} />}
           </Kpi>
           <Kpi label="This month" value={formatCount(thisMonth.length)} aside={`${formatCount(thisMonth.filter((r) => r.rating >= 4).length)} four stars or better`} />
-          <Kpi label="Needs a reply" value={formatCount(needsReply.length)} aside={needsReply.length ? `oldest ${timeAgo(needsReply[needsReply.length - 1]!.at, now)}` : "All caught up"} />
+          <Kpi label="Needs a reply" value={formatCount(needsReply.length)} aside={needsReply.length ? `oldest ${timeAgo(needsReply[needsReply.length - 1]!.at, now)}` : "All caught up"} attention={needsReply.length === 0 ? undefined : oldestNeedDays > 7 ? "red" : "amber"} />
           <Kpi label="Requests, 30 days" value={formatCount(sent30.length)} aside={`${formatRate(sent30.length ? reviewed30 / sent30.length : null)} left a review`} />
         </div>
 
@@ -310,10 +320,15 @@ export function ReputationBoard({
                     <tr
                       key={r.id}
                       aria-selected={isSelected}
+                      tabIndex={0}
                       onClick={() => {
                         setSelectedId(r.id);
                         setPanelOpen(true);
                       }}
+                      onKeyDown={keyActivate(() => {
+                        setSelectedId(r.id);
+                        setPanelOpen(true);
+                      })}
                       className={rowClass(isSelected)}
                     >
                       <td className="max-w-0 px-3 py-1.5 pl-5 md:pl-6">
@@ -363,10 +378,15 @@ export function ReputationBoard({
                     <tr
                       key={r.id}
                       aria-selected={isSelected}
+                      tabIndex={0}
                       onClick={() => {
                         setSelectedId(r.id);
                         setPanelOpen(true);
                       }}
+                      onKeyDown={keyActivate(() => {
+                        setSelectedId(r.id);
+                        setPanelOpen(true);
+                      })}
                       className={rowClass(isSelected)}
                     >
                       <td className="px-3 py-1.5 pl-5 md:pl-6">

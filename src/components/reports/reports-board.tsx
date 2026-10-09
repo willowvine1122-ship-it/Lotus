@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Pencil, Search, X } from "lucide-react";
-import { ButtonLink } from "@/components/page-header";
 import { FormNotice, SubmitButton } from "@/components/form";
 import { SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import type { ActionState } from "@/app/agency/reports/actions";
@@ -22,20 +21,18 @@ interface Sort { key: Key; dir: "asc" | "desc" }
 const columns: { key: Key; label: string; className?: string; defaultDir?: "asc" | "desc" }[] = [
   { key: "name", label: "Client", className: "min-w-[200px]" },
   { key: "schedule", label: "Schedule", className: "hidden md:table-cell" },
-  { key: "recipients", label: "Recipients", className: "hidden xl:table-cell" },
+  { key: "recipients", label: "Recipients", className: "hidden 2xl:table-cell" },
   { key: "last", label: "Last sent", className: "hidden sm:table-cell", defaultDir: "desc" },
   { key: "next", label: "Next", className: "hidden md:table-cell" },
   { key: "status", label: "Status" },
 ];
 
-function Kpi({ label, value, aside }: { label: string; value: string; aside?: string }) {
+function Kpi({ label, value, aside, attention }: { label: string; value: string; aside?: string; attention?: boolean }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded border border-line bg-surface px-4 py-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-3">
-      <div className="min-w-0">
-        <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
-        <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
-      </div>
-      {aside && <div className="num whitespace-nowrap text-xs text-fg-3 sm:ml-auto sm:text-right">{aside}</div>}
+    <div className="flex min-w-0 flex-col rounded border border-line bg-surface px-4 py-3">
+      <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
+      <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
+      <div className={cn("num mt-1 truncate text-xs", attention ? "font-medium text-amber" : "text-fg-3")}>{aside ?? "\u00a0"}</div>
     </div>
   );
 }
@@ -181,21 +178,13 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-rail-fg-2" strokeWidth={1.75} />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search clients and recipients" className="h-8 w-full rounded border border-rail-line bg-rail-2 pl-8 pr-3 text-sm text-rail-fg placeholder:text-rail-fg-2/80 focus:border-rail-fg-2 focus:outline-none" />
           </label>
-          {selected && (
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <ButtonLink href={`/agency/reports/${selected.slug}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
-                <Pencil className="size-3.5" strokeWidth={2.25} />
-                Edit report
-              </ButtonLink>
-            </div>
-          )}
         </header>
 
         <div className="grid grid-cols-2 gap-2.5 px-5 py-4 md:px-6 xl:grid-cols-4">
           <Kpi label="Weekly reports on" value={formatCount(on.length)} aside={`${formatCount(clients.length - on.length)} off`} />
           <Kpi label="Sent, 7 days" value={formatCount(sent7.length)} aside={`${formatCount(sent7.filter((s) => s.kind === "manual").length)} by hand`} />
           <Kpi label="Due this week" value={formatCount(dueWeek.length)} aside={dueWeek[0] ? `next ${fmtDate(nextSend(dueWeek[0].config, now))}` : undefined} />
-          <Kpi label="Missing recipients" value={formatCount(noRecipients.length)} aside={noRecipients.length ? "Schedule on, nobody to send to" : "Everyone covered"} />
+          <Kpi label="Missing recipients" value={formatCount(noRecipients.length)} aside={noRecipients.length ? "Schedule on, nobody to send to" : "Everyone covered"} attention={noRecipients.length > 0} />
         </div>
 
         <div className="overflow-x-auto border-y border-line bg-surface">
@@ -221,19 +210,19 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
                 const isSelected = selected?.id === c.id;
                 const cfg = c.config;
                 return (
-                  <tr key={c.id} aria-selected={isSelected} onClick={() => { setSelectedId(c.id); setPanelOpen(true); }} className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}>
-                    <td className="px-3 py-1.5 pl-5 md:pl-6">
+                  <tr key={c.id} aria-selected={isSelected} tabIndex={0} onClick={() => { setSelectedId(c.id); setPanelOpen(true); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(c.id); setPanelOpen(true); } }} className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100 focus-visible:outline-none focus-visible:bg-surface-2", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}>
+                    <td className="max-w-[220px] px-3 py-1.5 pl-5 md:pl-6">
                       <span className="block truncate font-medium">{c.name}</span>
                       <span className="block truncate text-xs text-fg-3">{rangeLabel(cfg.range)} · {formatCount(cfg.sections.length)} sections</span>
                     </td>
                     <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 md:table-cell">{scheduleLabel(cfg)}</td>
-                    <td className="hidden max-w-[240px] px-3 py-1.5 xl:table-cell">
+                    <td className="hidden max-w-[240px] px-3 py-1.5 2xl:table-cell">
                       {cfg.recipients.length ? <span className="num block truncate text-fg-2">{cfg.recipients.join(", ")}</span> : <span className="text-fg-3">–</span>}
                     </td>
                     <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 sm:table-cell">{c.lastSend ? timeAgo(c.lastSend.at, now) : <span className="text-fg-3">Never</span>}</td>
                     <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 md:table-cell">{cfg.enabled ? fmtDate(nextSend(cfg, now)) : <span className="text-fg-3">–</span>}</td>
                     <td className="px-3 py-1.5 pr-5 md:pr-6">
-                      <Tag tone="neutral">{cfg.enabled ? (cfg.recipients.length ? "Weekly" : "No recipients") : "Off"}</Tag>
+                      <Tag tone={cfg.enabled && cfg.recipients.length === 0 ? "amber" : "neutral"}>{cfg.enabled ? (cfg.recipients.length ? "Weekly" : "No recipients") : "Off"}</Tag>
                     </td>
                   </tr>
                 );
