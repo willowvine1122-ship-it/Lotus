@@ -102,18 +102,18 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
     setSort({ key: "health", dir: "asc" });
   };
 
-  const date = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const date = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
   const flagged = rows.filter((r) => r.client.health === "red").length;
   const watch = rows.filter((r) => r.client.health === "amber").length;
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
           <div className="min-w-0 md:shrink-0">
             <h1 className="text-lg font-semibold leading-6 tracking-tight">Daily Diagnostic</h1>
             <p className="text-xs text-rail-fg-2 md:whitespace-nowrap">
-              {date}, through yesterday
+              {date} · through yesterday
               {flagged > 0 && (
                 <span className="text-[#ff8a95]">
                   {" · "}
@@ -162,8 +162,8 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
             </select>
             <ButtonLink href="/agency/clients/new" className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
-              <span className="hidden sm:inline">Add client</span>
-              <span className="sr-only sm:hidden">Add client</span>
+              <span className="hidden 2xl:inline">Add client</span>
+              <span className="sr-only 2xl:hidden">Add client</span>
             </ButtonLink>
           </div>
         </header>
