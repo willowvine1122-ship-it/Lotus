@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { ActivityTimeline, ContactDetails, LogActivityForm, StageSelect } from "@/components/crm/contact-panel";
 import { crmClients, teamDirectory } from "@/components/crm/data";
-import { fullName, sourceLabel, stageOf } from "@/components/crm/model";
+import { fullName, sourceLabel } from "@/components/crm/model";
 import { Avatar, SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -23,18 +23,12 @@ async function ContactView({ params }: { params: Promise<{ id: string }> }) {
   const pipeline = getPipeline(now, contact.accountId);
   if (!client || !pipeline) notFound();
   const activities = listActivities(now, id);
-  const stage = stageOf(pipeline, contact.stageId);
   const owner = personFor(teamDirectory, contact.ownerName);
   const actions = { moveStage: moveStageAction, logActivity: logActivityAction, toggleDnd: toggleDndAction };
   return (
     <>
       <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            {fullName(contact)}
-            <Tag tone="neutral">{stage.name}</Tag>
-          </span>
-        }
+        title={fullName(contact)}
         meta={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Link href="/agency/contacts" className="inline-flex items-center gap-1 text-rail-fg hover:underline">
@@ -68,7 +62,7 @@ async function ContactView({ params }: { params: Promise<{ id: string }> }) {
       <div className="grid gap-x-10 gap-y-8 px-5 py-6 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="flex max-w-[640px] flex-col gap-3">
           <SectionTitle sub="Everything that has happened, newest first.">Activity</SectionTitle>
-          <LogActivityForm contact={contact} logActivity={logActivityAction} />
+          <LogActivityForm contact={contact} mode={client.mode} logActivity={logActivityAction} />
           <ActivityTimeline activities={activities} now={now} />
         </section>
         <aside className="flex flex-col gap-6">

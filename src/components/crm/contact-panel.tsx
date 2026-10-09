@@ -6,7 +6,7 @@ import { Ban, Calendar, CircleDollarSign, FileText, Mail, MessageSquare, Pencil,
 import { Field, FormNotice, Select, SubmitButton, Textarea } from "@/components/form";
 import { Avatar, SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import type { ActionState } from "@/app/agency/contacts/actions";
-import type { ActivityKind, Assignee, Contact, ContactActivity, Pipeline } from "@/lib/types";
+import type { AccountMode, ActivityKind, Assignee, Contact, ContactActivity, Pipeline } from "@/lib/types";
 import { cn, formatDollars, timeAgo } from "@/lib/utils";
 import { fullName, personFor, sourceLabel, stageOf, type ClientRef } from "./model";
 
@@ -108,11 +108,12 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function ContactDetails({ contact, client, team, actions }: { contact: Contact; client: ClientRef; team: Assignee[]; actions: ContactActions }) {
   const owner = personFor(team, contact.ownerName);
   const [, start] = useTransition();
-  const channels: { key: "email" | "sms" | "call"; label: string }[] = [
-    { key: "email", label: "Email" },
-    { key: "sms", label: "Text" },
-    { key: "call", label: "Call" },
+  const channels: { key: "email" | "sms" | "call"; label: string; noun: string }[] = [
+    { key: "email", label: "No email", noun: "email" },
+    { key: "sms", label: "No texts", noun: "texts" },
+    { key: "call", label: "No calls", noun: "calls" },
   ];
+  const optedOut = channels.filter((ch) => contact.doNotContact[ch.key]).map((ch) => ch.noun);
   return (
     <section className="flex flex-col gap-2">
       <SectionTitle
@@ -142,38 +143,42 @@ export function ContactDetails({ contact, client, team, actions }: { contact: Co
             <span className="text-fg-3">Unassigned</span>
           )}
         </Row>
+        <Row label="Do not contact">{optedOut.length ? optedOut.join(", ") : <span className="text-fg-3">–</span>}</Row>
       </div>
-      <div className="flex items-center gap-1.5 pt-1">
-        <span className="mr-1 text-xs text-fg-3">Do not</span>
-        {channels.map((ch) => {
-          const on = contact.doNotContact[ch.key];
-          return (
-            <button
-              key={ch.key}
-              type="button"
-              aria-pressed={on}
-              onClick={() => start(() => actions.toggleDnd(contact.id, ch.key))}
-              className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-[4px] border px-2 text-2xs font-medium transition-colors duration-150",
-                on ? "border-rail bg-rail text-rail-fg" : "border-line-strong bg-surface text-fg-2 hover:border-fg-3",
-              )}
-            >
-              {on && <Ban className="size-3" strokeWidth={2} />}
-              {ch.label}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-1.5 pt-1">
+        <span className="text-xs font-medium">Contact preferences</span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {channels.map((ch) => {
+            const on = contact.doNotContact[ch.key];
+            return (
+              <button
+                key={ch.key}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => start(() => actions.toggleDnd(contact.id, ch.key))}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded border px-2.5 text-xs transition-colors duration-150",
+                  on ? "border-rail bg-rail text-rail-fg" : "border-line-strong bg-surface text-fg-2 hover:border-fg-3",
+                )}
+              >
+                {on ? <Ban className="size-3" strokeWidth={2} /> : <span aria-hidden className="size-3 rounded-[2px] border border-line-strong" />}
+                {ch.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
 }
 
-export function LogActivityForm({ contact, logActivity }: { contact: Contact; logActivity: ContactActions["logActivity"] }) {
+export function LogActivityForm({ contact, mode, logActivity, variant = "primary" }: { contact: Contact; mode: AccountMode; logActivity: ContactActions["logActivity"]; variant?: "primary" | "secondary" }) {
   const [state, formAction] = useActionState(logActivity.bind(null, contact.id), null);
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded border border-line bg-surface p-3.5">
       <div className="grid grid-cols-[120px_minmax(0,1fr)] items-end gap-3">
-        <Field label="Log" htmlFor={`kind-${contact.id}`} error={state?.errors?.kind}>
+        <Field label="Type" htmlFor={`kind-${contact.id}`} error={state?.errors?.kind}>
           <Select id={`kind-${contact.id}`} name="kind" defaultValue="note" className="h-8 text-xs">
             <option value="note">Note</option>
             <option value="call">Call</option>
@@ -181,13 +186,13 @@ export function LogActivityForm({ contact, logActivity }: { contact: Contact; lo
             <option value="email">Email</option>
           </Select>
         </Field>
-        <div className="pb-1 text-xs text-fg-3">Sending from here arrives with the Inbox. For now, log what happened.</div>
+        <div className="pb-1 text-xs text-fg-3">Email and texts will send from the Inbox once it is connected. For now, log what happened.</div>
       </div>
       <Field label="What happened" htmlFor={`body-${contact.id}`} error={state?.errors?.body}>
-        <Textarea id={`body-${contact.id}`} name="body" placeholder="Spoke with Mike, wants the estimate by Friday." className="min-h-[72px]" aria-invalid={!!state?.errors?.body} />
+        <Textarea id={`body-${contact.id}`} name="body" placeholder={mode === "fundraising" ? "Called to say thanks, asked about the winter appeal." : "Spoke with Mike, wants the estimate by Friday."} className="min-h-[72px]" aria-invalid={!!state?.errors?.body} />
       </Field>
       <div className="flex items-center gap-3">
-        <SubmitButton pendingLabel="Saving…" className="h-7 px-2.5 text-xs">
+        <SubmitButton pendingLabel="Saving…" variant={variant} className="h-7 px-2.5 text-xs">
           Save
         </SubmitButton>
         <FormNotice state={state} />
@@ -249,7 +254,7 @@ export function ContactPanel({ contact, client, pipeline, activities, team, now,
         <ContactDetails contact={contact} client={client} team={team} actions={actions} />
         <section className="flex flex-col gap-3">
           <SectionTitle sub="Everything that has happened, newest first.">Activity</SectionTitle>
-          <LogActivityForm contact={contact} logActivity={actions.logActivity} />
+          <LogActivityForm contact={contact} mode={client.mode} logActivity={actions.logActivity} variant="secondary" />
           <ActivityTimeline activities={activities} now={now} />
         </section>
       </div>

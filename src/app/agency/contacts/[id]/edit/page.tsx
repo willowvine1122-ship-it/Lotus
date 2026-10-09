@@ -29,8 +29,17 @@ async function Edit({ params }: { params: Promise<{ id: string }> }) {
           </Link>
         }
       />
-      <div className="bg-surface">
-        <ContactForm action={updateContactAction.bind(null, id)} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} contact={contact} onDelete={deleteContactAction.bind(null, id)} />
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 bg-surface">
+          <ContactForm action={updateContactAction.bind(null, id)} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} contact={contact} onDelete={deleteContactAction.bind(null, id)} />
+        </div>
+        <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
+          <h2 className="text-sm font-semibold text-fg">Good to know</h2>
+          <ol className="mt-3 flex list-decimal flex-col gap-2 pl-4">
+            <li>Changing the stage here logs a move on the activity trail.</li>
+            <li>Deleting removes the contact and its history. Mark them lost or lapsed instead if you may need it.</li>
+          </ol>
+        </aside>
       </div>
     </>
   );

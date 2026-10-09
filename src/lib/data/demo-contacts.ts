@@ -52,9 +52,14 @@ const fundraisingSources: ContactSource[] = ["donation-page", "donation-page", "
 const marketingTags = ["Repair", "Replacement", "Insurance claim", "Financing", "Emergency", "Commercial", "Follow up", "Spanish", "VIP"];
 const fundraisingTags = ["Major donor", "Peer to peer", "Winter appeal", "Volunteer", "Corporate match", "Board", "Event", "Legacy"];
 
-function iso(now: Date, daysAgo: number, hour: number) {
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, hour, Math.floor((hour * 7) % 60));
+function iso(now: Date, daysAgo: number, hour: number, minute = 0) {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, hour, minute);
   return d.toISOString();
+}
+
+/** Something that happened "today" is spread over the last 48 hours so the feed reads as live. */
+function recent(now: Date, r: () => number) {
+  return new Date(now.getTime() - Math.floor(r() * 48 * 60) * 60000).toISOString();
 }
 
 export function demoContactsFor(c: ClientRecord, now: Date): { contacts: Contact[]; activities: ContactActivity[] } {
@@ -72,7 +77,7 @@ export function demoContactsFor(c: ClientRecord, now: Date): { contacts: Contact
     const last = pick(r, lastNames);
     const id = `${c.account.id}-c${i + 1}`;
     const createdDaysAgo = Math.floor(Math.pow(r(), 1.4) * 85); // skewed recent
-    const createdAt = iso(now, createdDaysAgo, 8 + Math.floor(r() * 10));
+    const createdAt = createdDaysAgo === 0 ? recent(now, r) : iso(now, createdDaysAgo, 8 + Math.floor(r() * 10), Math.floor(r() * 60));
     const nearby = r() < 0.6 ? homeCity : pick(r, cities);
     const email = r() < 0.85 ? `${first}.${last}@example.com`.toLowerCase() : undefined;
     const phone = r() < 0.8 ? `(${300 + Math.floor(r() * 600)}) 555-0${100 + Math.floor(r() * 900)}` : undefined;
@@ -85,7 +90,7 @@ export function demoContactsFor(c: ClientRecord, now: Date): { contacts: Contact
     let recurring: boolean | undefined;
     let lastAt = createdAt;
     const push = (kind: ActivityKind, title: string, daysAgo: number, extra: Partial<ContactActivity> = {}) => {
-      const at = iso(now, Math.max(0, daysAgo), 9 + Math.floor(r() * 9));
+      const at = daysAgo <= 0 ? recent(now, r) : iso(now, daysAgo, 9 + Math.floor(r() * 9), Math.floor(r() * 60));
       if (at > lastAt) lastAt = at;
       acts.push({ kind, title, at, ...extra });
     };

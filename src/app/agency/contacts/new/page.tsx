@@ -16,8 +16,18 @@ async function Form({ searchParams }: { searchParams: Promise<{ client?: string 
   const now = new Date();
   const clients = crmClients(now);
   return (
-    <div className="bg-surface">
-      <ContactForm action={createContactAction} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} initialClientId={clients.find((c) => c.id === client || c.slug === client)?.id} />
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="min-w-0 bg-surface">
+        <ContactForm action={createContactAction} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} initialClientId={clients.find((c) => c.id === client || c.slug === client)?.id} />
+      </div>
+        <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
+          <h2 className="text-sm font-semibold text-fg">What happens next</h2>
+          <ol className="mt-3 flex list-decimal flex-col gap-2 pl-4">
+            <li>The contact appears on the client&apos;s pipeline at the stage you pick.</li>
+            <li>The owner sees them on the Contacts board and gets the daily flags.</li>
+            <li>Email and text opt-outs are set from the contact page.</li>
+          </ol>
+        </aside>
     </div>
   );
 }
