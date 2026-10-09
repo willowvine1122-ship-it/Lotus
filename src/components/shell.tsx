@@ -5,6 +5,7 @@ import {
   CheckSquare,
   HeartHandshake,
   Inbox,
+  Layers,
   LayoutGrid,
   Settings,
   Users,
@@ -19,6 +20,8 @@ const nav = [
   { href: "/agency/calendars", label: "Calendars", icon: CalendarDays },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
   { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
+
+  { href: "/agency/funnels", label: "Funnels", icon: Layers },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 

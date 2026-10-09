@@ -41,6 +41,13 @@ function hoursAgo(now: Date, h: number) {
   return new Date(now.getTime() - h * 3600 * 1000).toISOString();
 }
 
+/** A distinct brand colour per demo client, so public pages never read as Lotus. */
+const brandPalette = ["#0f766e", "#1d4ed8", "#166534", "#b45309", "#9f1239", "#7c2d12", "#0e7490", "#4338ca"];
+export function brandColorFor(accountId: string) {
+  const n = [...accountId].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  return brandPalette[n % brandPalette.length]!;
+}
+
 const afza: Assignee = { name: "Afza", initials: "A", tone: "violet" };
 const mahad: Assignee = { name: "Mahad", initials: "M", tone: "orange" };
 const sara: Assignee = { name: "Sara", initials: "S", tone: "teal" };
@@ -252,7 +259,7 @@ export function demoClients(now: Date): ClientRecord[] {
   marketingSpecs.forEach((s, i) => {
     const base: Omit<MarketingClient, "health" | "alerts"> = {
       mode: "marketing",
-      account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "marketing" },
+      account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "marketing", brandColor: brandColorFor(s.id) },
       status: s.startedDaysAgo <= 30 ? "onboarding" : "active",
       industry: s.industry,
       website: s.website ?? `https://${s.slug.replace(/-/g, "")}.example.com`,
@@ -277,7 +284,7 @@ export function demoClients(now: Date): ClientRecord[] {
     const last30 = days.slice(-30).reduce((a, d) => a + d.raisedCents, 0);
     const base: Omit<FundraisingClient, "health" | "alerts"> = {
       mode: "fundraising",
-      account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "fundraising" },
+      account: { id: s.id, agencyId: demoAgency.id, name: s.name, slug: s.slug, mode: "fundraising", brandColor: brandColorFor(s.id) },
       status: s.startedDaysAgo <= 30 ? "onboarding" : "active",
       industry: s.industry,
       website: s.website ?? `https://${s.slug.replace(/-/g, "")}.example.org`,

@@ -288,6 +288,40 @@ export interface AvailabilityWindow {
 }
 
 export interface Calendar {
+
+/* Funnels and websites                                                 */
+/* ------------------------------------------------------------------ */
+
+export type FunnelStatus = "draft" | "live";
+
+export type FunnelBlock =
+  | { id: string; type: "hero"; eyebrow?: string; headline: string; subhead?: string; buttonLabel?: string; buttonHref?: string; align?: "left" | "center" | "split" }
+  | { id: string; type: "form"; headline: string; subhead?: string; fields: ("name" | "email" | "phone" | "address" | "message" | "amount")[]; buttonLabel: string; note?: string }
+  | { id: string; type: "features"; headline?: string; items: { title: string; body: string }[] }
+  | { id: string; type: "stats"; items: { value: string; label: string }[] }
+  | { id: string; type: "testimonial"; quote: string; name: string; detail?: string }
+  | { id: string; type: "text"; headline?: string; body: string }
+  | { id: string; type: "faq"; items: { q: string; a: string }[] }
+  | { id: string; type: "cta"; headline: string; body?: string; buttonLabel: string; buttonHref?: string }
+  | { id: string; type: "footer"; text: string };
+
+export type FunnelBlockType = FunnelBlock["type"];
+
+export interface FunnelStep {
+  id: string;
+  name: string;
+  /** Path segment after the funnel slug; the first step is the root. */
+  path: string;
+  blocks: FunnelBlock[];
+}
+
+export interface FunnelDay {
+  day: string;
+  visitors: number;
+  leads: number;
+}
+
+export interface Funnel {
   id: string;
   accountId: string;
   name: string;
@@ -389,4 +423,22 @@ export interface Donor {
   countryCode: string;
   countryName: string;
   anonymous: boolean;
+
+  status: FunnelStatus;
+  template: string;
+  /** Brand colour for the public pages; falls back to the account's. */
+  brandColor: string;
+  steps: FunnelStep[];
+  days: FunnelDay[]; // oldest first
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FunnelSubmission {
+  id: string;
+  funnelId: string;
+  stepId: string;
+  contactId?: string;
+  values: Record<string, string>;
+  at: string;
 }
