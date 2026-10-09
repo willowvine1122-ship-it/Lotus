@@ -473,6 +473,7 @@ export function recordSubmission(now: Date, funnelId: string, stepId: string, va
 
 export function listSubmissions(now: Date, funnelId: string): FunnelSubmission[] {
   return funnelStore(now).submissions.filter((s) => s.funnelId === funnelId).sort((a, b) => b.at.localeCompare(a.at));
+}
 
 /* ------------------------ Reputation and reporting ------------------------ */
 

@@ -3,22 +3,19 @@ import {
   Activity,
   CalendarDays,
   CheckSquare,
-  HeartHandshake,
-
+  ClipboardList,
   FileBarChart,
+  HeartHandshake,
   Inbox,
   Layers,
-
-  Mail,
   LayoutGrid,
+  Mail,
+  Receipt,
   Settings,
   Star,
   Users,
-  Wrench,
-  ClipboardList,
-  Receipt,
-
   Workflow,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,17 +27,12 @@ const nav = [
   { href: "/agency/calendars", label: "Calendars", icon: CalendarDays },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
   { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
-
   { href: "/agency/funnels", label: "Funnels", icon: Layers },
-
   { href: "/agency/email", label: "Email", icon: Mail },
-
   { href: "/agency/jobs", label: "Jobs", icon: Wrench },
   { href: "/agency/estimates", label: "Estimates", icon: ClipboardList },
   { href: "/agency/invoices", label: "Invoices", icon: Receipt },
-
   { href: "/agency/automations", label: "Automations", icon: Workflow },
-
   { href: "/agency/reputation", label: "Reputation", icon: Star },
   { href: "/agency/reports", label: "Reports", icon: FileBarChart },
   { href: "/agency/settings", label: "Settings", icon: Settings },

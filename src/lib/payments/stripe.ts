@@ -30,6 +30,7 @@ export async function chargeGift(req: ChargeRequest): Promise<ChargeResult> {
   }
   const prefix = req.frequency === "monthly" ? "sub_demo_" : "pi_demo_";
   return { ok: true, ref: `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, demo: true };
+}
 
 /*
  * Card payments. Stripe is stubbed until keys are provided: charges succeed

@@ -252,7 +252,6 @@ export interface InboxThread extends Conversation {
   client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
 }
 
-/* ------------------------------------------------------------------ */
 /* Calendars and booking                                               */
 /* ------------------------------------------------------------------ */
 
@@ -288,40 +287,6 @@ export interface AvailabilityWindow {
 }
 
 export interface Calendar {
-
-/* Funnels and websites                                                 */
-/* ------------------------------------------------------------------ */
-
-export type FunnelStatus = "draft" | "live";
-
-export type FunnelBlock =
-  | { id: string; type: "hero"; eyebrow?: string; headline: string; subhead?: string; buttonLabel?: string; buttonHref?: string; align?: "left" | "center" | "split" }
-  | { id: string; type: "form"; headline: string; subhead?: string; fields: ("name" | "email" | "phone" | "address" | "message" | "amount")[]; buttonLabel: string; note?: string }
-  | { id: string; type: "features"; headline?: string; items: { title: string; body: string }[] }
-  | { id: string; type: "stats"; items: { value: string; label: string }[] }
-  | { id: string; type: "testimonial"; quote: string; name: string; detail?: string }
-  | { id: string; type: "text"; headline?: string; body: string }
-  | { id: string; type: "faq"; items: { q: string; a: string }[] }
-  | { id: string; type: "cta"; headline: string; body?: string; buttonLabel: string; buttonHref?: string }
-  | { id: string; type: "footer"; text: string };
-
-export type FunnelBlockType = FunnelBlock["type"];
-
-export interface FunnelStep {
-  id: string;
-  name: string;
-  /** Path segment after the funnel slug; the first step is the root. */
-  path: string;
-  blocks: FunnelBlock[];
-}
-
-export interface FunnelDay {
-  day: string;
-  visitors: number;
-  leads: number;
-}
-
-export interface Funnel {
   id: string;
   accountId: string;
   name: string;
@@ -357,7 +322,9 @@ export interface Appointment {
   source: AppointmentSource;
   notes?: string;
   createdAt: string;
+}
 
+/* ------------------------------------------------------------------ */
 /* Fundraising: donors, donations, recurring plans, campaigns           */
 /* ------------------------------------------------------------------ */
 
@@ -423,14 +390,66 @@ export interface Donor {
   countryCode: string;
   countryName: string;
   anonymous: boolean;
+}
 
+/* ------------------------------------------------------------------ */
+/* Funnels and websites                                                 */
+/* ------------------------------------------------------------------ */
+
+export type FunnelStatus = "draft" | "live";
+
+export type FunnelBlock =
+  | { id: string; type: "hero"; eyebrow?: string; headline: string; subhead?: string; buttonLabel?: string; buttonHref?: string; align?: "left" | "center" | "split" }
+  | { id: string; type: "form"; headline: string; subhead?: string; fields: ("name" | "email" | "phone" | "address" | "message" | "amount")[]; buttonLabel: string; note?: string }
+  | { id: string; type: "features"; headline?: string; items: { title: string; body: string }[] }
+  | { id: string; type: "stats"; items: { value: string; label: string }[] }
+  | { id: string; type: "testimonial"; quote: string; name: string; detail?: string }
+  | { id: string; type: "text"; headline?: string; body: string }
+  | { id: string; type: "faq"; items: { q: string; a: string }[] }
+  | { id: string; type: "cta"; headline: string; body?: string; buttonLabel: string; buttonHref?: string }
+  | { id: string; type: "footer"; text: string };
+
+export type FunnelBlockType = FunnelBlock["type"];
+
+export interface FunnelStep {
+  id: string;
+  name: string;
+  /** Path segment after the funnel slug; the first step is the root. */
+  path: string;
+  blocks: FunnelBlock[];
+}
+
+export interface FunnelDay {
+  day: string;
+  visitors: number;
+  leads: number;
+}
+
+export interface Funnel {
+  id: string;
+  accountId: string;
+  name: string;
+  slug: string;
   status: FunnelStatus;
   template: string;
   /** Brand colour for the public pages; falls back to the account's. */
   brandColor: string;
   steps: FunnelStep[];
   days: FunnelDay[]; // oldest first
+  createdAt: string;
+  updatedAt: string;
+}
 
+export interface FunnelSubmission {
+  id: string;
+  funnelId: string;
+  stepId: string;
+  contactId?: string;
+  values: Record<string, string>;
+  at: string;
+}
+
+/* ------------------------------------------------------------------ */
 /* Email marketing: templates, audiences, campaigns, sends               */
 /* ------------------------------------------------------------------ */
 
@@ -474,14 +493,6 @@ export interface EmailAudience {
   updatedAt: string;
 }
 
-export interface FunnelSubmission {
-  id: string;
-  funnelId: string;
-  stepId: string;
-  contactId?: string;
-  values: Record<string, string>;
-  at: string;
-
 export type CampaignStatus = "draft" | "scheduled" | "sent";
 
 export interface EmailCampaign {
@@ -516,7 +527,9 @@ export interface EmailSend {
   clickedAt?: string;
   clickedUrl?: string;
   unsubscribedAt?: string;
+}
 
+/* ------------------------------------------------------------------ */
 /* Field service: technicians, jobs, estimates, invoices, payments       */
 /* ------------------------------------------------------------------ */
 
@@ -619,7 +632,6 @@ export interface Invoice {
   payments: Payment[];
   memo?: string;
   createdAt: string;
-
 }
 
 /* ------------------------------------------------------------------ */
@@ -720,7 +732,9 @@ export interface WorkflowRun {
   /** Step ids still to run, in order. A branch replaces itself with its chosen lane. */
   pending: string[];
   steps: RunStep[];
+}
 
+/* ------------------------------------------------------------------ */
 /* Reputation: reviews, review requests, per-client settings            */
 /* ------------------------------------------------------------------ */
 

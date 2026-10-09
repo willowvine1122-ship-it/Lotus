@@ -412,7 +412,7 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 - **New message**: one searchable "To" combobox over every CRM contact (name, phone, email, client; the client shows as a muted caption with its health dot), channel chips that disable what the contact cannot receive with the reasons in the hint, subject for email, the message, and Send.
 - **Phone**: the list is the page; a thread opens over it with a back arrow, and the contact opens as a sheet.
 
-## Revision 5: calendars and booking (2026-10-09)
+## Revision 6: calendars and booking (2026-10-09)
 
 `/agency/calendars` answers "what is the one table, what are the four numbers, what goes in the panel" for bookings. Nothing new in colour.
 
@@ -425,7 +425,7 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 - **Calendar settings**: types list with an on-page checkbox, weekly hours as one row per day (checkbox, two 112px selects), days off as removable date chips, rules as selects, all in Form sections.
 - **Public booking page** (`/book/[slug]`): client ink band with "Booking by Lotus", one bordered white surface on paper in three columns at lg (320px details and type choice, month grid, 232px time list) stacking on mobile. Open days are `surface-2` squares, the chosen day is solid ink, closed days muted; today carries a 4px dot. Time buttons are 40px bordered. The details step swaps the grid for the form; the violet button is the page's one primary action and names the time. Confirmation: a green-soft check square, "You're booked, {first name}.", the time at 22px, and an ink "Add to my calendar" (.ics).
 
-## Revision 5: fundraising checkout and donors (2026-10-09)
+## Revision 7: fundraising checkout and donors (2026-10-09)
 
 The public donation page is the first Lotus surface a client's own supporters see; the donor CRM is the fundraising twin of the Daily Diagnostic. Both reuse the frame and components above; nothing new in colour.
 
@@ -441,7 +441,7 @@ The public donation page is the first Lotus surface a client's own supporters se
 - The donation page never shows internal data: no donor emails, no notes, only first name and last initial on recent gifts, and nothing for anonymous donors.
 - Fees are recomputed on the server; the figure the browser shows is a preview.
 
-## Revision 5: funnels and websites (2026-10-09)
+## Revision 8: funnels and websites (2026-10-09)
 
 Funnels reuse the board grammar for the agency side and introduce one new world: the public page a client's visitor sees.
 
@@ -459,7 +459,7 @@ Funnels reuse the board grammar for the agency side and introduce one new world:
 - Internal truths (pledges, modules not yet built) live in the agency UI, never in copy a visitor reads.
 - The public page never shows the agency frame, and the agency frame never shows a public page outside the preview.
 
-## Revision 6: Email marketing (2026-10-09)
+## Revision 9: Email marketing (2026-10-09)
 
 Campaigns, the editor, the report and audiences reuse the board grammar (ink top bar, KPI strip, table, right panel) and the form grammar. Nothing new in colour.
 
@@ -476,7 +476,7 @@ Campaigns, the editor, the report and audiences reuse the board grammar (ink top
 - Opted-out and address-less contacts are counted and named, never silently dropped.
 - Image blocks show a described placeholder until file storage lands; the description doubles as alt text.
 
-## Revision 7: Automations (2026-10-09)
+## Revision 10: Automations (2026-10-09)
 
 The workflow list and run history reuse the board grammar (ink top bar, KPI strip, table, right panel). The builder is a single top-to-bottom column on paper with the editor in the right panel. Nothing new in colour.
 
@@ -496,7 +496,7 @@ The workflow list and run history reuse the board grammar (ink top bar, KPI stri
 - Skipped steps always carry a reason (no phone, opted out, already tagged) and are counted on the node.
 - Cmd/Ctrl+S saves; leaving with unsaved edits asks first.
 
-## Revision 6: reputation and reporting (2026-10-09)
+## Revision 11: reputation and reporting (2026-10-09)
 
 Reviews, review requests, the reports board, the report builder and the client's own Reviews and Reports tabs reuse the board grammar and the form grammar. Nothing new in colour.
 
