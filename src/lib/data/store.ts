@@ -1,6 +1,7 @@
-import type { AccountMode, Assignee, ClientRecord, ClientStatus, DiagnosticNote, Member, Task } from "@/lib/types";
+import type { AccountMode, Assignee, ClientRecord, ClientStatus, Contact, ContactActivity, DiagnosticNote, Member, Task } from "@/lib/types";
 import { demoAgency } from "./demo";
 import { demoClients } from "./demo-clients";
+import { demoInbox } from "./inbox-demo";
 
 /*
  * Demo store. Until Supabase is configured, clients live in process memory,
@@ -200,4 +201,51 @@ export function initialsOf(name: string) {
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+/* ------------------------------------------------------------------ */
+/* Contacts. Stub with the CRM's signatures, seeded from the inbox demo  */
+/* set; the CRM store (migration 0003) replaces these.                   */
+/* ------------------------------------------------------------------ */
+
+interface ContactStore {
+  seededFor: string;
+  contacts: Contact[];
+  activities: ContactActivity[];
+}
+
+const gc = globalThis as unknown as { __lotusContactStub?: ContactStore };
+
+function contactStore(now: Date): ContactStore {
+  const key = now.toISOString().slice(0, 10);
+  if (!gc.__lotusContactStub || gc.__lotusContactStub.seededFor !== key) {
+    gc.__lotusContactStub = { seededFor: key, contacts: demoInbox(now).contacts, activities: [] };
+  }
+  return gc.__lotusContactStub;
+}
+
+export function listContacts(now: Date, accountId?: string): Contact[] {
+  const all = contactStore(now).contacts;
+  return accountId ? all.filter((c) => c.accountId === accountId) : all;
+}
+
+export function findContact(now: Date, id: string): Contact | undefined {
+  return contactStore(now).contacts.find((c) => c.id === id);
+}
+
+export function listActivities(now: Date, contactId: string): ContactActivity[] {
+  return contactStore(now).activities.filter((a) => a.contactId === contactId);
+}
+
+export function addActivity(
+  now: Date,
+  contactId: string,
+  input: { kind: ContactActivity["kind"]; title: string; body?: string; by?: string; amountCents?: number },
+): ContactActivity | undefined {
+  const contact = findContact(now, contactId);
+  if (!contact) return undefined;
+  const a: ContactActivity = { id: `${contactId}-a-${Date.now().toString(36)}`, contactId, ...input, at: now.toISOString() };
+  contactStore(now).activities.unshift(a);
+  contact.lastActivityAt = a.at;
+  return a;
 }

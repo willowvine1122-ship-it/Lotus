@@ -154,3 +154,47 @@ export interface FundraisingClient extends ClientBase {
 }
 
 export type ClientRecord = MarketingClient | FundraisingClient;
+
+/* Contacts. Shared shape with the CRM (migration 0003); kept verbatim so both land cleanly. */
+export type ContactSource = "meta" | "google" | "website" | "referral" | "donation-page" | "import" | "manual";
+export interface PipelineStage { id: string; name: string; outcome?: "won" | "lost" }
+export interface Pipeline { id: string; accountId: string; name: string; stages: PipelineStage[] }
+export interface Contact { id: string; accountId: string; firstName: string; lastName: string; email?: string; phone?: string; company?: string; city?: string; tags: string[]; source: ContactSource; stageId: string; ownerName?: string; valueCents: number; recurring?: boolean; doNotContact: { email: boolean; sms: boolean; call: boolean }; createdAt: string; lastActivityAt: string; }
+export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
+export interface ContactActivity { id: string; contactId: string; kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number; at: string }
+
+/* ------------------------------------------------------------------ */
+/* Inbox: conversations and messages across channels                    */
+/* ------------------------------------------------------------------ */
+
+export type Channel = "sms" | "email" | "whatsapp" | "facebook";
+
+export interface InboxMessage {
+  id: string;
+  conversationId: string;
+  channel: Channel;
+  direction: "inbound" | "outbound";
+  /** A note is internal: agency staff only, never sent. */
+  kind: "message" | "note";
+  subject?: string;
+  body: string;
+  authorName?: string;
+  status?: "sent" | "delivered" | "read" | "failed";
+  sentAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  accountId: string;
+  contactId: string;
+  assigneeName?: string;
+  status: "open" | "closed";
+  unread: number;
+  messages: InboxMessage[]; // oldest first
+}
+
+/** A conversation joined with its contact and client, as the inbox renders it. */
+export interface InboxThread extends Conversation {
+  contact: Contact;
+  client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
+}

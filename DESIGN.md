@@ -378,3 +378,19 @@ The client roster, the add-client form, the client page and the client's own vie
 ### Rules
 - A client with no numbers yet shows "–" for rates, "No data yet" dashed boxes for charts, and a neutral pacing figure; red is never shown for the absence of data.
 - Internal notes, tasks and the diagnosis never render under `/c/`.
+
+## Revision 4: inbox (2026-10-09)
+
+`/agency/inbox` answers the three questions: the one table is the conversation list, the panel is the contact, and the work area between them is the thread. The ink top bar carries the counts (open, unread, unassigned), search, an All | Mine | Unassigned control and the one primary action, "New message".
+
+### Colors, added
+- **Ink wash** (`--ink-100`, #e6eaf2): the fill of the team's own messages in a thread. Ink is the agency's frame, so the team's words carry a pale tint of it; the contact's messages sit on white with a `line` border. Used nowhere else.
+- Channel identity is a monochrome glyph (Lucide `MessageSquare` and `Mail`; drawn WhatsApp and Facebook glyphs on the same 24px grid and 1.75 stroke) in the surrounding text colour. Brand greens and blues are never used: on paper they would read as signals.
+
+### Components, added
+- **Conversation row**: 32px neutral initial avatar (`surface-2`, `line` border; colour is reserved for the team), name 13px (600 when unread), time 11px tabular right; client line 12px muted with a 6px health dot and the assignee right; preview 13px with the channel glyph and, when unread, an 18px ink count block. Selected row is `surface-2` with a 2px ink bar on the left (no violet for state). Hairline between rows.
+- **List filters**: client select (grouped Marketing / Fundraising) beside a paper Open | Unread | Closed segmented control; below, channel chips (28px, 4px radius; active is solid ink) with counts.
+- **Thread**: date dividers as in the notes feed; contact messages left, team messages right on the ink wash, both 6px radius, max 520px (email 600px with the subject in 600 over a hairline); an 11px meta line under each (glyph, channel, time, author, delivery state; "Not delivered" in red with a 20% red border on the message). Internal notes are full width to 600px, dashed `line-strong` border on white, a lock and "Internal note" label.
+- **Composer**: Reply | Internal note (paper segmented), "via" channel select that disables channels the contact cannot receive (no phone, no email, opted out, never wrote to the page), subject for email, a 76px textarea, a character and segment count for texts, and the violet Send. Note mode tints the composer `surface-2` and dashes the textarea. Ctrl or Cmd + Enter sends.
+- **Contact panel**: 300px from 1400px wide (340px from 2xl), otherwise a right sheet behind the info button; header with 40px avatar, name 18px/600, city and since date, neutral tags; then Contact (dl rows), Client (health dot, link, "show only this client"), Channels used with counts and last time, Assigned.
+- **Phone**: the list is the page; a thread opens over it with a back arrow, and the contact opens as a sheet.
