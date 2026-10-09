@@ -378,3 +378,19 @@ The client roster, the add-client form, the client page and the client's own vie
 ### Rules
 - A client with no numbers yet shows "–" for rates, "No data yet" dashed boxes for charts, and a neutral pacing figure; red is never shown for the absence of data.
 - Internal notes, tasks and the diagnosis never render under `/c/`.
+
+## Revision 4: CRM (2026-10-09)
+
+Contacts, the pipeline and the contact page reuse the board grammar (ink top bar, KPI strip, table, right panel) and the form grammar from Revision 3.
+
+### Components, added
+- **Contacts board**: top bar with title and a count line, search, a client select and an Open | Everyone select in `rail-2`, a secondary Pipeline button and the primary add button; KPI strip (Contacts, Open pipeline, Won or Monthly donors, Won value or Lifetime giving); a table of Contact (name over email or phone), Client, Stage, Source, Value, Last activity, Owner; the selected row drives the contact panel.
+- **Stage tag**: every stage is a neutral tag. Amber and red stay reserved for health.
+- **Contact panel**: sticky header (name with an open-page icon, company · city · client, the stage select, tags, "Added … ago"), a Details ledger (email, phone, source, value, monthly giving, owner) with an Edit link, Do-not-contact chips (ink when on), a Log form (Note | Call | Text | Email plus a body), then the activity timeline.
+- **Activity timeline**: date dividers as in the notes feed; each item a `surface-2` card with a 28px ringed icon circle for the kind, title at 500, amount in tabular figures, "by · time ago" muted on the right, body relaxed in `fg-2`.
+- **Pipeline board**: one 240px column per stage on `surface-2`, header with name, count and column value; cards on white with name, company or city, owner avatar, "source · time ago" and the value; the selected card has an ink border; horizontal scroll.
+- **Contact page**: ink header with the name, stage tag, meta line (back, client, source, city) and the stage select on the right; activity at 640px beside a 360px details column.
+
+### Rules
+- Stage colour never encodes progress; the column position and the word do.
+- Logging a call, text or email records it; sending arrives with the Inbox and the form says so.
