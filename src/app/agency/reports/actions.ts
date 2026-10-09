@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { sendReportNow, updateReportConfig } from "@/lib/data/store";
+import { updateReportConfig } from "@/lib/data/store";
+import { sendReport } from "@/lib/data/reports-send";
 import type { ReportSectionId } from "@/lib/types";
 
 export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
@@ -38,8 +39,8 @@ export async function saveReportConfigAction(accountId: string, _prev: ActionSta
 }
 
 export async function sendReportNowAction(accountId: string): Promise<ActionState> {
-  const send = sendReportNow(new Date(), accountId);
-  if (!send) return { ok: false, message: "Client not found." };
+  const res = sendReport(new Date(), accountId);
+  if (!res) return { ok: false, message: "Client not found." };
   revalidatePath("/agency/reports");
-  return { ok: true, message: send.recipients.length ? `Sent to ${send.recipients.length} ${send.recipients.length === 1 ? "person" : "people"}` : "Recorded, no recipients yet" };
+  return { ok: true, message: res.delivered ? `Sent to ${res.delivered} ${res.delivered === 1 ? "person" : "people"}` : "Recorded, no recipients yet" };
 }

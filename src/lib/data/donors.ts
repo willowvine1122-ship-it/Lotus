@@ -79,6 +79,9 @@ export interface GiftReceipt {
   nextChargeOn?: string;
   totalCents: number;
   newDonor: boolean;
+  /** The CRM contact behind the donor, when the CRM knows them. */
+  contactId?: string;
+  accountId: string;
 }
 
 /** Record a gift from the checkout: match or create the donor, add the gift, start the plan. */
@@ -177,6 +180,8 @@ export function recordGift(now: Date, input: GiftInput): GiftReceipt | null {
     nextChargeOn: plan?.nextChargeOn ?? undefined,
     totalCents: input.amountCents + input.feeCoveredCents,
     newDonor,
+    contactId: inCrm ? donor.contact.id : undefined,
+    accountId: client.account.id,
   };
 }
 

@@ -68,9 +68,9 @@ export const workflowTemplates: WorkflowTemplate[] = [
   {
     id: "review-request",
     name: "Review request",
-    description: "Two days after a job is won, ask for a Google review.",
+    description: "Two days after a job is completed, ask for a Google review.",
     mode: "marketing",
-    trigger: { type: "stage_changed", stageId: "won" },
+    trigger: { type: "job_completed" },
     steps: [
       { id: "1", type: "wait", amount: 2, unit: "days" },
       { id: "2", type: "send_sms", body: "Thanks for choosing {{client_name}}, {{first_name}}! Would you leave us a quick review? It really helps a small business." },

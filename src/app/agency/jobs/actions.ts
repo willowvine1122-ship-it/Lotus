@@ -7,6 +7,7 @@ import type { ActionState } from "@/app/agency/contacts/actions";
 import { addTechnician, createJob, findJob, invoiceFromJob, scheduleJob, setJobStatus, updateJobDetails } from "@/lib/data/field-store";
 import { actor, flatten, parseLines, stamp } from "@/lib/field-forms";
 import type { JobStatus } from "@/lib/types";
+import { jobCompleted } from "@/lib/data/automation-events";
 
 /* Jobs and dispatch. zod in, { ok, errors } out, like the CRM actions. */
 
@@ -101,7 +102,14 @@ const statuses: JobStatus[] = ["unscheduled", "scheduled", "en_route", "in_progr
 
 export async function setJobStatusAction(id: string, status: JobStatus): Promise<void> {
   if (!statuses.includes(status)) return;
-  setJobStatus(new Date(), id, status, actor);
+  const now = new Date();
+  const was = findJob(now, id)?.status;
+  const job = setJobStatus(now, id, status, actor);
+  if (job && was !== "completed" && job.status === "completed") {
+    jobCompleted(now, job.accountId, job.contactId, job.number);
+    revalidatePath("/agency/automations");
+    revalidatePath("/agency/reputation");
+  }
   refresh(id);
 }
 

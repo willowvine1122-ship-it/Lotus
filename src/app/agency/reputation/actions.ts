@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { replyToReview, sendReviewRequest, updateReputationSettings } from "@/lib/data/store";
+import { replyToReview, updateReputationSettings } from "@/lib/data/store";
+import { deliverReviewRequest } from "@/lib/data/reputation-send";
 
 export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
 
@@ -28,11 +29,12 @@ export async function sendRequestAction(_prev: ActionState, formData: FormData):
     for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
     return { ok: false, errors };
   }
-  const req = sendReviewRequest(new Date(), parsed.data.accountId, parsed.data.contactId, parsed.data.channel, "Afza");
-  if (!req) return { ok: false, message: "That contact is not on this client." };
+  const res = deliverReviewRequest(new Date(), { accountId: parsed.data.accountId, contactId: parsed.data.contactId, channel: parsed.data.channel, trigger: "manual", by: "Afza" });
+  if (!res.ok) return { ok: false, message: res.reason === "unreachable" ? "That contact cannot be reached on that channel." : "That contact is not on this client." };
   revalidatePath("/agency/reputation");
   revalidatePath("/agency/contacts");
-  return { ok: true, message: `Request sent to ${req.contactName}` };
+  revalidatePath("/agency/inbox");
+  return { ok: true, message: `Request sent to ${res.request.contactName}` };
 }
 
 const settingsSchema = z.object({

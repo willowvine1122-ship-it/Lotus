@@ -648,7 +648,8 @@ export type TriggerType =
   | "donation_received"
   | "message_received"
   | "email_opened"
-  | "email_clicked";
+  | "email_clicked"
+  | "job_completed";
 
 /** What starts a workflow. Optional fields narrow it; empty means "any". */
 export interface WorkflowTrigger {

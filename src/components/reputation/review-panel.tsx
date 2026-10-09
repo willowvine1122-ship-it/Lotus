@@ -266,7 +266,7 @@ export function RequestsPanel({ client, contacts, settings, requests, now, actio
       </div>
       <SendRequestForm key={client.id} client={client} contacts={contacts} settings={settings} sendRequest={actions.sendRequest} />
       <SettingsForm key={`${client.id}-settings`} client={client} settings={settings} updateSettings={actions.updateSettings} />
-      <p className="text-xs leading-relaxed text-fg-3">Texts and emails go out through the Inbox once it is connected. Until then every request is recorded here and on the contact.</p>
+      <p className="text-xs leading-relaxed text-fg-3">Every request is a real Inbox conversation on the contact, by text or email. In demo mode nothing leaves the machine; live sending arrives with the Twilio and Resend keys.</p>
     </PanelFrame>
   );
 }

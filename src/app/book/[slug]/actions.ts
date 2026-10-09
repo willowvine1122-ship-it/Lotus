@@ -1,9 +1,11 @@
 "use server";
 
+import { appointmentBooked } from "@/lib/data/automation-events";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { bookAppointment } from "@/lib/data/calendars";
+import { bookAppointment, findCalendar } from "@/lib/data/calendars";
 
 /*
  * The one action a lead can take on the public page. The slot is re-checked
@@ -41,6 +43,9 @@ export async function bookAction(slug: string, _prev: BookingState, formData: Fo
       message: res.reason === "slot_taken" ? "Someone just took that time. Pick another one; the list is up to date." : "This booking page is not taking bookings right now.",
     };
   }
+  const typeName = findCalendar(new Date(), slug)?.types.find((t) => t.id === res.appointment.typeId)?.name ?? "an appointment";
+  appointmentBooked(new Date(), res.appointment.contact.id, typeName);
   revalidatePath("/agency/calendars");
+  revalidatePath("/agency/automations");
   redirect(`/book/${slug}/confirmed/${res.appointment.id}`);
 }

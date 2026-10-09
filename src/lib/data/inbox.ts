@@ -1,3 +1,4 @@
+import { messageReceived } from "./automation-events";
 import type { Channel, Contact, Conversation, InboxMessage, InboxThread } from "@/lib/types";
 import { demoInbox } from "./inbox-demo";
 import { addActivity, findClient, findContact, getPipeline, listContacts } from "./store";
@@ -141,4 +142,36 @@ export function setConversationRead(now: Date, id: string, read: boolean) {
 export function setConversationStatus(now: Date, id: string, status: Conversation["status"]) {
   const conv = findConversation(now, id);
   if (conv) conv.status = status;
+}
+
+/**
+ * An inbound message from a provider webhook (Twilio, Resend, Meta). Lands on
+ * the contact's conversation, reopens it, bumps unread, logs the activity and
+ * starts any workflow listening for a reply.
+ */
+export function receiveMessage(now: Date, input: { contactId: string; channel: Channel; body: string; subject?: string }): Conversation | undefined {
+  const contact = contactFor(now, input.contactId);
+  if (!contact) return undefined;
+  const s = store(now);
+  let conv = s.conversations.find((c) => c.contactId === contact.id && c.accountId === contact.accountId);
+  if (!conv) {
+    conv = { id: `cv-${Date.now().toString(36)}`, accountId: contact.accountId, contactId: contact.id, status: "open", unread: 0, messages: [] };
+    s.conversations.push(conv);
+  }
+  const m: InboxMessage = {
+    id: `${conv.id}-m-${Date.now().toString(36)}`,
+    conversationId: conv.id,
+    channel: input.channel,
+    direction: "inbound",
+    kind: "message",
+    subject: input.channel === "email" ? input.subject : undefined,
+    body: input.body.trim(),
+    sentAt: now.toISOString(),
+  };
+  conv.messages.push(m);
+  conv.status = "open";
+  conv.unread += 1;
+  addActivity(now, contact.id, { kind: activityKind[input.channel], title: `${channelLabel[input.channel]} received`, body: m.subject ? `${m.subject}: ${m.body}` : m.body });
+  messageReceived(now, contact.id, input.channel, m.body);
+  return conv;
 }

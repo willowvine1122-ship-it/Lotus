@@ -24,3 +24,43 @@ export function stageChanged(now: Date, contact: Contact, fromStageId: string) {
   const name = getPipeline(now, contact.accountId)?.stages.find((s) => s.id === contact.stageId)?.name ?? contact.stageId;
   fireTrigger(now, { type: "stage_changed", contactId: contact.id, stageId: contact.stageId, label: `Moved to ${name}` });
 }
+
+/* ------------------- events from the other modules ------------------- */
+
+import type { Channel, Contact as CrmContact } from "@/lib/types";
+import { formatDollars } from "@/lib/utils";
+import { autoReviewRequest } from "./reputation-send";
+
+/** A visitor booked through a booking page. The contact may be new. */
+export function appointmentBooked(now: Date, contactId: string, typeName: string) {
+  fireTrigger(now, { type: "appointment_booked", contactId, label: `Booked ${typeName}` });
+}
+
+/** The agency marked an appointment showed or no-show; a show may ask for a review. */
+export function appointmentOutcome(now: Date, accountId: string, contactId: string, outcome: "showed" | "no_show", typeName: string) {
+  if (outcome === "no_show") fireTrigger(now, { type: "appointment_no_show", contactId, label: `Missed ${typeName}` });
+  else autoReviewRequest(now, accountId, contactId, "appointment");
+}
+
+/** A gift was recorded. Fires the trigger and, when switched on, a review request. */
+export function donationReceived(now: Date, accountId: string, contactId: string, amountCents: number, campaignTitle: string) {
+  fireTrigger(now, { type: "donation_received", contactId, amountCents, label: `Gift of ${formatDollars(amountCents)} to ${campaignTitle}` });
+  autoReviewRequest(now, accountId, contactId, "donation");
+}
+
+/** A contact wrote in on a channel (inbound message on a conversation). */
+export function messageReceived(now: Date, contactId: string, channel: Channel, preview: string) {
+  fireTrigger(now, { type: "message_received", contactId, channel, label: `Wrote in by ${channel === "sms" ? "text" : channel}: ${preview.slice(0, 60)}` });
+}
+
+/** A funnel or website form was filled in. */
+export function formSubmitted(now: Date, contact: CrmContact, formName: string, isNew: boolean) {
+  if (isNew) contactCreated(now, contact);
+  fireTrigger(now, { type: "form_submitted", contactId: contact.id, source: contact.source, label: `Filled in ${formName}` });
+}
+
+/** A job was marked completed. Fires the trigger and, when switched on, a review request. */
+export function jobCompleted(now: Date, accountId: string, contactId: string, jobNumber: string) {
+  fireTrigger(now, { type: "job_completed", contactId, label: `Job ${jobNumber} completed` });
+  autoReviewRequest(now, accountId, contactId, "job");
+}

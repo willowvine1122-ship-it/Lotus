@@ -16,6 +16,39 @@ interface EmailStore {
   audiences: EmailAudience[];
   campaigns: EmailCampaign[];
   sends: EmailSend[];
+  /** One-off emails (weekly reports, receipts) that are not campaigns. */
+  transactional: TransactionalEmail[];
+}
+
+export interface TransactionalEmail {
+  id: string;
+  accountId: string;
+  to: string;
+  subject: string;
+  kind: "report" | "receipt" | "other";
+  status: "delivered" | "queued";
+  sentAt: string;
+}
+
+export function emailLive() {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
+/**
+ * Send one email outside a campaign. With RESEND_API_KEY this is where the
+ * Resend call goes; in demo mode the send is recorded as delivered and
+ * nothing leaves the machine.
+ */
+export function deliverEmail(now: Date, input: { accountId: string; to: string; subject: string; kind: TransactionalEmail["kind"] }): TransactionalEmail {
+  const s = store(now);
+  const t: TransactionalEmail = { id: `tx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, accountId: input.accountId, to: input.to, subject: input.subject, kind: input.kind, status: emailLive() ? "queued" : "delivered", sentAt: now.toISOString() };
+  s.transactional.unshift(t);
+  return t;
+}
+
+export function listTransactional(now: Date, accountId?: string) {
+  const all = store(now).transactional;
+  return accountId ? all.filter((t) => t.accountId === accountId) : all;
 }
 
 const g = globalThis as unknown as { __lotusEmail?: EmailStore };
@@ -188,7 +221,7 @@ function store(now: Date): EmailStore {
   const key = now.toISOString().slice(0, 10);
   if (!g.__lotusEmail || g.__lotusEmail.seededFor !== key) {
     const prev = g.__lotusEmail;
-    const s: EmailStore = { seededFor: key, audiences: [], campaigns: [], sends: [] };
+    const s: EmailStore = { seededFor: key, audiences: [], campaigns: [], sends: [], transactional: prev?.transactional ?? [] };
     for (const c of listClients(now)) if (!c.account.id.startsWith("new-")) seedClient(c, now, s);
     // Keep what people made in this process across the day boundary.
     if (prev) {

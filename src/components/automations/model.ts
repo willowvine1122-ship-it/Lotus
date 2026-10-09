@@ -22,13 +22,14 @@ export const triggerLabel: Record<TriggerType, string> = {
   message_received: "Message received",
   email_opened: "Campaign email opened",
   email_clicked: "Campaign email clicked",
+  job_completed: "Job completed",
 };
 
 /** Triggers grouped for the picker, filtered by the client's mode. */
 export function triggerGroups(mode: AccountMode): { label: string; types: TriggerType[] }[] {
   return [
     { label: "Contacts", types: ["contact_created", "form_submitted", "tag_added", "stage_changed"] },
-    { label: mode === "marketing" ? "Appointments" : "Giving", types: mode === "marketing" ? ["appointment_booked", "appointment_no_show"] : ["donation_received"] },
+    { label: mode === "marketing" ? "Appointments and jobs" : "Giving", types: mode === "marketing" ? ["appointment_booked", "appointment_no_show", "job_completed"] : ["donation_received"] },
     { label: "Conversations", types: ["message_received", "email_opened", "email_clicked"] },
   ];
 }
@@ -57,6 +58,8 @@ export function triggerSummary(t: WorkflowTrigger, pipeline?: Pipeline): string 
       return "A contact opens a campaign email";
     case "email_clicked":
       return "A contact clicks a link in a campaign email";
+    case "job_completed":
+      return "A job for the contact is marked completed";
   }
 }
 

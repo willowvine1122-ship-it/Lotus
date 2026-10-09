@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { addAppointmentType, createCalendar, findCalendar, setAppointmentStatus, setTypeActive, updateCalendar } from "@/lib/data/calendars";
 import { listClients } from "@/lib/data/store";
+import { appointmentOutcome } from "@/lib/data/automation-events";
+import { findAppointment } from "@/lib/data/calendars";
 import type { ActionState } from "@/app/agency/clients/actions";
 
 /*
@@ -145,6 +147,14 @@ const statusSchema = z.enum(["booked", "confirmed", "showed", "no_show", "cancel
 export async function setStatusAction(appointmentId: string, status: string) {
   const parsed = statusSchema.safeParse(status);
   if (!parsed.success) return;
-  setAppointmentStatus(new Date(), appointmentId, parsed.data);
+  const now = new Date();
+  const before = findAppointment(now, appointmentId)?.status;
+  const a = setAppointmentStatus(now, appointmentId, parsed.data);
+  if (a && before !== a.status && (a.status === "showed" || a.status === "no_show")) {
+    const typeName = findCalendar(now, a.calendarId)?.types.find((t) => t.id === a.typeId)?.name ?? "an appointment";
+    appointmentOutcome(now, a.accountId, a.contact.id, a.status, typeName);
+    revalidatePath("/agency/automations");
+    revalidatePath("/agency/reputation");
+  }
   revalidatePath("/agency/calendars");
 }

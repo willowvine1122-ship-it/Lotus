@@ -121,7 +121,7 @@ function Panel({ client, sends, now, sendNow, onClose }: { client: ReportClient;
             <p className="text-sm text-fg-3">Nothing sent yet.</p>
           )}
         </section>
-        <p className="text-xs leading-relaxed text-fg-3">Reports are recorded here now and email out once the email module is connected. The client can always open theirs at /c/{client.slug}.</p>
+        <p className="text-xs leading-relaxed text-fg-3">Each send goes out through the email module, one message per recipient; in demo mode it is recorded as delivered without leaving the machine. The client can always open theirs at /c/{client.slug}.</p>
       </div>
     </div>
   );

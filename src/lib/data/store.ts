@@ -561,7 +561,7 @@ export function updateReputationSettings(now: Date, accountId: string, patch: Pa
 }
 
 /** Send a review request to a contact: records the request and logs it on the contact. */
-export function sendReviewRequest(now: Date, accountId: string, contactId: string, channel: ReviewRequestChannel, by: string): ReviewRequest | undefined {
+export function sendReviewRequest(now: Date, accountId: string, contactId: string, channel: ReviewRequestChannel, by: string, opts: { trigger?: ReviewRequest["trigger"]; recordActivity?: boolean } = {}): ReviewRequest | undefined {
   const contact = findContact(now, contactId);
   if (!contact || contact.accountId !== accountId) return undefined;
   const req: ReviewRequest = {
@@ -570,12 +570,12 @@ export function sendReviewRequest(now: Date, accountId: string, contactId: strin
     contactId,
     contactName: `${contact.firstName} ${contact.lastName}`,
     channel,
-    trigger: "manual",
+    trigger: opts.trigger ?? "manual",
     status: "sent",
     sentAt: now.toISOString(),
   };
   reputationStore(now).requests.unshift(req);
-  addActivity(now, contactId, { kind: channel === "sms" ? "sms" : "email", title: `Review request sent by ${channel === "sms" ? "text" : "email"}`, by });
+  if (opts.recordActivity !== false) addActivity(now, contactId, { kind: channel === "sms" ? "sms" : "email", title: `Review request sent by ${channel === "sms" ? "text" : "email"}`, by });
   return req;
 }
 
@@ -601,6 +601,7 @@ export function listReportSends(now: Date, accountId?: string): ReportSend[] {
   return (accountId ? all.filter((r) => r.accountId === accountId) : all).slice().sort((a, b) => b.at.localeCompare(a.at));
 }
 
+/** Records the send for the board. Delivery itself goes through the email module (see sendReport in reports-send.ts). */
 export function sendReportNow(now: Date, accountId: string): ReportSend | undefined {
   const cfg = getReportConfig(now, accountId);
   if (!cfg) return undefined;

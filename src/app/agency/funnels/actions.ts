@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { addActivity, addStep, createContact, createFunnel, deleteFunnel, findFunnel, listContacts, moveStep, recordSubmission, removeStep, saveStepBlocks, updateFunnel } from "@/lib/data/store";
 import type { FunnelBlock } from "@/lib/types";
+import { donationReceived, formSubmitted } from "@/lib/data/automation-events";
 
 export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
 
@@ -113,8 +114,13 @@ export async function submitFunnelAction(funnelId: string, stepId: string, formD
     });
   }
   recordSubmission(now, f.id, stepId, values, contact?.id);
+  if (contact) {
+    formSubmitted(now, contact, f.name, !existing);
+    if (values.amount) donationReceived(now, f.accountId, contact.id, Number(values.amount) * 100, f.name);
+  }
   revalidatePath("/agency/contacts");
   revalidatePath("/agency/funnels");
+  revalidatePath("/agency/automations");
   const i = f.steps.findIndex((s) => s.id === stepId);
   const next = f.steps[i + 1];
   redirect(next ? `/f/${f.slug}/${next.path}` : `/f/${f.slug}?sent=1`);
