@@ -212,7 +212,9 @@ export interface ContactActivity {
   by?: string;
   amountCents?: number;
   at: string;
+}
 
+/* ------------------------------------------------------------------ */
 /* Fundraising: donors, donations, recurring plans, campaigns           */
 /* ------------------------------------------------------------------ */
 
