@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lotus
 
-## Getting Started
+Agency operating system: everything an agency needs to run clients in one place.
+CRM, inbox, funnels and automations under the hood, with two client modes
+(**digital marketing** and **digital fundraising**) and an agency-only
+**Daily Diagnostic** that tells the team every morning which client needs attention.
 
-First, run the development server:
+## Status
+
+Foundation. This commit contains:
+
+- Next.js 16 app (App Router, TypeScript, Tailwind v4)
+- Database schema for agencies, client sub-accounts, memberships, contacts,
+  daily diagnostics, notes and tasks, with row-level security
+  (`supabase/migrations/0001_foundation.sql`)
+- Agency workspace UI: Daily Diagnostic board, client list, client detail
+  with diagnostic, notes and tasks
+- Demo data so the app runs with no backend configured
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Without Supabase credentials the app shows demo
+clients. To use a real database, create a Supabase project, run the migration
+in `supabase/migrations/`, copy `.env.example` to `.env.local` and fill in the
+URL and anon key.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/app/agency/            agency workspace (diagnostic board, clients)
+src/components/            UI pieces (diagnostic card, sparkline, sidebar)
+src/lib/data/              data access, demo fallback
+src/lib/supabase/          server and browser Supabase clients
+supabase/migrations/       database schema
+```
 
-## Learn More
+## Roadmap
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the research doc in the project for the full plan. Next up: auth and
+onboarding, the marketing mode ad-metrics feed (Meta and Google Ads), the
+fundraising mode donation checkout and donor CRM, then funnels, inbox and
+automations.
