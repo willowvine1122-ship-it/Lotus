@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { MessageSquarePlus, Search } from "lucide-react";
 import { assignAction, setReadAction, setStatusAction } from "@/app/agency/inbox/actions";
 import { Segmented } from "@/components/diagnostic/primitives";
 import { Button } from "@/components/page-header";
 import type { Assignee, Channel, Contact, InboxThread } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { InboxClientRef } from "./composer";
 import { channels } from "./channel";
 import { NewConversation } from "./composer";
 import { ContactPanel } from "./contact-panel";
@@ -35,7 +36,7 @@ export function Inbox({
 }: {
   threads: InboxThread[];
   contacts: Contact[];
-  clients: { id: string; name: string; slug: string; mode: "marketing" | "fundraising" }[];
+  clients: InboxClientRef[];
   team: Assignee[];
   me: string;
   nowIso: string;
@@ -99,6 +100,14 @@ export function Inbox({
 
   // Desktop always shows a thread: the selection if it is still in view, else the newest.
   const selected = visible.find((t) => t.id === selectedId) ?? (selectedId ? threads.find((t) => t.id === selectedId && matches(t)) : undefined) ?? visible[0] ?? null;
+
+  // On desktop the newest thread opens by itself; reading it there counts as reading it.
+  const shownId = selected && !composing ? selected.id : null;
+  const shownUnread = selected ? selected.unread > 0 && readOverride[selected.id] === undefined : false;
+  useEffect(() => {
+    if (!shownId || !shownUnread || !window.matchMedia("(min-width: 1024px)").matches) return;
+    startTransition(() => setReadAction(shownId, true));
+  }, [shownId, shownUnread]);
 
   const syncUrl = (id: string | null, clientId = filters.clientId) => {
     const params = new URLSearchParams();
@@ -176,6 +185,7 @@ export function Inbox({
           />
           <Button
             type="button"
+            variant="secondary"
             onClick={() => {
               setComposing(true);
               setThreadOpen(true);
@@ -205,6 +215,9 @@ export function Inbox({
             now={now}
             timeZone={timeZone}
             onClear={clearFilters}
+            me={me}
+            team={team}
+            showAssignee={view === "all"}
             filtered={filtered}
           />
         </section>

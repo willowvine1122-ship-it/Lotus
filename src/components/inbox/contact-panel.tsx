@@ -122,8 +122,8 @@ export function ContactPanel({
           }
         >
           <dl>
-            <Row label="Phone">{c.phone ? <a href={`tel:${c.phone}`} className="num hover:underline">{c.phone}</a> : <span className="text-fg-3">None</span>}</Row>
-            <Row label="Email">{c.email ? <a href={`mailto:${c.email}`} className="hover:underline" title={c.email}>{c.email}</a> : <span className="text-fg-3">None</span>}</Row>
+            <Row label="Phone">{c.phone ? <a href={`tel:${c.phone}`} className="num hover:underline">{c.phone}</a> : <span className="text-fg-3">–</span>}</Row>
+            <Row label="Email">{c.email ? <a href={`mailto:${c.email}`} className="hover:underline" title={c.email}>{c.email}</a> : <span className="text-fg-3">–</span>}</Row>
             {thread.stageName && <Row label="Stage">{thread.stageName}</Row>}
             <Row label="Source">{sourceLabel[c.source]}</Row>
             <Row label={fundraising ? "Lifetime giving" : "Est. value"}>
@@ -135,30 +135,29 @@ export function ContactPanel({
           </dl>
         </Section>
 
-        <Section title="Client">
-          <div className="flex flex-col gap-2 rounded border border-line bg-surface-2/50 px-3.5 py-3">
-            <div className="flex items-center gap-2">
-              <StatusDot health={thread.client.health} />
-              <Link href={`/agency/clients/${thread.client.slug}`} className="min-w-0 truncate text-sm font-medium hover:underline">
-                {thread.client.name}
-              </Link>
-              <Link
-                href={`/agency/clients/${thread.client.slug}`}
-                aria-label={`Open ${thread.client.name}`}
-                className="ml-auto grid size-6 place-items-center rounded text-fg-3 transition-colors duration-150 hover:bg-surface hover:text-fg"
-              >
-                <ArrowUpRight className="size-4" strokeWidth={1.75} />
-              </Link>
-            </div>
-            <p className="text-xs text-fg-3">{fundraising ? "Fundraising" : "Marketing"} client</p>
+        <Section
+          title="Client"
+          aside={
             <button
               type="button"
               onClick={() => onFilterClient(thread.client.id)}
-              className="self-start text-xs font-medium text-fg-2 underline decoration-line-strong underline-offset-4 transition-colors duration-150 hover:text-fg hover:decoration-fg"
+              className="text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-fg hover:underline"
             >
-              Show only this client&apos;s conversations
+              Only this client
             </button>
-          </div>
+          }
+        >
+          <dl>
+            <Row label="Client">
+              <span className="inline-flex max-w-full items-center gap-1.5">
+                <StatusDot health={thread.client.health} />
+                <Link href={`/agency/clients/${thread.client.slug}`} className="truncate hover:underline">
+                  {thread.client.name}
+                </Link>
+              </span>
+            </Row>
+            <Row label="Mode">{fundraising ? "Fundraising" : "Marketing"}</Row>
+          </dl>
         </Section>
 
         <Section title="Channels">

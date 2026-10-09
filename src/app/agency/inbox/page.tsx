@@ -24,7 +24,7 @@ async function InboxLoader({ searchParams }: { searchParams: Promise<Record<stri
     threads = listThreads(now);
   }
   const clients = listClients(now)
-    .map((c) => ({ id: c.account.id, name: c.account.name, slug: c.account.slug, mode: c.mode }))
+    .map((c) => ({ id: c.account.id, name: c.account.name, slug: c.account.slug, mode: c.mode, health: c.health }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const clientSlug = one(params.client);
   return (

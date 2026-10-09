@@ -3,9 +3,9 @@
 import { useActionState, useRef, useState } from "react";
 import { Lock, Send, X } from "lucide-react";
 import { replyAction, startConversationAction, type InboxActionState } from "@/app/agency/inbox/actions";
-import { Segmented } from "@/components/diagnostic/primitives";
-import { Field, Input, Select, SubmitButton, controlClass } from "@/components/form";
-import type { Channel, Contact, InboxThread } from "@/lib/types";
+import { Segmented, StatusDot } from "@/components/diagnostic/primitives";
+import { Field, Input, SubmitButton, controlClass } from "@/components/form";
+import type { Channel, Contact, Health, InboxThread } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChannelIcon, channelLabel, channels } from "./channel";
 import { contactName } from "./format";
@@ -175,13 +175,138 @@ export function Composer({ thread }: { thread: InboxThread }) {
               <span className="hidden sm:inline">Ctrl+Enter to {isNote ? "save" : "send"}</span>
             )}
           </p>
-          <SubmitButton pendingLabel={isNote ? "Saving" : "Sending"} className="ml-auto h-8">
+          <SubmitButton pendingLabel={isNote ? "Saving" : "Sending"} className={cn("ml-auto h-8", isNote && "bg-rail shadow-none hover:bg-rail-2")}>
             {isNote ? <Lock className="size-3.5" strokeWidth={2} /> : <Send className="size-3.5" strokeWidth={2} />}
             {isNote ? "Add note" : "Send"}
           </SubmitButton>
         </div>
       </div>
     </form>
+  );
+}
+
+export interface InboxClientRef {
+  id: string;
+  name: string;
+  slug: string;
+  mode: "marketing" | "fundraising";
+  health: Health;
+}
+
+/** One searchable "To" field across every client's contacts; the client comes with the pick. */
+function ContactPicker({
+  id,
+  contacts,
+  clients,
+  value,
+  onChange,
+  preferClientId,
+  invalid,
+}: {
+  id: string;
+  contacts: Contact[];
+  clients: InboxClientRef[];
+  value: string;
+  onChange: (id: string) => void;
+  preferClientId: string | null;
+  invalid: boolean;
+}) {
+  const picked = contacts.find((c) => c.id === value);
+  const [query, setQuery] = useState(picked ? contactName(picked) : "");
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const clientOf = (c: Contact) => clients.find((x) => x.id === c.accountId);
+
+  const q = query.trim().toLowerCase();
+  const matches = contacts
+    .filter((c) => {
+      if (!q || (picked && query === contactName(picked))) return !preferClientId || c.accountId === preferClientId;
+      const hay = `${contactName(c)} ${c.phone ?? ""} ${c.email ?? ""} ${clientOf(c)?.name ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    })
+    .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt))
+    .slice(0, 8);
+
+  const choose = (c: Contact) => {
+    onChange(c.id);
+    setQuery(contactName(c));
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <input type="hidden" name="contactId" value={value} />
+      <input
+        id={id}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && matches[active] ? `${id}-opt-${matches[active].id}` : undefined}
+        aria-invalid={invalid || undefined}
+        autoComplete="off"
+        value={query}
+        placeholder="Name, phone, email or client"
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setActive(0);
+          setOpen(true);
+          if (value) onChange("");
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setOpen(true);
+            setActive((i) => Math.min(i + 1, matches.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActive((i) => Math.max(i - 1, 0));
+          } else if (e.key === "Enter" && open && matches[active]) {
+            e.preventDefault();
+            choose(matches[active]);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+        className={controlClass}
+      />
+      {open && (
+        <ul id={`${id}-list`} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded border border-line bg-surface py-1 shadow-2">
+          {matches.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-fg-3">No contact matches “{query}”</li>
+          ) : (
+            matches.map((c, i) => {
+              const client = clientOf(c);
+              return (
+                <li
+                  key={c.id}
+                  id={`${id}-opt-${c.id}`}
+                  role="option"
+                  aria-selected={i === active}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    choose(c);
+                  }}
+                  onMouseEnter={() => setActive(i)}
+                  className={cn("flex cursor-pointer flex-col px-3 py-1.5", i === active && "bg-surface-2")}
+                >
+                  <span className="text-sm font-medium">{contactName(c)}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs text-fg-3">
+                    {client && <StatusDot health={client.health} className="size-1.5" />}
+                    <span className="truncate">
+                      {client?.name}
+                      {(c.phone || c.email) && ` · ${c.phone ?? c.email}`}
+                    </span>
+                  </span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -194,13 +319,12 @@ export function NewConversation({
   onStarted,
 }: {
   contacts: Contact[];
-  clients: { id: string; name: string; mode: "marketing" | "fundraising" }[];
+  clients: InboxClientRef[];
   defaultClientId: string | null;
   defaultContactId?: string | null;
   onClose: () => void;
   onStarted: (conversationId: string) => void;
 }) {
-  const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [contactId, setContactId] = useState(defaultContactId ?? "");
   const [channel, setChannel] = useState<Channel>(() => {
     const c = contacts.find((x) => x.id === defaultContactId);
@@ -209,7 +333,6 @@ export function NewConversation({
     return channels.find((ch) => a[ch] === null) ?? "sms";
   });
 
-  const forClient = contacts.filter((c) => !clientId || c.accountId === clientId).sort((a, b) => contactName(a).localeCompare(contactName(b)));
   const contact = contacts.find((c) => c.id === contactId);
   const availability = contact ? channelAvailability(contact) : { sms: null, email: null, whatsapp: null, facebook: "Reply from an existing conversation" };
 
@@ -228,7 +351,12 @@ export function NewConversation({
     if (a[channel] !== null) setChannel(channels.find((ch) => a[ch] === null) ?? "sms");
   };
 
-  const clientName = (id: string) => clients.find((c) => c.id === id)?.name ?? "";
+  const blocked = contact
+    ? channels.filter((ch) => availability[ch]).map((ch) => `${channelLabel[ch]}: ${availability[ch]!.toLowerCase()}`)
+    : [];
+  const channelHint = contact
+    ? [`To ${addressFor(contact, channel) ?? ""}`, ...blocked].join(" · ")
+    : "Pick a contact to see where it goes. Facebook opens from a conversation the contact started.";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-surface">
@@ -240,38 +368,11 @@ export function NewConversation({
       </header>
       <form action={action} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         <div className="mx-auto flex max-w-[560px] flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Client" htmlFor="nc-client">
-              <Select
-                id="nc-client"
-                value={clientId}
-                onChange={(e) => {
-                  setClientId(e.target.value);
-                  setContactId("");
-                }}
-              >
-                <option value="">All clients</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="To" htmlFor="nc-contact" error={errors?.contactId}>
-              <Select id="nc-contact" name="contactId" value={contactId} onChange={(e) => pickContact(e.target.value)} aria-invalid={errors?.contactId ? true : undefined}>
-                <option value="">Pick a contact</option>
-                {forClient.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {contactName(c)}
-                    {!clientId ? ` · ${clientName(c.accountId)}` : ""}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
+          <Field label="To" htmlFor="nc-contact" error={errors?.contactId} hint="Search by name, phone, email or client">
+            <ContactPicker id="nc-contact" contacts={contacts} clients={clients} value={contactId} onChange={pickContact} preferClientId={defaultClientId} invalid={Boolean(errors?.contactId)} />
+          </Field>
 
-          <Field label="Channel" htmlFor="nc-channel" error={errors?.channel} hint={contact ? addressFor(contact, channel) : "Pick a contact to see where it goes"}>
+          <Field label="Channel" htmlFor="nc-channel" error={errors?.channel} hint={channelHint}>
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Channel" id="nc-channel">
               {channels.map((ch) => {
                 const blocked = availability[ch];

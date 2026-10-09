@@ -1,9 +1,10 @@
 "use client";
 
-import { Inbox as InboxIcon } from "lucide-react";
-import { Segmented, StatusDot } from "@/components/diagnostic/primitives";
-import type { Channel, InboxThread } from "@/lib/types";
+import { CircleAlert, Inbox as InboxIcon } from "lucide-react";
+import { Avatar, Segmented, StatusDot } from "@/components/diagnostic/primitives";
+import type { Assignee, Channel, InboxThread } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { InboxClientRef } from "./composer";
 import { ChannelIcon, channelLabel, channels } from "./channel";
 import { ContactAvatar } from "./contact-avatar";
 import { contactName, listTime } from "./format";
@@ -56,12 +57,15 @@ export function ConversationList({
   timeZone,
   onClear,
   filtered,
+  me,
+  team,
+  showAssignee,
 }: {
   threads: InboxThread[];
   filters: ListFilters;
   onFilters: (f: Partial<ListFilters>) => void;
   channelCounts: Record<Channel | "all", number>;
-  clients: { id: string; name: string; mode: "marketing" | "fundraising" }[];
+  clients: InboxClientRef[];
   selectedId: string | null;
   /** The selection is the desktop default, not something the user opened: only mark it where the thread shows. */
   selectedImplicit: boolean;
@@ -71,6 +75,10 @@ export function ConversationList({
   timeZone: string;
   onClear: () => void;
   filtered: boolean;
+  me: string;
+  team: Assignee[];
+  /** Mine and Unassigned already say who owns each row. */
+  showAssignee: boolean;
 }) {
   const marketing = clients.filter((c) => c.mode === "marketing");
   const fundraising = clients.filter((c) => c.mode === "fundraising");
@@ -152,6 +160,9 @@ export function ConversationList({
             const unread = unreadOf(t);
             const selected = t.id === selectedId;
             const preview = last ? (last.channel === "email" && last.subject ? last.subject : last.body) : "";
+            const lastOut = [...t.messages].reverse().find((m) => m.kind === "message" && m.direction === "outbound");
+            const failed = lastOut?.status === "failed" && last?.id === lastOut.id;
+            const assignee = team.find((p) => p.name === t.assigneeName);
             return (
               <li key={t.id} className="border-b border-line">
                 <button
@@ -159,7 +170,7 @@ export function ConversationList({
                   onClick={() => onSelect(t.id)}
                   aria-current={selected && !selectedImplicit ? "true" : undefined}
                   className={cn(
-                    "relative grid w-full grid-cols-[32px_minmax(0,1fr)] gap-3 px-4 py-3 text-left transition-colors duration-150",
+                    "relative grid w-full grid-cols-[28px_minmax(0,1fr)] items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150",
                     "hover:bg-surface-2/60",
                     selected &&
                       (selectedImplicit
@@ -167,23 +178,30 @@ export function ConversationList({
                         : "bg-surface-2 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-rail hover:bg-surface-2"),
                   )}
                 >
-                  <ContactAvatar contact={t.contact} />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="flex items-baseline gap-2">
-                      <span className={cn("truncate text-sm", unread ? "font-semibold text-fg" : "font-medium text-fg")}>{contactName(t.contact)}</span>
-                      <span className={cn("num ml-auto shrink-0 text-2xs", unread ? "font-medium text-fg" : "text-fg-3")}>{last ? listTime(last.sentAt, now, timeZone) : ""}</span>
-                    </span>
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-fg-3">
-                      <StatusDot health={t.client.health} className="size-1.5" />
-                      <span className="truncate">{t.client.name}</span>
-                      <span className="ml-auto shrink-0">
-                        {t.assigneeName ?? "Unassigned"}
+                  <ContactAvatar contact={t.contact} size="sm" />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className={cn("shrink-0 truncate text-sm", unread ? "font-semibold text-fg" : "font-medium text-fg")}>{contactName(t.contact)}</span>
+                      <span className="flex min-w-0 items-center gap-1.5 self-center text-xs text-fg-3">
+                        <StatusDot health={t.client.health} className="size-1.5" />
+                        <span className="truncate">{t.client.name}</span>
+                      </span>
+                      <span className="ml-auto flex shrink-0 items-center gap-1.5 self-center">
+                        {showAssignee && assignee && <Avatar person={assignee} size="xs" />}
+                        <span className={cn("num text-2xs", unread ? "font-medium text-fg" : "text-fg-3")}>{last ? listTime(last.sentAt, now, timeZone) : ""}</span>
                       </span>
                     </span>
-                    <span className="mt-1 flex min-w-0 items-center gap-1.5">
+                    <span className="flex min-w-0 items-center gap-1.5">
                       {last && <ChannelIcon channel={last.channel} className={unread ? "text-fg" : "text-fg-3"} />}
                       <span className={cn("truncate text-sm", unread ? "text-fg" : "text-fg-2")}>
-                        {last?.direction === "outbound" && <span className="text-fg-3">You: </span>}
+                        {failed ? (
+                          <span className="inline-flex items-center gap-1 font-medium text-red">
+                            <CircleAlert className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                            Not delivered:{" "}
+                          </span>
+                        ) : (
+                          last?.direction === "outbound" && <span className="text-fg-3">{last.authorName && last.authorName !== me ? `${last.authorName}: ` : "You: "}</span>
+                        )}
                         {preview}
                       </span>
                       {unread > 0 && (
