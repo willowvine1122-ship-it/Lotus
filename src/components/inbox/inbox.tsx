@@ -31,6 +31,7 @@ export function Inbox({
   nowIso,
   initialClientId,
   initialConversationId,
+  initialComposeTo,
 }: {
   threads: InboxThread[];
   contacts: Contact[];
@@ -40,6 +41,8 @@ export function Inbox({
   nowIso: string;
   initialClientId: string | null;
   initialConversationId: string | null;
+  /** A contact to start a new message to, when linked from the CRM. */
+  initialComposeTo: string | null;
 }) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const timeZone = useTimeZone();
@@ -54,9 +57,9 @@ export function Inbox({
     channel: null,
   });
   const [selectedId, setSelectedId] = useState<string | null>(initial?.id ?? null);
-  const [threadOpen, setThreadOpen] = useState(Boolean(initial));
+  const [threadOpen, setThreadOpen] = useState(Boolean(initial || initialComposeTo));
   const [panelOpen, setPanelOpen] = useState(false);
-  const [composing, setComposing] = useState(false);
+  const [composing, setComposing] = useState(Boolean(initialComposeTo));
   // Read state the user just changed, ahead of the server round trip.
   const [readOverride, setReadOverride] = useState<Record<string, boolean>>({});
 
@@ -217,7 +220,8 @@ export function Inbox({
             <NewConversation
               contacts={contacts}
               clients={clients}
-              defaultClientId={filters.clientId}
+              defaultClientId={contacts.find((c) => c.id === initialComposeTo)?.accountId ?? filters.clientId}
+              defaultContactId={initialComposeTo}
               onClose={() => {
                 setComposing(false);
                 setThreadOpen(false);

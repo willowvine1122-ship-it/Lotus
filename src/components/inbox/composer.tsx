@@ -189,18 +189,25 @@ export function NewConversation({
   contacts,
   clients,
   defaultClientId,
+  defaultContactId,
   onClose,
   onStarted,
 }: {
   contacts: Contact[];
   clients: { id: string; name: string; mode: "marketing" | "fundraising" }[];
   defaultClientId: string | null;
+  defaultContactId?: string | null;
   onClose: () => void;
   onStarted: (conversationId: string) => void;
 }) {
   const [clientId, setClientId] = useState(defaultClientId ?? "");
-  const [contactId, setContactId] = useState("");
-  const [channel, setChannel] = useState<Channel>("sms");
+  const [contactId, setContactId] = useState(defaultContactId ?? "");
+  const [channel, setChannel] = useState<Channel>(() => {
+    const c = contacts.find((x) => x.id === defaultContactId);
+    if (!c) return "sms";
+    const a = channelAvailability(c);
+    return channels.find((ch) => a[ch] === null) ?? "sms";
+  });
 
   const forClient = contacts.filter((c) => !clientId || c.accountId === clientId).sort((a, b) => contactName(a).localeCompare(contactName(b)));
   const contact = contacts.find((c) => c.id === contactId);

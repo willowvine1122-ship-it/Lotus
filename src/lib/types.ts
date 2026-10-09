@@ -155,13 +155,64 @@ export interface FundraisingClient extends ClientBase {
 
 export type ClientRecord = MarketingClient | FundraisingClient;
 
-/* Contacts. Shared shape with the CRM (migration 0003); kept verbatim so both land cleanly. */
+/* ------------------------------------------------------------------ */
+/* CRM: contacts, pipeline stages, activity                              */
+/* ------------------------------------------------------------------ */
+
 export type ContactSource = "meta" | "google" | "website" | "referral" | "donation-page" | "import" | "manual";
-export interface PipelineStage { id: string; name: string; outcome?: "won" | "lost" }
-export interface Pipeline { id: string; accountId: string; name: string; stages: PipelineStage[] }
-export interface Contact { id: string; accountId: string; firstName: string; lastName: string; email?: string; phone?: string; company?: string; city?: string; tags: string[]; source: ContactSource; stageId: string; ownerName?: string; valueCents: number; recurring?: boolean; doNotContact: { email: boolean; sms: boolean; call: boolean }; createdAt: string; lastActivityAt: string; }
+
+/** One pipeline per client; marketing and fundraising clients use different stage sets. */
+export interface PipelineStage {
+  id: string;
+  name: string;
+  /** Terminal stages: a won deal or a recurring donor is "won", a lost deal or lapsed donor is "lost". */
+  outcome?: "won" | "lost";
+}
+
+export interface Pipeline {
+  id: string;
+  accountId: string;
+  name: string;
+  stages: PipelineStage[];
+}
+
+export interface Contact {
+  id: string;
+  accountId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  city?: string;
+  tags: string[];
+  source: ContactSource;
+  /** Stage id within the client's pipeline. */
+  stageId: string;
+  /** Agency or client person who owns the relationship. */
+  ownerName?: string;
+  /** Marketing: estimated or won job value. Fundraising: lifetime donated. */
+  valueCents: number;
+  /** Fundraising only: active monthly giving. */
+  recurring?: boolean;
+  doNotContact: { email: boolean; sms: boolean; call: boolean };
+  createdAt: string;
+  lastActivityAt: string;
+}
+
 export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
-export interface ContactActivity { id: string; contactId: string; kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number; at: string }
+
+export interface ContactActivity {
+  id: string;
+  contactId: string;
+  kind: ActivityKind;
+  title: string;
+  body?: string;
+  /** Person who did it (agency member) or "System" for automated events. */
+  by?: string;
+  amountCents?: number;
+  at: string;
+}
 
 /* ------------------------------------------------------------------ */
 /* Inbox: conversations and messages across channels                    */
@@ -196,5 +247,7 @@ export interface Conversation {
 /** A conversation joined with its contact and client, as the inbox renders it. */
 export interface InboxThread extends Conversation {
   contact: Contact;
+  /** The contact's pipeline stage name, for the contact panel. */
+  stageName?: string;
   client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
 }

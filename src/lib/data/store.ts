@@ -1,7 +1,6 @@
-import type { AccountMode, Assignee, ClientRecord, ClientStatus, Contact, ContactActivity, DiagnosticNote, Member, Task } from "@/lib/types";
+import type { AccountMode, Assignee, ClientRecord, ClientStatus, DiagnosticNote, Member, Task } from "@/lib/types";
 import { demoAgency } from "./demo";
 import { demoClients } from "./demo-clients";
-import { demoInbox } from "./inbox-demo";
 
 /*
  * Demo store. Until Supabase is configured, clients live in process memory,
@@ -203,49 +202,147 @@ export function initialsOf(name: string) {
     .join("");
 }
 
-/* ------------------------------------------------------------------ */
-/* Contacts. Stub with the CRM's signatures, seeded from the inbox demo  */
-/* set; the CRM store (migration 0003) replaces these.                   */
-/* ------------------------------------------------------------------ */
+/* ------------------------------- CRM -------------------------------- */
 
-interface ContactStore {
+import type { ActivityKind, Contact, ContactActivity, ContactSource, Pipeline } from "@/lib/types";
+import { demoContactsFor, pipelineFor } from "./demo-contacts";
+
+interface CrmStore {
   seededFor: string;
   contacts: Contact[];
   activities: ContactActivity[];
 }
 
-const gc = globalThis as unknown as { __lotusContactStub?: ContactStore };
+const gc = globalThis as unknown as { __lotusCrm?: CrmStore };
 
-function contactStore(now: Date): ContactStore {
+function crm(now: Date): CrmStore {
   const key = now.toISOString().slice(0, 10);
-  if (!gc.__lotusContactStub || gc.__lotusContactStub.seededFor !== key) {
-    gc.__lotusContactStub = { seededFor: key, contacts: demoInbox(now).contacts, activities: [] };
+  if (!gc.__lotusCrm || gc.__lotusCrm.seededFor !== key) {
+    const contacts: Contact[] = [];
+    const activities: ContactActivity[] = [];
+    for (const c of listClients(now)) {
+      if (c.account.id.startsWith("new-")) continue;
+      const d = demoContactsFor(c, now);
+      contacts.push(...d.contacts);
+      activities.push(...d.activities);
+    }
+    const kept = gc.__lotusCrm?.contacts.filter((c) => c.id.startsWith("new-")) ?? [];
+    const keptIds = new Set(kept.map((c) => c.id));
+    const keptActs = gc.__lotusCrm?.activities.filter((a) => keptIds.has(a.contactId)) ?? [];
+    gc.__lotusCrm = { seededFor: key, contacts: [...contacts, ...kept], activities: [...activities, ...keptActs] };
   }
-  return gc.__lotusContactStub;
+  return gc.__lotusCrm;
+}
+
+export function getPipeline(now: Date, accountId: string): Pipeline | undefined {
+  const c = findClient(now, accountId);
+  return c ? pipelineFor(c) : undefined;
 }
 
 export function listContacts(now: Date, accountId?: string): Contact[] {
-  const all = contactStore(now).contacts;
+  const all = crm(now).contacts;
   return accountId ? all.filter((c) => c.accountId === accountId) : all;
 }
 
 export function findContact(now: Date, id: string): Contact | undefined {
-  return contactStore(now).contacts.find((c) => c.id === id);
+  return crm(now).contacts.find((c) => c.id === id);
 }
 
 export function listActivities(now: Date, contactId: string): ContactActivity[] {
-  return contactStore(now).activities.filter((a) => a.contactId === contactId);
+  return crm(now)
+    .activities.filter((a) => a.contactId === contactId)
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+export interface NewContactInput {
+  accountId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  city?: string;
+  tags: string[];
+  source: ContactSource;
+  stageId?: string;
+  ownerName?: string;
+  valueCents?: number;
+}
+
+export function createContact(now: Date, input: NewContactInput): Contact | undefined {
+  const pipeline = getPipeline(now, input.accountId);
+  if (!pipeline) return undefined;
+  const id = `new-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  const at = now.toISOString();
+  const contact: Contact = {
+    id,
+    accountId: input.accountId,
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    email: input.email?.trim() || undefined,
+    phone: input.phone?.trim() || undefined,
+    company: input.company?.trim() || undefined,
+    city: input.city?.trim() || undefined,
+    tags: input.tags,
+    source: input.source,
+    stageId: input.stageId && pipeline.stages.some((s) => s.id === input.stageId) ? input.stageId : pipeline.stages[0]!.id,
+    ownerName: input.ownerName || undefined,
+    valueCents: input.valueCents ?? 0,
+    doNotContact: { email: false, sms: false, call: false },
+    createdAt: at,
+    lastActivityAt: at,
+  };
+  const s = crm(now);
+  s.contacts.push(contact);
+  s.activities.push({ id: `${id}-a1`, contactId: id, kind: "form", title: "Added by hand", by: "System", at });
+  return contact;
+}
+
+export type ContactPatch = Partial<Pick<Contact, "firstName" | "lastName" | "email" | "phone" | "company" | "city" | "tags" | "source" | "ownerName" | "valueCents" | "doNotContact">>;
+
+export function updateContact(now: Date, id: string, patch: ContactPatch): Contact | undefined {
+  const c = findContact(now, id);
+  if (!c) return undefined;
+  Object.assign(c, patch);
+  return c;
+}
+
+export function moveContactStage(now: Date, id: string, stageId: string, by: string): Contact | undefined {
+  const c = findContact(now, id);
+  if (!c || c.stageId === stageId) return c;
+  const pipeline = getPipeline(now, c.accountId);
+  const stage = pipeline?.stages.find((s) => s.id === stageId);
+  if (!stage) return c;
+  c.stageId = stageId;
+  addActivity(now, id, { kind: "stage", title: `Moved to ${stage.name}`, by });
+  return c;
 }
 
 export function addActivity(
   now: Date,
   contactId: string,
-  input: { kind: ContactActivity["kind"]; title: string; body?: string; by?: string; amountCents?: number },
+  input: { kind: ActivityKind; title: string; body?: string; by?: string; amountCents?: number },
 ): ContactActivity | undefined {
-  const contact = findContact(now, contactId);
-  if (!contact) return undefined;
-  const a: ContactActivity = { id: `${contactId}-a-${Date.now().toString(36)}`, contactId, ...input, at: now.toISOString() };
-  contactStore(now).activities.unshift(a);
-  contact.lastActivityAt = a.at;
+  const c = findContact(now, contactId);
+  if (!c) return undefined;
+  const a: ContactActivity = {
+    id: `${contactId}-a-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`,
+    contactId,
+    kind: input.kind,
+    title: input.title.trim(),
+    body: input.body?.trim() || undefined,
+    by: input.by,
+    amountCents: input.amountCents,
+    at: now.toISOString(),
+  };
+  crm(now).activities.push(a);
+  c.lastActivityAt = a.at;
+  if (input.kind === "donation" && input.amountCents) c.valueCents += input.amountCents;
   return a;
+}
+
+export function deleteContact(now: Date, id: string) {
+  const s = crm(now);
+  s.contacts = s.contacts.filter((c) => c.id !== id);
+  s.activities = s.activities.filter((a) => a.contactId !== id);
 }

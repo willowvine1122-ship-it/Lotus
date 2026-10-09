@@ -24,10 +24,13 @@ const sourceLabel: Record<ContactSource, string> = {
   manual: "Added by hand",
 };
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {aside}
+      </div>
       {children}
     </section>
   );
@@ -75,7 +78,11 @@ export function ContactPanel({
         <div className="flex items-start gap-3">
           <ContactAvatar contact={c} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold leading-6">{contactName(c)}</h2>
+            <h2 className="truncate text-lg font-semibold leading-6">
+              <Link href={`/agency/contacts/${c.id}`} className="hover:underline">
+                {contactName(c)}
+              </Link>
+            </h2>
             <p className="flex items-center gap-1 text-xs text-fg-3">
               {c.city && (
                 <>
@@ -105,10 +112,19 @@ export function ContactPanel({
       </header>
 
       <div className="flex flex-col gap-6 px-5 py-5">
-        <Section title="Contact">
+        <Section
+          title="Contact"
+          aside={
+            <Link href={`/agency/contacts/${c.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-fg-2 hover:text-fg hover:underline">
+              Open in CRM
+              <ArrowUpRight className="size-3.5" strokeWidth={1.75} aria-hidden />
+            </Link>
+          }
+        >
           <dl>
             <Row label="Phone">{c.phone ? <a href={`tel:${c.phone}`} className="num hover:underline">{c.phone}</a> : <span className="text-fg-3">None</span>}</Row>
             <Row label="Email">{c.email ? <a href={`mailto:${c.email}`} className="hover:underline" title={c.email}>{c.email}</a> : <span className="text-fg-3">None</span>}</Row>
+            {thread.stageName && <Row label="Stage">{thread.stageName}</Row>}
             <Row label="Source">{sourceLabel[c.source]}</Row>
             <Row label={fundraising ? "Lifetime giving" : "Est. value"}>
               <span className="num">{c.valueCents ? formatDollars(c.valueCents) : <span className="text-fg-3">–</span>}</span>

@@ -1,6 +1,6 @@
 import type { Channel, Contact, Conversation, InboxMessage, InboxThread } from "@/lib/types";
 import { demoInbox } from "./inbox-demo";
-import { addActivity, findClient, findContact, listClients } from "./store";
+import { addActivity, findClient, findContact, getPipeline, listContacts } from "./store";
 
 /*
  * Demo inbox store. Conversations live in process memory on globalThis,
@@ -12,8 +12,6 @@ import { addActivity, findClient, findContact, listClients } from "./store";
 interface InboxStore {
   seededFor: string;
   conversations: Conversation[];
-  /** The inbox's own copy of its demo contacts, used when the CRM has no match. */
-  contacts: Map<string, Contact>;
 }
 
 const g = globalThis as unknown as { __lotusInbox?: InboxStore };
@@ -22,17 +20,23 @@ function store(now: Date): InboxStore {
   const key = now.toISOString().slice(0, 10);
   if (!g.__lotusInbox || g.__lotusInbox.seededFor !== key) {
     const seed = demoInbox(now);
-    g.__lotusInbox = {
-      seededFor: key,
-      conversations: seed.conversations,
-      contacts: new Map(seed.contacts.map((c) => [c.id, c])),
-    };
+    // The people writing in are CRM contacts too: add them to the CRM store,
+    // on the stage their client's pipeline would put them.
+    const crm = listContacts(now);
+    for (const c of seed.contacts) {
+      if (crm.some((x) => x.id === c.id)) continue;
+      const stages = getPipeline(now, c.accountId)?.stages ?? [];
+      const stageId = c.recurring && stages.some((s) => s.id === "monthly") ? "monthly" : (stages[1]?.id ?? c.stageId);
+      crm.push({ ...c, stageId });
+    }
+    g.__lotusInbox = { seededFor: key, conversations: seed.conversations };
   }
   return g.__lotusInbox;
 }
 
 function contactFor(now: Date, id: string): Contact | undefined {
-  return findContact(now, id) ?? store(now).contacts.get(id);
+  store(now);
+  return findContact(now, id);
 }
 
 export function lastActivityAt(c: Conversation) {
@@ -51,6 +55,7 @@ export function listThreads(now: Date): InboxThread[] {
     out.push({
       ...conv,
       contact,
+      stageName: getPipeline(now, conv.accountId)?.stages.find((st) => st.id === contact.stageId)?.name,
       client: { id: client.account.id, name: client.account.name, slug: client.account.slug, mode: client.mode, health: client.health },
     });
   }
@@ -61,13 +66,10 @@ export function findConversation(now: Date, id: string) {
   return store(now).conversations.find((c) => c.id === id);
 }
 
-/** Contacts the composer can start a conversation with, for one client or all. */
+/** Contacts the composer can start a conversation with: every CRM contact. */
 export function listInboxContacts(now: Date): Contact[] {
-  const ids = new Set(listClients(now).map((c) => c.account.id));
-  const s = store(now);
-  const byId = new Map<string, Contact>();
-  for (const c of s.contacts.values()) byId.set(c.id, contactFor(now, c.id) ?? c);
-  return [...byId.values()].filter((c) => ids.has(c.accountId));
+  store(now);
+  return listContacts(now);
 }
 
 const activityKind: Record<Channel, "sms" | "email"> = { sms: "sms", email: "email", whatsapp: "sms", facebook: "sms" };
