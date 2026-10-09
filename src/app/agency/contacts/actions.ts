@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { addActivity, createContact, deleteContact, findContact, moveContactStage, updateContact } from "@/lib/data/store";
 import type { ActivityKind } from "@/lib/types";
+import { contactCreated, stageChanged, tagsChanged } from "@/lib/data/automation-events";
 
 /* Server actions for the CRM. Same shape as the client actions: zod in, { ok, errors } out. */
 
@@ -82,6 +83,7 @@ export async function createContactAction(_prev: ActionState, formData: FormData
     valueCents: Math.round(d.value * 100),
   });
   if (!c) return { ok: false, message: "That client does not exist." };
+  contactCreated(new Date(), c);
   revalidatePath("/agency/contacts");
   redirect(`/agency/contacts/${c.id}`);
 }
@@ -91,6 +93,8 @@ export async function updateContactAction(id: string, _prev: ActionState, formDa
   if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
   const d = parsed.data;
   const now = new Date();
+  const before = findContact(now, id);
+  const prev = before ? { tags: [...before.tags], stageId: before.stageId } : undefined;
   const c = updateContact(now, id, {
     firstName: d.firstName,
     lastName: d.lastName,
@@ -105,13 +109,20 @@ export async function updateContactAction(id: string, _prev: ActionState, formDa
   });
   if (!c) return { ok: false, message: "Contact not found." };
   if (d.stageId) moveContactStage(now, id, d.stageId, actor);
+  if (prev) {
+    tagsChanged(now, id, prev.tags, c.tags);
+    stageChanged(now, c, prev.stageId);
+  }
   revalidatePath("/agency/contacts");
   revalidatePath(`/agency/contacts/${id}`);
   return { ok: true, message: "Saved" };
 }
 
 export async function moveStageAction(id: string, stageId: string): Promise<void> {
-  moveContactStage(new Date(), id, stageId, actor);
+  const now = new Date();
+  const from = findContact(now, id)?.stageId;
+  const c = moveContactStage(now, id, stageId, actor);
+  if (c && from) stageChanged(now, c, from);
   revalidatePath("/agency/contacts");
   revalidatePath(`/agency/contacts/${id}`);
 }

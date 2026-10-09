@@ -331,3 +331,103 @@ export interface EmailSend {
   clickedUrl?: string;
   unsubscribedAt?: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Automations: workflows, their steps, and runs per contact            */
+/* ------------------------------------------------------------------ */
+
+export type TriggerType =
+  | "contact_created"
+  | "form_submitted"
+  | "tag_added"
+  | "stage_changed"
+  | "appointment_booked"
+  | "appointment_no_show"
+  | "donation_received"
+  | "message_received"
+  | "email_opened"
+  | "email_clicked";
+
+/** What starts a workflow. Optional fields narrow it; empty means "any". */
+export interface WorkflowTrigger {
+  type: TriggerType;
+  tag?: string;
+  stageId?: string;
+  source?: ContactSource;
+  channel?: Channel;
+  minAmountCents?: number;
+}
+
+export type ConditionField = "tag" | "stage" | "source" | "has_email" | "has_phone" | "value" | "owner";
+
+/** One test on the contact. `op` reads as "is", "is not", "at least". */
+export interface WorkflowCondition {
+  field: ConditionField;
+  op: "is" | "is_not" | "gte";
+  value: string;
+}
+
+export type WaitUnit = "minutes" | "hours" | "days";
+
+export type WorkflowStep =
+  | { id: string; type: "send_sms"; body: string }
+  | { id: string; type: "send_email"; subject: string; body: string }
+  | { id: string; type: "add_tag"; tag: string }
+  | { id: string; type: "remove_tag"; tag: string }
+  | { id: string; type: "move_stage"; stageId: string }
+  | { id: string; type: "assign_owner"; ownerName: string }
+  | { id: string; type: "create_task"; title: string; assigneeName?: string; dueInDays: number }
+  | { id: string; type: "notify"; to: string; message: string }
+  | { id: string; type: "wait"; amount: number; unit: WaitUnit }
+  | { id: string; type: "branch"; condition: WorkflowCondition; yes: WorkflowStep[]; no: WorkflowStep[] };
+
+export type StepType = WorkflowStep["type"];
+
+export type WorkflowStatus = "active" | "paused" | "draft";
+
+export interface Workflow {
+  id: string;
+  accountId: string;
+  name: string;
+  status: WorkflowStatus;
+  trigger: WorkflowTrigger;
+  steps: WorkflowStep[];
+  /** When false a contact goes through the workflow once, ever. */
+  allowReentry: boolean;
+  templateId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RunStatus = "waiting" | "completed" | "failed" | "stopped";
+
+export type RunStepStatus = "done" | "skipped" | "failed" | "waiting";
+
+/** What happened at one step for one contact, in plain words. */
+export interface RunStep {
+  stepId: string;
+  type: StepType;
+  status: RunStepStatus;
+  /** "Sent: Hi Dana, thanks…", "Skipped: no phone number", "Took Yes: tag is VIP". */
+  detail: string;
+  at: string;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflowId: string;
+  accountId: string;
+  contactId: string;
+  status: RunStatus;
+  /** The event that started it, in words: "Booked a call", "Tag added: VIP". */
+  triggeredBy: string;
+  /** A test run started by hand from the builder. */
+  test?: boolean;
+  startedAt: string;
+  finishedAt?: string;
+  /** Set while waiting. */
+  resumeAt?: string;
+  /** Step ids still to run, in order. A branch replaces itself with its chosen lane. */
+  pending: string[];
+  steps: RunStep[];
+}

@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Settings,
   Users,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ const nav = [
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
   { href: "/agency/email", label: "Email", icon: Mail },
+  { href: "/agency/automations", label: "Automations", icon: Workflow },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 

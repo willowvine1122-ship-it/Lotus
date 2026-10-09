@@ -67,7 +67,7 @@ export function MergeText({ text, empty = "No subject yet" }: { text: string; em
         if (!m) return p;
         const label = mergeTags.find((t) => t.tag === `{{${m[1]}}}`)?.label ?? m[1];
         return (
-          <span key={i} className="mx-px rounded-[3px] bg-surface-2 px-1 py-px text-[0.92em] text-fg-2 ring-1 ring-line ring-inset">
+          <span key={i} className="mx-px whitespace-nowrap rounded-[3px] bg-surface-2 px-1 py-px text-[0.92em] text-fg-2 ring-1 ring-line ring-inset">
             {label}
           </span>
         );
