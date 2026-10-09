@@ -70,7 +70,7 @@ export function Shell({
 }) {
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <aside className="flex items-center gap-2 bg-rail px-4 py-3 text-rail-fg md:w-56 md:shrink-0 md:flex-col md:items-stretch md:gap-0 md:px-0 md:py-0">
+      <aside className="flex items-center gap-2 bg-rail px-4 py-3 text-rail-fg md:sticky md:top-0 md:h-screen md:w-56 md:shrink-0 md:flex-col md:items-stretch md:gap-0 md:px-0 md:py-0">
         <Link
           href="/agency"
           className="flex items-center gap-2.5 md:border-b md:border-rail-line md:px-5 md:py-4"
@@ -105,17 +105,13 @@ export function Shell({
           })}
         </nav>
 
-        <div className="hidden border-t border-rail-line px-5 py-4 text-xs text-rail-fg-2 md:block">
-          Lotus agency
+        <div className="mt-auto hidden border-t border-rail-line px-5 py-4 text-xs text-rail-fg-2 md:block">
+          <div>Lotus agency</div>
+          <p className="mt-2 leading-relaxed text-rail-fg-2/70">Demo data. Client names, numbers and notes are synthetic until live feeds are connected.</p>
         </div>
       </aside>
 
-      <main className="flex min-w-0 flex-1 flex-col">
-        <div className="flex-1">{children}</div>
-        <p className="px-5 py-4 text-xs text-fg-3 md:px-8">
-          Demo data. Client names, numbers and notes are synthetic until live feeds are connected.
-        </p>
-      </main>
+      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
     </div>
   );
 }
