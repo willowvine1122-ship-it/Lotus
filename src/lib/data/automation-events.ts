@@ -54,9 +54,9 @@ export function messageReceived(now: Date, contactId: string, channel: Channel, 
 }
 
 /** A funnel or website form was filled in. */
-export function formSubmitted(now: Date, contact: CrmContact, formName: string, isNew: boolean) {
+export function formSubmitted(now: Date, contact: CrmContact, formName: string, isNew: boolean, formId?: string) {
   if (isNew) contactCreated(now, contact);
-  fireTrigger(now, { type: "form_submitted", contactId: contact.id, source: contact.source, label: `Filled in ${formName}` });
+  fireTrigger(now, { type: "form_submitted", contactId: contact.id, source: contact.source, formId, label: `Filled in ${formName}` });
 }
 
 /** A job was marked completed. Fires the trigger and, when switched on, a review request. */

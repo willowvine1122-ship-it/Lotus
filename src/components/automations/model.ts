@@ -82,6 +82,8 @@ export interface TriggerEvent {
   source?: ContactSource;
   channel?: Channel;
   amountCents?: number;
+  /** The Lotus form (or funnel) that was filled in, for form_submitted. */
+  formId?: string;
   /** How the run history describes it: "Booked a call", "Gift of $50". */
   label: string;
 }

@@ -810,3 +810,27 @@ export interface ReportSend {
   /** "schedule" for the weekly run, "manual" for Send now. */
   kind: "schedule" | "manual";
 }
+
+/* ------------------------------------------------------------------ */
+/* Integrations: connected apps, webhooks in and out, API keys          */
+/* ------------------------------------------------------------------ */
+
+// (integrations types go here)
+
+/* ------------------------------------------------------------------ */
+/* Forms: Typeform-style forms, one question at a time                  */
+/* ------------------------------------------------------------------ */
+
+// (forms types go here)
+
+/* ------------------------------------------------------------------ */
+/* Websites: multi-page sites with navigation, domain and SEO           */
+/* ------------------------------------------------------------------ */
+
+// (websites types go here)
+
+/* ------------------------------------------------------------------ */
+/* Estimate templates: price book, templates, signatures, deposits      */
+/* ------------------------------------------------------------------ */
+
+// (estimate template types go here)
