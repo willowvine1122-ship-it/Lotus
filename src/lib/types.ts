@@ -250,7 +250,9 @@ export interface InboxThread extends Conversation {
   /** The contact's pipeline stage name, for the contact panel. */
   stageName?: string;
   client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
+}
 
+/* ------------------------------------------------------------------ */
 /* Calendars and booking                                               */
 /* ------------------------------------------------------------------ */
 
