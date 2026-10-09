@@ -73,3 +73,66 @@ export interface ClientOverview {
   latestNote: DiagnosticNote | null;
   openTasks: number;
 }
+
+/* ------------------------------------------------------------------ */
+/* Daily Diagnostic: per-client daily series used by the board/panel    */
+/* ------------------------------------------------------------------ */
+
+export interface Assignee {
+  name: string;
+  initials: string;
+  tone: "violet" | "orange" | "teal" | "ink";
+}
+
+export interface MarketingDay {
+  day: string; // YYYY-MM-DD
+  spendCents: number;
+  leads: number;
+  appointments: number;
+  showed: number;
+  closed: number;
+}
+
+export interface FundraisingDay {
+  day: string;
+  raisedCents: number;
+  donations: number;
+  newDonors: number;
+  newRecurring: number;
+}
+
+export interface CountryRaised {
+  code: string;
+  name: string;
+  raisedCents: number;
+}
+
+interface ClientBase {
+  account: Account;
+  location: string;
+  timeZone: string;
+  tags: string[];
+  assignees: Assignee[];
+  startedOn: string;
+  health: Health;
+  alerts: string[];
+  summary: string | null;
+  notes: DiagnosticNote[];
+  tasks: Task[];
+}
+
+export interface MarketingClient extends ClientBase {
+  mode: "marketing";
+  monthlyBudgetCents: number;
+  avgJobValueCents: number;
+  days: MarketingDay[]; // oldest first, last entry is yesterday
+}
+
+export interface FundraisingClient extends ClientBase {
+  mode: "fundraising";
+  monthlyGoalCents: number;
+  days: FundraisingDay[];
+  countries: CountryRaised[]; // last 30 days
+}
+
+export type ClientRecord = MarketingClient | FundraisingClient;

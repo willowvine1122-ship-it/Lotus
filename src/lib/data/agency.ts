@@ -5,7 +5,9 @@ import type {
   DailyDiagnostic,
   DiagnosticNote,
   Task,
+  ClientRecord,
 } from "@/lib/types";
+import { demoClients } from "./demo-clients";
 import {
   demoAccounts,
   demoDiagnostics,
@@ -111,4 +113,13 @@ function mapDiagnostic(d: any): DailyDiagnostic {
     alerts: d.alerts ?? [],
     summary: d.summary,
   };
+}
+
+/**
+ * Full client records with daily history for the Daily Diagnostic.
+ * The Supabase path needs a daily-metrics table that does not exist yet,
+ * so this always serves the synthetic set for now.
+ */
+export async function getClientRecords(now: Date): Promise<ClientRecord[]> {
+  return demoClients(now);
 }

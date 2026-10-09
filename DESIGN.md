@@ -329,3 +329,35 @@ On the client page, a `dl` row with the label in 13px `fg-2` on the left and the
 - **Don't** add shadows to rows, chips, notices or panels; the primary button lift is the only shadow.
 - **Don't** use pills or circles; radii stay at 6px or below and the status dot is a 1px-radius square.
 - **Don't** write an uppercase label above a title as a kicker; the label style belongs to column heads only.
+
+## Revision 2: Daily Diagnostic as master table + client panel (2026-10-09)
+
+The founder supplied a reference Daily Diagnostic (workfuel; copies in the project files under lotus/reference/) and made it the bar. This revision supersedes the "no cards" and "square status dot" rules above for the Daily Diagnostic; the ink frame, the paper ground, Geist with tabular numerals, the three signals and the 6px radius all stand.
+
+### Colors, added
+- **Series Blue** (`chart-1`, #2f6fed) and **Series Orange** (`chart-2`, #e8731c): the only two data colours. Validated as a categorical pair with the dataviz validator (light surface). Orange is lead cost / leads / avg gift; blue is appointment cost / appointments / raised. Marks only: text beside a mark always uses text tokens. They never appear outside charts, sparklines, avatars and the country bars.
+- The status dot is now an 8px circle (`red`/`amber`/`green`) leading the client name; the 24px chip survives on the client list and client page.
+
+### Components, added
+- **Top bar**: a 56px ink band (title 18px/600 with a 12px meta line; search field in `rail-2` with a `rail-line` border; Marketing | Fundraising segmented control; range select; 28px primary button).
+- **KPI tile**: bordered white tile (1px `line`, 6px), 12px 16px padding; uppercase 11px label, 22px/600 tabular figure, a muted 12px aside bottom-right (red or amber when it is an attention count). Four across from xl.
+- **Data table**: a real `<table>` on white. Header row uppercase 11px `fg-3` with a sort icon per column (chevrons when inactive, arrow when active, `aria-sort` set); 52px rows, hairline below, hover `surface-2` at 60%; the selected row is `brand-soft` at 40% with a 2px violet inset bar on the left (the one place violet marks state). Figure cells: 13px/500 tabular with a signed change beside it (green good, red bad, `goodWhenUp` flips for costs) and an 11px muted count beneath.
+- **Pacing gauge**: 120px wide; a 2px `line-strong` track with a centre tick for "on pace" and an 8px dot (surface ring) placed at pace on a 0–200% scale, coloured by `pacingTone` (budget: green 90–110, amber 70–135, else red; goal: green ≥90, amber ≥70, else red). Percent in the tone colour above left, budget compact in muted above right.
+- **Sparkline**: 72×20, 1.5px line in `chart-1` with a 5px end dot, 30 daily values, a change tag beside it.
+- **Client panel**: 360/384/420px at lg/xl/2xl, white, 1px `line` on the left, sticky full-height and scrolling on its own; on mobile a right-anchored sheet over a 40% ink scrim with a close button. Sticky header (status dot, 18px/600 name, open-client icon, amber tags with a dashed "Add tag" chip, location / local time / days active in 12px, 24px initial avatars ring-2 surface overlapping 6px). Body 20px gutters, 24px between sections.
+- **Diagnosis box**: red or amber soft fill at 50% with the strong tint at 25% as border; alerts joined with " · " in the signal colour at 500, summary in `fg-2`.
+- **Tile (panel)**: `surface-2` at 50% with a `line` border, uppercase label, 18px/600 figure, 12px sub-line. Always a 2×2 grid.
+- **Ledger row**: label uppercase 11px left, figures right, same fill as the tile; the green variant (`green-soft` 50%, `green` 25% border, label in green) is reserved for the money-in row (est. revenue & ROI, raised per day).
+- **Segmented (paper)**: 28px track in `surface-2`, 2px inset; active segment is solid ink with white text. **Range chips**: 24px bordered chips, active is solid ink.
+- **Line chart**: 190px tall, 44px left gutter, four nice ticks with hairline `line` gridlines, 2px round-joined lines, no area fill, a legend above when two series, 10px muted axis text, crosshair (`line-strong`) with 8px ringed dots and an HTML tooltip (white, `line` border, shadow-2) that flips side past 60% width.
+- **Column chart**: 150px tall, columns ≤24px with a 2px gap and a 4px rounded data-end on a square baseline, other columns dim to 55% on hover, same tooltip.
+- **Bar list** (raised by country): label left, compact value and share right, a 6px `surface-2` track with a `chart-1` fill.
+- **Trend tile**: label, then one row per window (7D, 30D): before in muted, 12px arrow, after at 500, change with a diagonal arrow right-aligned.
+- **Metrics table**: bordered 6px container, `surface-2` header row at 70%, 12px rows, metric names as row headers at 500, figures right-aligned tabular in `fg-2`; a By month | By week segmented control.
+- **Notes feed**: date dividers (hairline, uppercase 11px date, hairline), note cards on `surface-2` at 40% with a 28px initial avatar, author at 500, relative time in muted on the right, body 13px relaxed in `fg-2`.
+
+### Do's and Don'ts, amended
+- **Do** keep tiles to the KPI strip and the client panel; the board itself stays a table.
+- **Do** give every chart a legend when it has two series, a tooltip, and one axis.
+- **Don't** use `chart-1` or `chart-2` for anything that is not a mark.
+- **Don't** colour text in a series colour; identity comes from the swatch beside it.
