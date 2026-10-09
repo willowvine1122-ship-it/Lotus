@@ -346,3 +346,131 @@ export function deleteContact(now: Date, id: string) {
   s.contacts = s.contacts.filter((c) => c.id !== id);
   s.activities = s.activities.filter((a) => a.contactId !== id);
 }
+
+/* ------------------------------ Funnels ------------------------------ */
+
+import type { Funnel, FunnelBlock, FunnelStep, FunnelSubmission } from "@/lib/types";
+import { demoFunnelsFor, templateFor } from "./demo-funnels";
+
+interface FunnelStore {
+  seededFor: string;
+  funnels: Funnel[];
+  submissions: FunnelSubmission[];
+}
+
+const gf = globalThis as unknown as { __lotusFunnels?: FunnelStore };
+
+function funnelStore(now: Date): FunnelStore {
+  const key = now.toISOString().slice(0, 10);
+  if (!gf.__lotusFunnels || gf.__lotusFunnels.seededFor !== key) {
+    const seeded = listClients(now)
+      .filter((c) => !c.account.id.startsWith("new-"))
+      .flatMap((c) => demoFunnelsFor(c, now));
+    const kept = gf.__lotusFunnels?.funnels.filter((f) => f.id.startsWith("new-")) ?? [];
+    gf.__lotusFunnels = { seededFor: key, funnels: [...seeded, ...kept], submissions: gf.__lotusFunnels?.submissions ?? [] };
+  }
+  return gf.__lotusFunnels;
+}
+
+export function listFunnels(now: Date, accountId?: string): Funnel[] {
+  const all = funnelStore(now).funnels;
+  return accountId ? all.filter((f) => f.accountId === accountId) : all;
+}
+
+export function findFunnel(now: Date, idOrSlug: string): Funnel | undefined {
+  return funnelStore(now).funnels.find((f) => f.id === idOrSlug || f.slug === idOrSlug);
+}
+
+export function createFunnel(now: Date, input: { accountId: string; name: string; template: string }): Funnel | undefined {
+  const c = findClient(now, input.accountId);
+  if (!c) return undefined;
+  const t = templateFor(input.template);
+  const id = `new-${Date.now().toString(36)}`;
+  let slug = `${c.account.slug}-${slugify(input.name)}`;
+  if (findFunnel(now, slug)) slug = `${slug}-${id.slice(-4)}`;
+  const f: Funnel = {
+    id,
+    accountId: c.account.id,
+    name: input.name.trim(),
+    slug,
+    status: "draft",
+    template: t.id,
+    brandColor: c.account.brandColor ?? "#6d28d9",
+    steps: t.steps({ name: c.account.name, industry: c.industry, location: c.location }),
+    days: [],
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+  funnelStore(now).funnels.push(f);
+  return f;
+}
+
+export function updateFunnel(now: Date, id: string, patch: Partial<Pick<Funnel, "name" | "status" | "brandColor" | "slug">>): Funnel | undefined {
+  const f = findFunnel(now, id);
+  if (!f) return undefined;
+  Object.assign(f, patch, { updatedAt: now.toISOString() });
+  return f;
+}
+
+export function saveStepBlocks(now: Date, funnelId: string, stepId: string, blocks: FunnelBlock[], name?: string): FunnelStep | undefined {
+  const f = findFunnel(now, funnelId);
+  const s = f?.steps.find((s) => s.id === stepId);
+  if (!f || !s) return undefined;
+  s.blocks = blocks;
+  if (name) s.name = name.trim();
+  f.updatedAt = now.toISOString();
+  return s;
+}
+
+export function addStep(now: Date, funnelId: string, name: string): FunnelStep | undefined {
+  const f = findFunnel(now, funnelId);
+  if (!f) return undefined;
+  const id = `s-${Date.now().toString(36)}`;
+  const s: FunnelStep = { id, name: name.trim(), path: slugify(name), blocks: [{ id: `${id}-b1`, type: "hero", headline: name.trim(), subhead: "Add blocks to build this step.", align: "center" }] };
+  f.steps.push(s);
+  f.updatedAt = now.toISOString();
+  return s;
+}
+
+export function moveStep(now: Date, funnelId: string, stepId: string, dir: -1 | 1) {
+  const f = findFunnel(now, funnelId);
+  if (!f) return;
+  const i = f.steps.findIndex((s) => s.id === stepId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= f.steps.length) return;
+  [f.steps[i], f.steps[j]] = [f.steps[j]!, f.steps[i]!];
+  // The first step is always the root path.
+  f.steps.forEach((s, k) => (s.path = k === 0 ? "" : s.path || slugify(s.name)));
+  f.updatedAt = now.toISOString();
+}
+
+export function removeStep(now: Date, funnelId: string, stepId: string) {
+  const f = findFunnel(now, funnelId);
+  if (!f || f.steps.length <= 1) return;
+  f.steps = f.steps.filter((s) => s.id !== stepId);
+  f.steps.forEach((s, k) => (s.path = k === 0 ? "" : s.path || slugify(s.name)));
+  f.updatedAt = now.toISOString();
+}
+
+export function deleteFunnel(now: Date, id: string) {
+  const s = funnelStore(now);
+  s.funnels = s.funnels.filter((f) => f.id !== id);
+}
+
+export function recordSubmission(now: Date, funnelId: string, stepId: string, values: Record<string, string>, contactId?: string): FunnelSubmission {
+  const sub: FunnelSubmission = { id: `sub-${Date.now().toString(36)}`, funnelId, stepId, values, contactId, at: now.toISOString() };
+  const s = funnelStore(now);
+  s.submissions.push(sub);
+  const f = s.funnels.find((f) => f.id === funnelId);
+  if (f) {
+    const today = now.toISOString().slice(0, 10);
+    const d = f.days.find((d) => d.day === today);
+    if (d) d.leads += 1;
+    else f.days.push({ day: today, visitors: 1, leads: 1 });
+  }
+  return sub;
+}
+
+export function listSubmissions(now: Date, funnelId: string): FunnelSubmission[] {
+  return funnelStore(now).submissions.filter((s) => s.funnelId === funnelId).sort((a, b) => b.at.localeCompare(a.at));
+}
