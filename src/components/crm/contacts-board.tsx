@@ -22,7 +22,7 @@ const columns: { key: Key; label: string; className?: string; align?: "right"; d
   { key: "name", label: "Contact", className: "min-w-[200px]" },
   { key: "client", label: "Client", className: "hidden md:table-cell" },
   { key: "stage", label: "Stage" },
-  { key: "source", label: "Source", className: "hidden lg:table-cell" },
+  { key: "source", label: "Source", className: "hidden xl:table-cell" },
   { key: "value", label: "Value", align: "right", className: "hidden sm:table-cell", defaultDir: "desc" },
   { key: "activity", label: "Last activity", className: "hidden md:table-cell", defaultDir: "desc" },
   { key: "owner", label: "Owner", className: "hidden xl:table-cell" },
@@ -161,8 +161,8 @@ export function ContactsBoard({
               className="inline-flex h-7 items-center gap-1.5 rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line"
             >
               <KanbanSquare className="size-3.5" strokeWidth={1.75} />
-              <span className="hidden 2xl:inline">Pipeline</span>
-              <span className="sr-only 2xl:hidden">Pipeline</span>
+              <span className="hidden xl:inline">Pipeline</span>
+              <span className="sr-only xl:hidden">Pipeline</span>
             </Link>
             <ButtonLink href={clientId === "all" ? "/agency/contacts/new" : `/agency/contacts/new?client=${clientId}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
@@ -198,7 +198,7 @@ export function ContactsBoard({
                         onClick={() => setSort(active ? { key: c.key, dir: sort.dir === "asc" ? "desc" : "asc" } : { key: c.key, dir: c.defaultDir ?? "asc" })}
                         className={cn("inline-flex items-center gap-1 hover:text-fg", active && "text-fg", c.align === "right" && "flex-row-reverse")}
                       >
-                        {c.label}
+                        {c.key === "value" && fundraisingOnly ? "Lifetime giving" : c.label}
                         <Icon className={cn("size-3", !active && "opacity-60")} strokeWidth={2} />
                       </button>
                     </th>
@@ -226,11 +226,11 @@ export function ContactsBoard({
                       <span className="block truncate font-medium">{fullName(c)}</span>
                       <span className="block truncate text-xs text-fg-3">{c.email ?? c.phone ?? (c.city || "No contact details")}</span>
                     </td>
-                    <td className="hidden px-3 py-1.5 text-fg-2 md:table-cell">{client?.name}</td>
+                    <td className="hidden max-w-[180px] truncate whitespace-nowrap px-3 py-1.5 text-fg-2 md:table-cell">{client?.name}</td>
                     <td className="px-3 py-1.5">
                       <Tag tone="neutral">{stage.name}</Tag>
                     </td>
-                    <td className="hidden px-3 py-1.5 text-fg-2 lg:table-cell">{sourceLabel[c.source]}</td>
+                    <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 xl:table-cell">{sourceLabel[c.source]}</td>
                     <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{c.valueCents ? formatDollars(c.valueCents) : <span className="text-fg-3">–</span>}</td>
                     <td className="hidden px-3 py-1.5 text-fg-2 md:table-cell">{timeAgo(c.lastActivityAt, now)}</td>
                     <td className="hidden px-3 py-1.5 pr-6 xl:table-cell">{owner ? <Avatar person={owner} /> : <span className="text-fg-3">–</span>}</td>
