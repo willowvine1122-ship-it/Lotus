@@ -394,3 +394,20 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 ### Rules
 - Stage colour never encodes progress; the column position and the word do.
 - Logging a call, text or email records it; sending arrives with the Inbox and the form says so.
+
+## Revision 5: funnels and websites (2026-10-09)
+
+Funnels reuse the board grammar for the agency side and introduce one new world: the public page a client's visitor sees.
+
+### Components, added
+- **Funnels board**: top bar with title and a "N funnels · N live" line, search, a client select and an All | Live | Drafts select in `rail-2`, the primary "New funnel" button; KPI strip (Live funnels, Visitors this week, Leads this week, Conversion) with week-over-week arrows; a table of Funnel (name over its public path), Client, Status, Visitors 7d, Leads 7d, Conv., Updated, and a 14-day leads sparkline in `chart-2`; the selected row drives the funnel panel.
+- **Funnel panel**: sticky header (name, client · template · step count, a neutral Live or Draft tag, "Updated … ago"), an action row (primary Edit pages, secondary View live, Publish or Unpublish on the right), the public link in a copy field, 2x2 result tiles (Visitors, Leads, Conversion, Best day), a two-series daily line chart (visitors `chart-1`, leads `chart-2`, legend always on), a numbered steps list, and the newest form submissions linking to their contacts.
+- **New funnel form**: Revision 3 form grammar; templates are bordered tiles, the chosen one in ink. Templates that do not fit the client's mode are not offered.
+- **Funnel editor**: ink header (name with status tag, back · client · template · updated; View live, Settings, Publish, Save), then three columns: 260px steps and blocks list (steps as numbered rows, the current one in ink; blocks as type over a one-line summary, the selected one in `brand-soft`; hover reveals move and remove), the page preview on `surface-2` in a white frame with a Desktop | Phone switch, and a 320px inspector with the selected block's fields (or the funnel settings: name, brand colour, step name, delete). The selected block gets a 2px violet outline in the preview; clicking a block in the preview selects it.
+- **Public funnel page** (`/f/[slug]/[step]`): paper `#faf9f6`, ink `#0f1221`, the client's brand colour on buttons, eyebrows and feature rules only. Blocks: hero (left at 1040px or centred at 760px), numbers strip on white, feature points with a 2px brand rule, testimonial on white, text, FAQ as native details, call-to-action in an ink card, a form card (white, 12px radius, soft shadow, 44px fields, gift amounts as four selectable tiles), footer with "Built with Lotus". Every form posts to a server action that creates or updates a contact, logs the activity, records the submission and moves to the next step.
+
+### Rules
+- Live and Draft are neutral tags; publishing is a state, not a health signal.
+- A draft funnel's public URL renders the not-found page; nothing half-built is reachable.
+- The editor never auto-saves; the Save button reads Saved, Save or Saving and unsaved steps carry a dot in the steps list.
+- The public page never shows the agency frame, and the agency frame never shows a public page outside the preview.

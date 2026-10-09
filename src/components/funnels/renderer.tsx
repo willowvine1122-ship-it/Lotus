@@ -34,7 +34,8 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
     case "hero":
       return (
         <section className={cn("px-6 pb-16 pt-20 md:pb-24 md:pt-28", block.align === "center" ? "text-center" : "")}>
-          <div className={cn("mx-auto max-w-[760px]", block.align === "center" ? "" : "md:mx-0 md:max-w-[640px]")}>
+          <div className={cn("mx-auto", block.align === "center" ? "max-w-[760px]" : "max-w-[1040px]")}>
+            <div className={block.align === "center" ? "" : "max-w-[640px]"}>
             {block.eyebrow && <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[var(--fb)]">{block.eyebrow}</p>}
             <h1 className="mt-3 text-4xl font-semibold leading-[1.1] tracking-tight text-[#0f1221] md:text-5xl">{block.headline}</h1>
             {block.subhead && <p className="mt-5 text-lg leading-relaxed text-[#4b4f63] md:text-xl">{block.subhead}</p>}
@@ -43,6 +44,7 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
                 <Button href={block.buttonHref || "#form"}>{block.buttonLabel}</Button>
               </div>
             )}
+            </div>
           </div>
         </section>
       );
@@ -170,12 +172,40 @@ export function Block({ block, formAction, preview }: { block: FunnelBlock; form
   }
 }
 
-export function FunnelPage({ funnel, step, formAction, preview, className }: { funnel: Pick<Funnel, "brandColor" | "name">; step: FunnelStep; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean; className?: string }) {
+export function FunnelPage({
+  funnel,
+  step,
+  formAction,
+  preview,
+  selectedId,
+  onSelectBlock,
+  className,
+}: {
+  funnel: Pick<Funnel, "brandColor" | "name">;
+  step: FunnelStep;
+  formAction?: (fd: FormData) => void | Promise<void>;
+  preview?: boolean;
+  /** Editor only: outline this block and let a click select another. */
+  selectedId?: string | null;
+  onSelectBlock?: (id: string) => void;
+  className?: string;
+}) {
   return (
     <div className={cn("min-h-full bg-[#faf9f6] font-sans text-[#0f1221] antialiased", className)} style={{ ["--fb" as string]: funnel.brandColor }}>
-      {step.blocks.map((b) => (
-        <Block key={b.id} block={b} formAction={formAction} preview={preview} />
-      ))}
+      {step.blocks.map((b) =>
+        onSelectBlock ? (
+          <div
+            key={b.id}
+            data-block={b.id}
+            onClick={() => onSelectBlock(b.id)}
+            className={cn("relative cursor-pointer outline-offset-[-2px] transition-[outline-color] duration-100", selectedId === b.id ? "outline outline-2 outline-[#7c3aed]" : "hover:outline hover:outline-2 hover:outline-[#7c3aed]/40")}
+          >
+            <Block block={b} formAction={formAction} preview={preview} />
+          </div>
+        ) : (
+          <Block key={b.id} block={b} formAction={formAction} preview={preview} />
+        ),
+      )}
       {step.blocks.length === 0 && <p className="px-6 py-20 text-center text-sm text-[#6b6f83]">This page has no blocks yet.</p>}
     </div>
   );

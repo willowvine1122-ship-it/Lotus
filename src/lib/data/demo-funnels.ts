@@ -50,7 +50,7 @@ export const templates: FunnelTemplate[] = [
         name: "Landing page",
         path: "",
         blocks: [
-          { id: bid(), type: "hero", eyebrow: `${c.industry} · ${c.location}`, headline: `Get a free ${c.industry.toLowerCase()} quote in 24 hours`, subhead: `Licensed, insured and local. Tell us about the job and ${c.name} will call you back today.`, buttonLabel: "Get my quote", buttonHref: "#form", align: "left" },
+          { id: bid(), type: "hero", eyebrow: `${c.industry} · ${c.location}`, headline: `Get a free ${/[A-Z]{2,}/.test(c.industry) ? c.industry : c.industry.toLowerCase()} quote in 24 hours`, subhead: `Licensed, insured and local. Tell us about the job and ${c.name} will call you back today.`, buttonLabel: "Get my quote", buttonHref: "#form", align: "left" },
           { id: bid(), type: "stats", items: [{ value: "4.9", label: "Google rating" }, { value: "1,200+", label: "Jobs completed" }, { value: "24h", label: "Quote turnaround" }] },
           { id: bid(), type: "features", headline: "Why people pick us", items: [{ title: "Upfront pricing", body: "A written quote before any work starts. No surprises on the invoice." }, { title: "Local crew", body: `Our own team, based in ${c.location}. No subcontractors.` }, { title: "Workmanship guarantee", body: "If something is not right, we come back and fix it." }] },
           { id: bid(), type: "testimonial", quote: "They showed up when they said they would, quoted on the spot and finished a day early.", name: "Mike S.", detail: `Homeowner, ${c.location}` },
