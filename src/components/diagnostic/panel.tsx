@@ -231,16 +231,16 @@ function PanelHeader({ client, now, onClose }: { client: ClientRecord; now: Date
           {client.tags.length > 0 && <span className="sr-only">Add tag</span>}
         </button>
       </div>
-      <div className="flex items-center gap-3 text-xs text-fg-2">
-        <span className="inline-flex items-center gap-1">
-          <MapPin className="size-3.5 text-fg-3" strokeWidth={1.75} />
-          {client.location}
+      <div className="flex items-center gap-3 whitespace-nowrap text-xs text-fg-2">
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <MapPin className="size-3.5 shrink-0 text-fg-3" strokeWidth={1.75} />
+          <span className="truncate">{client.location}</span>
         </span>
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3.5 text-fg-3" strokeWidth={1.75} />
           <span className="num">{localTime}</span>
         </span>
-        <span className="num text-fg-3">{active}d active</span>
+        <span className="num text-fg-3" title={`Client for ${active} days`}>{active}d</span>
         <span className="ml-auto">
           <AvatarStack people={client.assignees} />
         </span>
@@ -413,7 +413,8 @@ function YearOverYear({ now }: { now: Date }) {
 
 function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
   const c = row.client;
-  const [perf, setPerf] = useState<"both" | "raised" | "gift">("both");
+  // Raised per day and average gift are two orders of magnitude apart, so one series at a time.
+  const [perf, setPerf] = useState<"raised" | "gift">("raised");
   const [perfRange, setPerfRange] = useState<ChartRange>("14");
   const [vol, setVol] = useState<"donations" | "donors">("donations");
   const series = fundraisingSeries(c.days, Number(perfRange));
@@ -461,7 +462,6 @@ function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
               value={perf}
               onChange={setPerf}
               options={[
-                { value: "both", label: "Both" },
                 { value: "raised", label: "Raised" },
                 { value: "gift", label: "Avg gift" },
               ]}
@@ -476,10 +476,11 @@ function FundraisingPanel({ row, now }: { row: FundraisingRow; now: Date }) {
         <LineChart
           labels={series.labels}
           format={(v) => `$${compactNumber(v / 100)}`}
-          series={[
-            ...(perf !== "gift" ? [{ key: "raised", label: "Raised / day", color: "var(--chart-1)", values: series.a }] : []),
-            ...(perf !== "raised" ? [{ key: "gift", label: "Avg gift", color: "var(--chart-2)", values: series.b }] : []),
-          ]}
+          series={
+            perf === "raised"
+              ? [{ key: "raised", label: "Raised / day", color: "var(--chart-1)", values: series.a }]
+              : [{ key: "gift", label: "Avg gift", color: "var(--chart-2)", values: series.b }]
+          }
         />
       </section>
 

@@ -76,24 +76,24 @@ interface Column {
 }
 
 const marketingColumns: Column[] = [
-  { key: "name", label: "Client", className: "min-w-[176px]" },
-  { key: "leadCost", label: "Lead cost", className: "min-w-[92px]" },
-  { key: "aptCost", label: "Apt cost", className: "min-w-[92px]" },
-  { key: "bookRate", label: "Book rate", align: "right", defaultDir: "desc" },
+  { key: "name", label: "Client", className: "w-[160px] min-w-[160px]" },
+  { key: "leadCost", label: "Lead cost", className: "min-w-[88px]" },
+  { key: "aptCost", label: "Apt cost", className: "hidden sm:table-cell min-w-[88px]" },
+  { key: "bookRate", label: "Book rate", align: "right", className: "hidden md:table-cell", defaultDir: "desc" },
   { key: "pacing", label: "Budget pacing", className: "hidden md:table-cell" },
   { key: "spend", label: "Spend", align: "right", defaultDir: "desc" },
-  { key: "roi", label: "Est ROI", align: "right", defaultDir: "desc" },
-  { key: "trend", label: "30 days", className: "hidden xl:table-cell", defaultDir: "desc" },
+  { key: "roi", label: "Est ROI", align: "right", className: "hidden md:table-cell", defaultDir: "desc" },
+  { key: "trend", label: "30-day leads", className: "hidden lg:table-cell", defaultDir: "desc" },
 ];
 
 const fundraisingColumns: Column[] = [
-  { key: "name", label: "Client", className: "min-w-[176px]" },
-  { key: "raised", label: "Raised", className: "min-w-[104px]", defaultDir: "desc" },
-  { key: "gift", label: "Avg gift", className: "min-w-[92px]", defaultDir: "desc" },
-  { key: "donors", label: "New donors", align: "right", defaultDir: "desc" },
+  { key: "name", label: "Client", className: "w-[160px] min-w-[160px]" },
+  { key: "raised", label: "Raised", className: "min-w-[100px]", defaultDir: "desc" },
+  { key: "gift", label: "Avg gift", className: "hidden sm:table-cell min-w-[88px]", defaultDir: "desc" },
+  { key: "donors", label: "New donors", align: "right", className: "hidden md:table-cell", defaultDir: "desc" },
   { key: "pacing", label: "Goal pacing", className: "hidden md:table-cell" },
-  { key: "recurring", label: "Monthly", align: "right", defaultDir: "desc" },
-  { key: "trend", label: "30 days", className: "hidden xl:table-cell", defaultDir: "desc" },
+  { key: "recurring", label: "Recurring", className: "hidden md:table-cell min-w-[80px]", defaultDir: "desc" },
+  { key: "trend", label: "30-day raised", className: "hidden lg:table-cell", defaultDir: "desc" },
 ];
 
 export function DiagnosticTable({
@@ -131,7 +131,7 @@ export function DiagnosticTable({
                   key={c.key}
                   scope="col"
                   aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
-                  className={cn("whitespace-nowrap px-2.5 py-2 text-2xs font-medium uppercase tracking-[0.06em] text-fg-3 first:pl-5 last:pr-5", c.className, c.align === "right" ? "text-right" : "text-left")}
+                  className={cn("whitespace-nowrap px-2 py-2 text-2xs font-medium uppercase tracking-[0.06em] text-fg-3 first:pl-5 last:pr-5", c.className, c.align === "right" ? "text-right" : "text-left")}
                 >
                   <button
                     type="button"
@@ -154,7 +154,7 @@ export function DiagnosticTable({
               aria-selected={selectedId === r.client.account.id}
               className={cn(
                 "h-[52px] cursor-pointer border-b border-line transition-colors duration-100 hover:bg-surface-2/60",
-                selectedId === r.client.account.id && "bg-brand-soft/40 shadow-[inset_2px_0_0_var(--brand)] hover:bg-brand-soft/50",
+                selectedId === r.client.account.id && "bg-brand-soft/40 hover:bg-brand-soft/50",
               )}
             >
               <ClientCell row={r} />
@@ -178,7 +178,7 @@ function ClientCell({ row }: { row: Row }) {
   const { client } = row;
   const noteCount = client.notes.length;
   return (
-    <td className="px-2.5 py-2 pl-5">
+    <td className="px-2 py-2 pl-5">
       <div className="flex items-center gap-2.5">
         <StatusDot health={client.health} />
         <span className="truncate font-medium">{client.account.name}</span>
@@ -194,9 +194,20 @@ function ClientCell({ row }: { row: Row }) {
   );
 }
 
-function Money({ cents, change, sub, goodWhenUp = false }: { cents: number | null; change: number | null; sub: string; goodWhenUp?: boolean }) {
+/** 30-day sparkline; the change versus the previous range is in the tooltip and for screen readers. */
+function TrendCell({ spark, change }: { spark: number[]; change: number | null }) {
+  const label = change === null ? "No prior period" : `${change > 0 ? "+" : ""}${Math.round(change * 100)}% vs previous period`;
   return (
-    <td className="px-2.5 py-2">
+    <td className="hidden px-2 py-2 pr-5 lg:table-cell" title={label}>
+      <Sparkline values={spark} color="var(--chart-1)" width={64} />
+      <span className="sr-only">{label}</span>
+    </td>
+  );
+}
+
+function Money({ cents, change, sub, goodWhenUp = false, className }: { cents: number | null; change: number | null; sub: string; goodWhenUp?: boolean; className?: string }) {
+  return (
+    <td className={cn("px-2 py-2", className)}>
       <div className="flex items-baseline gap-1.5">
         <span className="num font-medium">{cents === null ? "–" : formatDollars(cents)}</span>
         <Change value={change} goodWhenUp={goodWhenUp} />
@@ -211,19 +222,14 @@ function MarketingCells({ row }: { row: MarketingRow }) {
   return (
     <>
       <Money cents={cur.leadCostCents} change={row.leadCostChange} sub={`${formatCount(cur.leads)} leads`} />
-      <Money cents={cur.aptCostCents} change={row.aptCostChange} sub={`${formatCount(cur.appointments)} apts`} />
-      <td className="num px-2.5 py-2 text-right">{formatRate(cur.bookRate)}</td>
-      <td className="hidden px-2.5 py-2 md:table-cell">
+      <Money cents={cur.aptCostCents} change={row.aptCostChange} sub={`${formatCount(cur.appointments)} apts`} className="hidden sm:table-cell" />
+      <td className="num hidden px-2 py-2 text-right md:table-cell">{formatRate(cur.bookRate)}</td>
+      <td className="hidden px-2 py-2 md:table-cell">
         <PacingGauge pct={row.pacing.pct} budgetCents={row.pacing.budgetCents} />
       </td>
-      <td className="num px-2.5 py-2 text-right font-medium">{formatDollars(cur.spendCents)}</td>
-      <td className={cn("num px-3 py-2 text-right font-medium", cur.roi !== null && cur.roi >= 3 ? "text-green" : "text-fg-2")}>{formatMultiple(cur.roi)}</td>
-      <td className="hidden px-2.5 py-2 pr-5 xl:table-cell">
-        <div className="flex items-center gap-2">
-          <Sparkline values={row.spark} color="var(--chart-1)" />
-          <Change value={row.leadsChange} />
-        </div>
-      </td>
+      <td className="num px-2 py-2 text-right font-medium">{formatDollars(cur.spendCents)}</td>
+      <td className={cn("num hidden px-2 py-2 text-right font-medium md:table-cell", cur.roi !== null && cur.roi >= 3 ? "text-green" : "text-fg-2")}>{formatMultiple(cur.roi)}</td>
+      <TrendCell spark={row.spark} change={row.leadsChange} />
     </>
   );
 }
@@ -233,27 +239,22 @@ function FundraisingCells({ row }: { row: FundraisingRow }) {
   return (
     <>
       <Money cents={cur.raisedCents} change={row.raisedChange} sub={`${formatCount(cur.donations)} gifts`} goodWhenUp />
-      <td className="px-2.5 py-2">
+      <td className="hidden px-2 py-2 sm:table-cell">
         <div className="flex items-baseline gap-1.5">
           <span className="num font-medium">{cur.avgGiftCents === null ? "–" : formatDollarsExact(cur.avgGiftCents)}</span>
           <Change value={row.giftChange} goodWhenUp />
         </div>
         <div className="num text-2xs text-fg-3">per gift</div>
       </td>
-      <td className="num px-2.5 py-2 text-right">{formatCount(cur.newDonors)}</td>
-      <td className="hidden px-2.5 py-2 md:table-cell">
+      <td className="num hidden px-2 py-2 text-right md:table-cell">{formatCount(cur.newDonors)}</td>
+      <td className="hidden px-2 py-2 md:table-cell">
         <PacingGauge pct={row.pacing.pct} budgetCents={row.pacing.budgetCents} kind="goal" />
       </td>
-      <td className="num px-2.5 py-2 text-right">
-        {formatRate(cur.recurringShare)}
-        <span className="ml-1 text-2xs text-fg-3">({cur.newRecurring})</span>
+      <td className="hidden px-2 py-2 md:table-cell">
+        <div className="num font-medium">{formatRate(cur.recurringShare)}</div>
+        <div className="num whitespace-nowrap text-2xs text-fg-3">{formatCount(cur.newRecurring)} new</div>
       </td>
-      <td className="hidden px-2.5 py-2 pr-5 xl:table-cell">
-        <div className="flex items-center gap-2">
-          <Sparkline values={row.spark} color="var(--chart-1)" />
-          <Change value={row.raisedChange} />
-        </div>
-      </td>
+      <TrendCell spark={row.spark} change={row.raisedChange} />
     </>
   );
 }

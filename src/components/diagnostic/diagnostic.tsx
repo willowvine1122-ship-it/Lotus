@@ -5,7 +5,7 @@ import { Plus, Search } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import type { RangeDays } from "@/lib/diagnostic";
 import type { AccountMode, ClientRecord } from "@/lib/types";
-import { cn, formatCount, formatDollars, formatDollarsCompact, formatDollarsExact, formatMultiple, formatRate } from "@/lib/utils";
+import { formatCount, formatDollars, formatDollarsCompact, formatDollarsExact, formatMultiple, formatRate } from "@/lib/utils";
 import { buildRow, type Row } from "./model";
 import { ClientPanel } from "./panel";
 import { Segmented } from "./primitives";
@@ -22,24 +22,19 @@ const ranges: { value: RangeDays; label: string }[] = [
   { value: 90, label: "Last 90 days" },
 ];
 
-function Kpi({ label, value, aside, tone }: { label: string; value: string; aside?: string; tone?: "red" | "amber" }) {
+function Kpi({ label, value, aside }: { label: string; value: string; aside?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded border border-line bg-surface px-4 py-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-3">
       <div className="min-w-0">
         <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
         <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
       </div>
-      {aside && <div className={cn("num whitespace-nowrap text-xs sm:ml-auto sm:text-right", tone === "red" ? "font-medium text-red" : tone === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside}</div>}
+      {aside && <div className="num whitespace-nowrap text-xs text-fg-3 sm:ml-auto sm:text-right">{aside}</div>}
     </div>
   );
 }
 
 function KpiStrip({ rows, mode }: { rows: Row[]; mode: AccountMode }) {
-  const flagged = rows.filter((r) => r.client.health === "red").length;
-  const watch = rows.filter((r) => r.client.health === "amber").length;
-  const attention = flagged ? `${flagged} need${flagged === 1 ? "s" : ""} action` : watch ? `${watch} to watch` : "All on track";
-  const tone = flagged ? "red" : watch ? "amber" : undefined;
-
   if (mode === "marketing") {
     const m = rows.filter((r): r is Extract<Row, { mode: "marketing" }> => r.mode === "marketing");
     const spend = m.reduce((a, r) => a + r.cur.spendCents, 0);
@@ -48,10 +43,10 @@ function KpiStrip({ rows, mode }: { rows: Row[]; mode: AccountMode }) {
     const revenue = m.reduce((a, r) => a + r.cur.estRevenueCents, 0);
     return (
       <div className="grid grid-cols-2 gap-2.5 px-5 py-4 md:px-6 xl:grid-cols-4">
-        <Kpi label="Active clients" value={String(m.length)} aside={attention} tone={tone} />
+        <Kpi label="Active clients" value={String(m.length)} aside={`Spend ${formatDollarsCompact(spend)}`} />
         <Kpi label="Leads" value={formatCount(leads)} aside={`Avg cost ${leads ? formatDollars(spend / leads) : "–"}`} />
         <Kpi label="Appointments" value={formatCount(apts)} aside={`Avg cost ${apts ? formatDollars(spend / apts) : "–"}`} />
-        <Kpi label="Spend" value={formatDollarsCompact(spend)} aside={`Est ROI ${formatMultiple(spend ? revenue / spend : null)}`} />
+        <Kpi label="Est revenue" value={formatDollarsCompact(revenue)} aside={`Est ROI ${formatMultiple(spend ? revenue / spend : null)}`} />
       </div>
     );
   }
@@ -63,9 +58,9 @@ function KpiStrip({ rows, mode }: { rows: Row[]; mode: AccountMode }) {
   const mtd = f.reduce((a, r) => a + r.pacing.spentCents, 0);
   return (
     <div className="grid grid-cols-2 gap-2.5 px-5 py-4 md:px-6 xl:grid-cols-4">
-      <Kpi label="Active clients" value={String(f.length)} aside={attention} tone={tone} />
-      <Kpi label="Raised" value={formatDollarsCompact(raised)} aside={`${formatCount(gifts)} gifts`} />
-      <Kpi label="Avg gift" value={gifts ? formatDollarsExact(raised / gifts) : "–"} aside={`${formatCount(donors)} new donors`} />
+      <Kpi label="Active clients" value={String(f.length)} aside={`Raised ${formatDollarsCompact(raised)}`} />
+      <Kpi label="Gifts" value={formatCount(gifts)} aside={`${formatCount(donors)} new donors`} />
+      <Kpi label="Avg gift" value={gifts ? formatDollarsExact(raised / gifts) : "–"} aside={`${formatCount(f.reduce((a, r) => a + r.cur.newRecurring, 0))} new monthly`} />
       <Kpi label="Month to date" value={formatDollarsCompact(mtd)} aside={`${formatRate(goal ? mtd / goal : null)} of ${formatDollarsCompact(goal)} goal`} />
     </div>
   );
@@ -108,16 +103,32 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
   };
 
   const date = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const flagged = rows.filter((r) => r.client.health === "red").length;
+  const watch = rows.filter((r) => r.client.health === "amber").length;
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:px-6">
-          <div className="min-w-0">
+        <header className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
+          <div className="min-w-0 md:shrink-0">
             <h1 className="text-lg font-semibold leading-6 tracking-tight">Daily Diagnostic</h1>
-            <p className="text-xs text-rail-fg-2">{date}, through yesterday</p>
+            <p className="text-xs text-rail-fg-2 md:whitespace-nowrap">
+              {date}, through yesterday
+              {flagged > 0 && (
+                <span className="text-[#ff8a95]">
+                  {" · "}
+                  <span className="num">{flagged}</span> need{flagged === 1 ? "s" : ""} action
+                </span>
+              )}
+              {watch > 0 && (
+                <span className="text-[#ffc46b]">
+                  {" · "}
+                  <span className="num">{watch}</span> to watch
+                </span>
+              )}
+            </p>
           </div>
-          <label className="relative order-last w-full md:order-none md:ml-2 md:w-auto md:flex-1 md:max-w-[380px]">
+          <label className="relative order-last w-full md:order-none md:ml-2 md:w-auto md:min-w-[120px] md:flex-1 md:max-w-[320px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-rail-fg-2" strokeWidth={1.75} />
             <input
               type="search"
@@ -127,7 +138,7 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
               className="h-8 w-full rounded border border-rail-line bg-rail-2 pl-8 pr-3 text-sm text-rail-fg placeholder:text-rail-fg-2/80 focus:border-rail-fg-2 focus:outline-none"
             />
           </label>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <Segmented
               label="Client mode"
               value={mode}
@@ -176,7 +187,7 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[352px] 2xl:w-[420px]">
             <ClientPanel row={selected} now={now} />
           </aside>
           {panelOpen && (
