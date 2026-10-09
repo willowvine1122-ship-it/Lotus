@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Activity,
   CheckSquare,
+  HeartHandshake,
   Inbox,
   LayoutGrid,
   Settings,
@@ -15,6 +16,7 @@ const nav = [
   { href: "/agency/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
+  { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;
 
