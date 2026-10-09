@@ -251,3 +251,83 @@ export interface InboxThread extends Conversation {
   stageName?: string;
   client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
 }
+
+/* ------------------------------------------------------------------ */
+/* Email marketing: templates, audiences, campaigns, sends               */
+/* ------------------------------------------------------------------ */
+
+/** One block of an email body. Text supports {{first_name}} style merge tags. */
+export type EmailBlock =
+  | { id: string; type: "heading"; text: string }
+  | { id: string; type: "text"; text: string }
+  | { id: string; type: "button"; text: string; url: string }
+  | { id: string; type: "image"; alt: string; caption?: string }
+  | { id: string; type: "divider" };
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  description: string;
+  /** Which client mode it is written for; undefined means both. */
+  mode?: AccountMode;
+  subject: string;
+  previewText: string;
+  blocks: EmailBlock[];
+}
+
+/** Rules for a segment. Empty arrays mean "any". All rules must match. */
+export interface AudienceFilter {
+  tags: string[];
+  stageIds: string[];
+  sources: ContactSource[];
+  /** Only contacts added in the last N days. */
+  addedWithinDays?: number;
+}
+
+export interface EmailAudience {
+  id: string;
+  accountId: string;
+  name: string;
+  /** A segment is evaluated live from its rules; a list is a fixed set of contacts. */
+  kind: "segment" | "list";
+  filter: AudienceFilter;
+  contactIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CampaignStatus = "draft" | "scheduled" | "sent";
+
+export interface EmailCampaign {
+  id: string;
+  accountId: string;
+  name: string;
+  subject: string;
+  previewText: string;
+  fromName: string;
+  fromEmail: string;
+  audienceId?: string;
+  templateId?: string;
+  blocks: EmailBlock[];
+  status: CampaignStatus;
+  scheduledFor?: string;
+  sentAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SendStatus = "delivered" | "bounced";
+
+/** One email to one contact. Engagement timestamps are set by provider webhooks. */
+export interface EmailSend {
+  id: string;
+  campaignId: string;
+  contactId: string;
+  email: string;
+  status: SendStatus;
+  sentAt: string;
+  openedAt?: string;
+  clickedAt?: string;
+  clickedUrl?: string;
+  unsubscribedAt?: string;
+}
