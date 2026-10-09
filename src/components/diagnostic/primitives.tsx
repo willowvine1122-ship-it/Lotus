@@ -70,13 +70,13 @@ const avatarTone: Record<Assignee["tone"], string> = {
   ink: "bg-rail text-rail-fg",
 };
 
-export function Avatar({ person, size = "sm" }: { person: Assignee; size?: "sm" | "md" }) {
+export function Avatar({ person, size = "sm" }: { person: Assignee; size?: "xs" | "sm" | "md" }) {
   return (
     <span
       title={person.name}
       className={cn(
         "grid shrink-0 place-items-center rounded-full font-semibold ring-2 ring-surface",
-        size === "sm" ? "size-6 text-2xs" : "size-8 text-xs",
+        size === "xs" ? "size-4 text-[9px] ring-1" : size === "sm" ? "size-6 text-2xs" : "size-8 text-xs",
         avatarTone[person.tone],
       )}
     >

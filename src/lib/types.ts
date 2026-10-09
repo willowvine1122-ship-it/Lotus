@@ -213,3 +213,41 @@ export interface ContactActivity {
   amountCents?: number;
   at: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Inbox: conversations and messages across channels                    */
+/* ------------------------------------------------------------------ */
+
+export type Channel = "sms" | "email" | "whatsapp" | "facebook";
+
+export interface InboxMessage {
+  id: string;
+  conversationId: string;
+  channel: Channel;
+  direction: "inbound" | "outbound";
+  /** A note is internal: agency staff only, never sent. */
+  kind: "message" | "note";
+  subject?: string;
+  body: string;
+  authorName?: string;
+  status?: "sent" | "delivered" | "read" | "failed";
+  sentAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  accountId: string;
+  contactId: string;
+  assigneeName?: string;
+  status: "open" | "closed";
+  unread: number;
+  messages: InboxMessage[]; // oldest first
+}
+
+/** A conversation joined with its contact and client, as the inbox renders it. */
+export interface InboxThread extends Conversation {
+  contact: Contact;
+  /** The contact's pipeline stage name, for the contact panel. */
+  stageName?: string;
+  client: { id: string; name: string; slug: string; mode: AccountMode; health: Health };
+}
