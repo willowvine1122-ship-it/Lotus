@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Activity,
+  CalendarDays,
   CheckSquare,
   Inbox,
   LayoutGrid,
@@ -14,6 +15,7 @@ const nav = [
   { href: "/agency/clients", label: "Clients", icon: LayoutGrid },
   { href: "/agency/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/agency/inbox", label: "Inbox", icon: Inbox },
+  { href: "/agency/calendars", label: "Calendars", icon: CalendarDays },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
   { href: "/agency/settings", label: "Settings", icon: Settings },
 ] as const;

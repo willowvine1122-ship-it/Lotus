@@ -1,4 +1,4 @@
-import type { AccountMode, Assignee, ClientRecord, ClientStatus, DiagnosticNote, Member, Task } from "@/lib/types";
+import type { AccountMode, Assignee, ClientRecord, ClientStatus, Contact, ContactActivity, DiagnosticNote, Member, Task } from "@/lib/types";
 import { demoAgency } from "./demo";
 import { demoClients } from "./demo-clients";
 
@@ -200,4 +200,33 @@ export function initialsOf(name: string) {
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+/*
+ * Contacts stubs. The contacts module replaces these four with the real
+ * store; until then they keep the same signatures so the booking flow can
+ * log an "appointment" activity against the contact it booked.
+ */
+const contactsStub = globalThis as unknown as { __lotusContactsStub?: { contacts: Contact[]; activities: ContactActivity[] } };
+function contactsStore() {
+  contactsStub.__lotusContactsStub ??= { contacts: [], activities: [] };
+  return contactsStub.__lotusContactsStub;
+}
+
+export function listContacts(_now: Date, accountId?: string): Contact[] {
+  return contactsStore().contacts.filter((c) => !accountId || c.accountId === accountId);
+}
+
+export function findContact(_now: Date, id: string): Contact | undefined {
+  return contactsStore().contacts.find((c) => c.id === id);
+}
+
+export function listActivities(_now: Date, contactId: string): ContactActivity[] {
+  return contactsStore().activities.filter((a) => a.contactId === contactId);
+}
+
+export function addActivity(now: Date, contactId: string, input: { kind: ContactActivity["kind"]; title: string; body?: string; by?: string; amountCents?: number }): ContactActivity {
+  const a: ContactActivity = { id: `act-${Date.now().toString(36)}`, contactId, ...input, at: now.toISOString() };
+  contactsStore().activities.unshift(a);
+  return a;
 }
