@@ -154,3 +154,134 @@ export interface FundraisingClient extends ClientBase {
 }
 
 export type ClientRecord = MarketingClient | FundraisingClient;
+
+/* ------------------------------------------------------------------ */
+/* CRM: contacts, pipeline stages, activity                              */
+/* ------------------------------------------------------------------ */
+
+export type ContactSource = "meta" | "google" | "website" | "referral" | "donation-page" | "import" | "manual";
+
+/** One pipeline per client; marketing and fundraising clients use different stage sets. */
+export interface PipelineStage {
+  id: string;
+  name: string;
+  /** Terminal stages: a won deal or a recurring donor is "won", a lost deal or lapsed donor is "lost". */
+  outcome?: "won" | "lost";
+}
+
+export interface Pipeline {
+  id: string;
+  accountId: string;
+  name: string;
+  stages: PipelineStage[];
+}
+
+export interface Contact {
+  id: string;
+  accountId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  city?: string;
+  tags: string[];
+  source: ContactSource;
+  /** Stage id within the client's pipeline. */
+  stageId: string;
+  /** Agency or client person who owns the relationship. */
+  ownerName?: string;
+  /** Marketing: estimated or won job value. Fundraising: lifetime donated. */
+  valueCents: number;
+  /** Fundraising only: active monthly giving. */
+  recurring?: boolean;
+  doNotContact: { email: boolean; sms: boolean; call: boolean };
+  createdAt: string;
+  lastActivityAt: string;
+}
+
+export type ActivityKind = "call" | "sms" | "email" | "form" | "appointment" | "donation" | "note" | "stage" | "task";
+
+export interface ContactActivity {
+  id: string;
+  contactId: string;
+  kind: ActivityKind;
+  title: string;
+  body?: string;
+  /** Person who did it (agency member) or "System" for automated events. */
+  by?: string;
+  amountCents?: number;
+  at: string;
+}
+
+/* Calendars and booking                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The slice of a contact that booking needs. A stub until the contacts
+ * module lands; a booking creates or matches a contact by email.
+ */
+export interface ContactRef {
+  id: string;
+  accountId: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+export type MeetingLocation = "phone" | "video" | "in_person";
+
+export interface AppointmentType {
+  id: string;
+  calendarId: string;
+  name: string;
+  durationMinutes: number;
+  description?: string;
+  location: MeetingLocation;
+  locationDetail?: string;
+  active: boolean;
+}
+
+/** One bookable window inside a day, in minutes from midnight (calendar time zone). */
+export interface AvailabilityWindow {
+  start: number;
+  end: number;
+}
+
+export interface Calendar {
+  id: string;
+  accountId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  ownerName: string;
+  timeZone: string;
+  /** Index 0 is Sunday. An empty list means closed that day. */
+  weekly: AvailabilityWindow[][];
+  blockedDates: string[]; // YYYY-MM-DD in the calendar's time zone
+  bufferMinutes: number;
+  minNoticeHours: number;
+  maxDaysAhead: number;
+  slotStepMinutes: number;
+  bookingEnabled: boolean;
+  types: AppointmentType[];
+  createdAt: string;
+}
+
+/** booked = the lead booked but has not confirmed; confirmed = reminder answered. */
+export type AppointmentStatus = "booked" | "confirmed" | "showed" | "no_show" | "cancelled";
+export type AppointmentSource = "booking_page" | "manual" | "ads";
+
+export interface Appointment {
+  id: string;
+  calendarId: string;
+  accountId: string;
+  typeId: string;
+  contact: ContactRef;
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
+  source: AppointmentSource;
+  notes?: string;
+  createdAt: string;
+}
