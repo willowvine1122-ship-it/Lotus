@@ -1019,7 +1019,57 @@ export interface FormVisit {
 /* Websites: multi-page sites with navigation, domain and SEO           */
 /* ------------------------------------------------------------------ */
 
-// (websites types go here)
+/** Website pages reuse the funnel blocks, plus an embedded Lotus form. */
+export type WebsiteBlock = FunnelBlock | { id: string; type: "lotus_form"; formId: string; headline?: string; subhead?: string };
+
+export interface WebsitePage {
+  id: string;
+  title: string;
+  /** Path after the site root; "" is the home page. */
+  path: string;
+  blocks: WebsiteBlock[];
+  inNav: boolean;
+  seo: { title?: string; description?: string; noindex?: boolean };
+}
+
+export type DomainStatus = "pending" | "connected" | "failed";
+
+export interface WebsiteDomain {
+  host: string;
+  status: DomainStatus;
+  checkedAt?: string;
+  /** What the last DNS lookup found, in words. */
+  found?: string;
+}
+
+export interface WebsiteDay {
+  day: string;
+  views: number;
+  leads: number;
+}
+
+export interface Website {
+  id: string;
+  accountId: string;
+  name: string;
+  slug: string;
+  status: "draft" | "live";
+  template: string;
+  brandColor: string;
+  /** Wordmark text in the header; the client's name by default. */
+  logoText: string;
+  header: { ctaLabel?: string; ctaHref?: string; phone?: string };
+  footer: { tagline?: string; phone?: string; email?: string; address?: string; hours?: string };
+  seo: { siteTitle: string; description: string; ogImage?: string };
+  analytics: { gaId?: string; metaPixelId?: string };
+  domain?: WebsiteDomain;
+  pages: WebsitePage[];
+  days: WebsiteDay[];
+  /** Page views per page id, last 30 days. */
+  pageViews: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+}
 
 /* ------------------------------------------------------------------ */
 /* Estimate templates: price book, templates, signatures, deposits      */

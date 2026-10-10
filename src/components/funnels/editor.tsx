@@ -32,7 +32,7 @@ export interface EditorActions {
   deleteFunnel: (funnelId: string) => Promise<void>;
 }
 
-const blockTypes: FunnelBlockType[] = ["hero", "text", "features", "stats", "testimonial", "faq", "form", "cta", "footer"];
+export const blockTypes: FunnelBlockType[] = ["hero", "text", "features", "stats", "testimonial", "faq", "form", "cta", "footer"];
 const formFields: { key: "name" | "email" | "phone" | "address" | "message" | "amount"; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
@@ -94,7 +94,7 @@ function ListEditor<T extends Record<string, string>>({ items, keys, onChange, b
   );
 }
 
-function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: FunnelBlock) => void }) {
+export function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: FunnelBlock) => void }) {
   const set = (patch: Partial<FunnelBlock>) => onChange({ ...block, ...patch } as FunnelBlock);
   const text = (label: string, key: string, value: string | undefined, opts?: { long?: boolean; hint?: string; placeholder?: string }) => (
     <Field label={label} htmlFor={`f-${key}`} hint={opts?.hint}>
@@ -203,7 +203,7 @@ function BlockFields({ block, onChange }: { block: FunnelBlock; onChange: (b: Fu
 /* ------------------------------ preview ------------------------------ */
 
 /** Renders the page at its real width (desktop or phone) and scales it to fit the column, so the preview is the page. */
-function ScaledPreview({ width, children }: { width: number; children: React.ReactNode }) {
+export function ScaledPreview({ width, children }: { width: number; children: React.ReactNode }) {
   const [outer, outerWidth] = useWidth<HTMLDivElement>();
   const inner = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);

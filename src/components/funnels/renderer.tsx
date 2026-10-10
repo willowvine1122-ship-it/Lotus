@@ -144,7 +144,7 @@ export function Block({ block, formAction, preview, aside }: { block: FunnelBloc
   }
 }
 
-function FormCard({ block, formAction, preview, className }: { block: Extract<FunnelBlock, { type: "form" }>; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean; className?: string }) {
+export function FormCard({ block, formAction, preview, className }: { block: Extract<FunnelBlock, { type: "form" }>; formAction?: (fd: FormData) => void | Promise<void>; preview?: boolean; className?: string }) {
   return (
     <div className={cn("rounded-xl border border-[#e9e7e1] bg-white p-6 shadow-[0_1px_2px_rgba(15,18,33,0.04),0_8px_24px_rgba(15,18,33,0.06)] @md:p-8", className)}>
       {(() => {

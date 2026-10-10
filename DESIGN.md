@@ -551,3 +551,21 @@ The forms board, builder and responses reuse the board grammar and the workflow 
 - A submission finds the contact by email, then phone, fills only empty fields, adds the form's tags, logs the answers on the timeline and fires "Form submitted" (filterable by form).
 - Only answers on the respondent's actual path are saved; skipped questions are dropped.
 - A live form that is saved with an unfinished question goes back to draft rather than break for visitors.
+
+## Revision 14: Websites (2026-10-10)
+
+Websites extend funnels into multi-page sites: the same blocks and editor grammar, plus a site header with navigation, a site footer, per-page SEO and a custom domain. Like forms, the public site is where the client's brand leads; Lotus only signs the footer.
+
+### Components, added
+- **Websites board**: top bar (status select, client select, violet "New site"), KPI strip (Live sites, Visits · 7 days with change, Leads · 7 days, Visit to lead, which turns amber with "N domains waiting" when a domain isn't connected), table of Site (brand swatch, name over the domain or /s/slug), Client, Status, Pages, Visits 7d (14-day sparkline + count), Leads 7d, Domain (green, amber or red dot before the host; "Lotus address" when none). The panel: Edit site (ink), Domain, Open; the address with copy; 30-day tiles and a per-day sparkline; pages ranked by visits as bars, hidden pages marked.
+- **New site**: client, name, and a template list where each template shows its pages as chips (Local service business, Nonprofit, One page, Start from scratch).
+- **Editor**: the ink header carries Domain (amber dot while waiting), Site settings, Publish (or "Save and publish" with edits) and the violet Save. Left: Pages (home pinned first, hidden-from-nav and path-problem marks, reorder, remove, add by title) and the selected page's blocks. Middle: the page as visitors see it, header and footer included, at desktop or phone width; links in the preview switch pages instead of leaving. Right: the block, Page settings (title, path, show in navigation, search title and description with a Google result preview and a character count, hide from search engines), Site settings (name, Lotus address, logo text, brand colour, header button and phone, footer tagline and contact lines, site title, description, share image, Google Analytics and Meta Pixel IDs), or Domain.
+- **Domain pane**: host entry; once added, the status row with Check DNS (a real DNS lookup), what was found in plain words, the one CNAME record to add as a copyable table, four numbered steps, and Disconnect.
+- **Public site**: sticky header (logo text, navigation from 768px container width with the current page in ink, phone from 1024px, brand-colour button; a menu button below), the blocks, and a white footer with tagline, Pages and Contact columns.
+
+### Rules
+- Internal links are written as paths (/contact) and resolve to /s/<slug>/contact or to the custom domain, so a site moves to its domain without edits.
+- The first page is the home page and has no path; paths are unique, lowercase, and can't use sitemap.xml, robots.txt, _next or api.
+- Contact forms on a site create or update the contact (source Website, tag "Website lead"), log it on the timeline, fire "Form submitted" and count as a lead for the site. An embedded Lotus form records its responses in Forms.
+- Each site serves its own sitemap.xml and robots.txt; pages hidden from search are left out of the first and disallowed in the second. A draft site answers 404 everywhere.
+- Custom domains: one CNAME to the Lotus sites host. Apex domains forward to their www subdomain at the registrar. Hosts are served when the app runs with LOTUS_APP_HOSTS set (src/proxy.ts).
