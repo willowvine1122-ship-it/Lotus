@@ -91,7 +91,7 @@ export function JobsBoard({
         );
       },
     },
-    { key: "value", label: "Value", align: "right", defaultDir: "desc", sort: (j) => jobValue(j), cell: (j) => <span className="num">{formatDollars(jobValue(j))}</span> },
+    { key: "value", label: "Value", align: "right", className: "hidden sm:table-cell", defaultDir: "desc", sort: (j) => jobValue(j), cell: (j) => <span className="num">{formatDollars(jobValue(j))}</span> },
   ];
 
   const rows = useSorted(

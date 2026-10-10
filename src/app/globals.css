@@ -170,3 +170,9 @@ a {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Sortable column heads: the sort button keeps the head's uppercase tracking. */
+th > button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+}

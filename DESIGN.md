@@ -514,3 +514,25 @@ Reviews, review requests, the reports board, the report builder and the client's
 - Replies post as the client and are recorded now; delivery to Google and Facebook, and sending texts and emails, arrive with the Inbox and the email module. The forms say so in the muted footnote.
 - Two series share an axis only when they share a unit and a scale.
 - A replied review stays selected after the reply even under the Needs reply filter, so the confirmation is visible.
+
+## Revision 12: whole-app consistency pass (2026-10-10)
+
+Every module was built in its own thread; this revision pulls them to one grammar, with the Daily Diagnostic as the bar.
+
+### One board bar
+- Every board (Diagnostic, Clients, Tasks, Inbox, Calendars, Contacts, Donors, Funnels, Email, Jobs, Estimates, Invoices, Automations, Reputation, Reports, Settings) uses the 56px ink `TopBar` from `field/ui.tsx`: 18px/600 title, 12px tabular meta, a search slot (160–280px, `flex-1`), then controls at 28px. The 24px `PageHeader` is reserved for record pages (client page, add client, new-record forms).
+- The in-bar primary is 28px violet; its label shows from `xl` and collapses to the icon below. Secondary filters that do not fit the bar go in a paper filter row above the table (Reputation's Source and Everything | Needs reply, as Calendars' Upcoming | Needs outcome).
+- On phones the search is always the last row of the bar and selects shrink (`min-w-0 flex-1`).
+
+### Tables and tiles
+- Column heads are uppercase 11px tracked `fg-3` in every table; the sort button inherits the transform (`th > button` in globals.css), so sortable and plain heads read the same.
+- Rows are 52px. Columns that do not fit a phone hide below `sm` (Value, Balance, Status on Email) or `2xl` (Owner, Source) rather than widening the page; nothing scrolls horizontally at 390.
+- KPI tiles keep one shape: label, 20px figure, aside bottom-right on its own line (always reserved, so a strip stays one height). `tone` red/amber on the aside is the only colour.
+
+### Panel
+- The right panel is `w-[360px] xl:w-[384px] 2xl:w-[420px]` everywhere. Tasks puts its Add-a-task form there instead of a card in the work area.
+- The panel's main action is ink-filled (Jobs "Schedule", Invoices "Send a reminder", Calendars "Mark confirmed"); violet appears inside a panel only on boards with no bar primary (Inbox, Reports, Reputation, Tasks).
+- Contact tags are neutral everywhere (Diagnostic panel, Contacts, Inbox). Amber stays reserved for signals: Paused, Lapsed, Unconfirmed, Unscheduled, Needs reply.
+
+### Settings
+- The webhook sample is the first shipped use of Geist Mono: a `surface-2/50` bordered block, never an ink block inside the paper work area.

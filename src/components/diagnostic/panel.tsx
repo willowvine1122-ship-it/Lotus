@@ -227,7 +227,7 @@ export function PanelHeader({ client, now, onClose }: { client: ClientRecord; no
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         {client.tags.map((t) => (
-          <Tag key={t}>{t}</Tag>
+          <Tag key={t} tone="neutral">{t}</Tag>
         ))}
         <button type="button" className="inline-flex h-5 items-center gap-1 rounded-[4px] border border-dashed border-line-strong px-1.5 text-2xs text-fg-3 hover:text-fg">
           <Plus className="size-3" strokeWidth={2} />

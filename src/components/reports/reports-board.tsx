@@ -239,7 +239,7 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[380px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <Panel client={selected} sends={sends.filter((s) => s.accountId === selected.id)} now={now} sendNow={sendNow} />
           </aside>
           {panelOpen && (

@@ -25,7 +25,7 @@ const columns: { key: Key; label: string; className?: string; align?: "right"; d
   { key: "source", label: "Source", className: "hidden xl:table-cell" },
   { key: "value", label: "Value", align: "right", className: "hidden sm:table-cell", defaultDir: "desc" },
   { key: "activity", label: "Last activity", className: "hidden md:table-cell", defaultDir: "desc" },
-  { key: "owner", label: "Owner", className: "hidden xl:table-cell" },
+  { key: "owner", label: "Owner", className: "hidden 2xl:table-cell" },
 ];
 
 function Kpi({ label, value, aside }: { label: string; value: string; aside?: string }) {
@@ -112,7 +112,7 @@ export function ContactsBoard({
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
+        <header className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
           <div className="min-w-0 md:shrink-0">
             <h1 className="text-lg font-semibold leading-6 tracking-tight">Contacts</h1>
             <p className="num text-xs text-rail-fg-2 md:whitespace-nowrap">
@@ -120,7 +120,7 @@ export function ContactsBoard({
               {newWeek > 0 && ` · ${newWeek} new this week`}
             </p>
           </div>
-          <label className="relative order-last w-full md:order-none md:ml-2 md:w-auto md:min-w-[180px] md:flex-1 md:max-w-[280px]">
+          <label className="relative order-last w-full md:order-none md:ml-2 md:w-auto md:min-w-[160px] md:flex-1 md:max-w-[280px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-rail-fg-2" strokeWidth={1.75} />
             <input
               type="search"
@@ -161,8 +161,8 @@ export function ContactsBoard({
               className="inline-flex h-7 items-center gap-1.5 rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line"
             >
               <KanbanSquare className="size-3.5" strokeWidth={1.75} />
-              <span className="hidden xl:inline">Pipeline</span>
-              <span className="sr-only xl:hidden">Pipeline</span>
+              <span className="hidden 2xl:inline">Pipeline</span>
+              <span className="sr-only 2xl:hidden">Pipeline</span>
             </Link>
             <ButtonLink href={clientId === "all" ? "/agency/contacts/new" : `/agency/contacts/new?client=${clientId}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
@@ -233,7 +233,7 @@ export function ContactsBoard({
                     <td className="hidden whitespace-nowrap px-3 py-1.5 text-fg-2 xl:table-cell">{sourceLabel[c.source]}</td>
                     <td className="num hidden px-3 py-1.5 text-right sm:table-cell">{c.valueCents ? formatDollars(c.valueCents) : <span className="text-fg-3">–</span>}</td>
                     <td className="hidden px-3 py-1.5 text-fg-2 md:table-cell">{timeAgo(c.lastActivityAt, now)}</td>
-                    <td className="hidden px-3 py-1.5 pr-6 xl:table-cell">{owner ? <Avatar person={owner} /> : <span className="text-fg-3">–</span>}</td>
+                    <td className="hidden px-3 py-1.5 pr-6 2xl:table-cell">{owner ? <Avatar person={owner} /> : <span className="text-fg-3">–</span>}</td>
                   </tr>
                 );
               })}
@@ -251,7 +251,7 @@ export function ContactsBoard({
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[380px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <ContactPanel contact={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]!} activities={selectedActivities} team={team} now={now} actions={actions} />
           </aside>
           {panelOpen && (

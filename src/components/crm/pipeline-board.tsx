@@ -122,7 +122,7 @@ export function PipelineBoard({ client, clients, pipeline, contacts, activities,
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[380px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <ContactPanel contact={selected} client={client} pipeline={pipeline} activities={selectedActivities} team={team} now={now} actions={actions} onClose={() => setSelectedId(null)} />
           </aside>
           {panelOpen && (

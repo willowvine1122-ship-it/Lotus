@@ -271,7 +271,7 @@ export function WorkflowsBoard({ rows, clients, pipelines, nowIso, initialClient
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[400px] 2xl:w-[440px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <WorkflowPanel row={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]} now={now} actions={actions} />
           </aside>
           {panelOpen && (

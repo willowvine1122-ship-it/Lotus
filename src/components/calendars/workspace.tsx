@@ -205,7 +205,7 @@ export function CalendarsWorkspace({
 
       {view === "bookings" && selected && selectedCal && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[360px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <BookingPanel appointment={selected} calendar={selectedCal} client={clientById.get(selected.accountId)} history={appointments} now={now} />
           </aside>
           {panelOpen && (

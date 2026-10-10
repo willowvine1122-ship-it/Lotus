@@ -78,7 +78,7 @@ export function ScheduleForm({ job, client, crew, schedule }: { job: Job; client
         )}
       </fieldset>
       <div className="flex items-center gap-3">
-        <SubmitButton pendingLabel="Saving…" variant="secondary" className="h-7 px-2.5 text-xs">
+        <SubmitButton pendingLabel="Saving…" variant="secondary" className="h-7 border-rail bg-rail px-2.5 text-xs text-rail-fg hover:bg-rail-2">
           {job.status === "unscheduled" ? "Schedule" : "Save schedule"}
         </SubmitButton>
         <FormNotice state={state} />
