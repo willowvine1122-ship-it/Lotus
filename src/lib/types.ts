@@ -1127,3 +1127,105 @@ export interface EstimateExtras {
   deposit?: { amountCents: number; reference: string; at: string };
   viewedAt?: string;
 }
+
+/* ------------------------- Donation elements ------------------------ */
+/* Fundraise Up style embeddable pieces: one definition, many placements. */
+
+export type DonationElementType =
+  | "donate_button"
+  | "button_group"
+  | "image_card"
+  | "sticky_button"
+  | "goal_meter"
+  | "stat_counter"
+  | "donation_form"
+  | "donation_levels"
+  | "impact_slider"
+  | "recent_donations"
+  | "message_bar"
+  | "popup"
+  | "social_proof";
+
+export type DonationElementStatus = "live" | "paused";
+
+/** "campaign" follows the campaign's default frequency. */
+export type ElementFrequency = "campaign" | GiftFrequency;
+
+export interface ElementLevel {
+  id: string;
+  amountCents: number;
+  label: string;
+  description: string;
+}
+
+export interface DonationElementConfig {
+  label: string;
+  headline: string;
+  body: string;
+  imageUrl?: string;
+  frequency: ElementFrequency;
+  /** Preset gift the element opens checkout with; 0 lets the donor choose. */
+  amountCents: number;
+  /** Amount buttons (button group) and tiers (levels, impact slider). */
+  levels: ElementLevel[];
+  allowChange: boolean;
+  /** Goal meter and stat counter. */
+  metric: "raised" | "donors" | "gifts" | "monthly_donors" | "monthly_value";
+  showDonors: boolean;
+  showDeadline: boolean;
+  deadline?: string;
+  /** Offline money added to the meter, in cents. */
+  offlineCents: number;
+  /** Matching multiplier shown on the meter; 1 means no match. */
+  match: number;
+  /** Recent donations and social proof: how names show. */
+  nameStyle: "first_initial" | "initials" | "hidden";
+  showLocation: boolean;
+  count: number;
+  /** Look. */
+  accent: string;
+  theme: "light" | "dark";
+  size: "sm" | "md" | "lg";
+  shape: "square" | "rounded" | "pill";
+  icon: boolean;
+  pulse: boolean;
+  fullWidth: boolean;
+  align: "left" | "center" | "right";
+  /** Overlays. */
+  position: "bottom_right" | "bottom_left" | "top" | "bottom" | "right_edge";
+  trigger: "load" | "delay" | "scroll" | "exit";
+  delaySeconds: number;
+  scrollPercent: number;
+  devices: "all" | "desktop" | "mobile";
+  startsOn?: string;
+  endsOn?: string;
+  showOn: string[];
+  hideOn: string[];
+}
+
+export interface DonationElement {
+  id: string;
+  accountId: string;
+  campaignId: string;
+  type: DonationElementType;
+  name: string;
+  status: DonationElementStatus;
+  config: DonationElementConfig;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ElementDay {
+  date: string;
+  views: number;
+  opens: number; // checkout opened from the element
+  gifts: number;
+  raisedCents: number;
+}
+
+/** A Lotus funnel or website block that places a donation element. */
+export interface DonationElementBlock {
+  id: string;
+  type: "donation_element";
+  elementId: string;
+}

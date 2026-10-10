@@ -39,13 +39,22 @@ const stepOf: Record<string, Step> = {
 
 const money = (cents: number) => (cents % 100 === 0 ? formatDollars(cents) : formatDollarsExact(cents));
 
-export function Checkout({ campaign, orgName, defaultCountry }: { campaign: CheckoutCampaign; orgName: string; defaultCountry: string }) {
+/** Where the gift starts when a donation element opened the checkout. */
+export interface CheckoutStart {
+  amountCents?: number;
+  frequency?: GiftFrequency;
+  elementId?: string;
+}
+
+export function Checkout({ campaign, orgName, defaultCountry, start }: { campaign: CheckoutCampaign; orgName: string; defaultCountry: string; start?: CheckoutStart }) {
   const [state, formAction, pending] = useActionState<DonateState, FormData>(donateAction, null);
   const [step, setStep] = useState<Step>("amount");
-  const [frequency, setFrequency] = useState<GiftFrequency>(campaign.defaultFrequency);
+  const [frequency, setFrequency] = useState<GiftFrequency>(start?.frequency ?? campaign.defaultFrequency);
   const preset = (f: GiftFrequency) => campaign.amounts[f][Math.floor((campaign.amounts[f].length - 1) / 2)] ?? 5000;
-  const [amountCents, setAmountCents] = useState<number>(preset(campaign.defaultFrequency));
-  const [custom, setCustom] = useState("");
+  const startAmount = start?.amountCents && start.amountCents >= 100 ? start.amountCents : undefined;
+  const startCustom = startAmount && !campaign.amounts[start?.frequency ?? campaign.defaultFrequency].includes(startAmount);
+  const [amountCents, setAmountCents] = useState<number>(startAmount ?? preset(start?.frequency ?? campaign.defaultFrequency));
+  const [custom, setCustom] = useState(startCustom ? String(startAmount! / 100) : "");
   const [designation, setDesignation] = useState(campaign.designations[0] ?? "");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -149,6 +158,7 @@ export function Checkout({ campaign, orgName, defaultCountry }: { campaign: Chec
       noValidate
     >
       <input type="hidden" name="campaign" value={campaign.slug} />
+      {start?.elementId && <input type="hidden" name="element" value={start.elementId} />}
       <input type="hidden" name="frequency" value={frequency} />
       <input type="hidden" name="amount" value={(amountCents / 100).toFixed(2)} />
       <input type="hidden" name="designation" value={designation} />

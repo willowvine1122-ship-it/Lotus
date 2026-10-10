@@ -5,6 +5,7 @@ import { findCampaign, recordGift } from "@/lib/data/donors";
 import { countries, feeToCover } from "@/lib/fundraising";
 import { chargeGift } from "@/lib/payments/stripe";
 import { donationReceived } from "@/lib/data/automation-events";
+import { creditGift } from "@/lib/data/elements";
 
 /*
  * The public checkout's one action. Validates the gift with zod, recomputes
@@ -86,6 +87,9 @@ export async function donateAction(_prev: DonateState, formData: FormData): Prom
     paymentRef: charge.ref,
   });
   if (!receipt) return { ok: false, message: "We could not record your gift. You have not been charged." };
+  // Gifts that came through a donation element are credited to it.
+  const element = formData.get("element");
+  if (typeof element === "string" && element) creditGift(now, element.slice(0, 120), receipt.donationId, amountCents);
   if (receipt.contactId) donationReceived(now, receipt.accountId, receipt.contactId, receipt.totalCents, found.campaign.title);
 
   return {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Activity,
+  Blocks,
   CalendarDays,
   CheckSquare,
   ClipboardPen,
@@ -30,6 +31,7 @@ const nav = [
   { href: "/agency/calendars", label: "Calendars", icon: CalendarDays },
   { href: "/agency/contacts", label: "Contacts", icon: Users },
   { href: "/agency/donors", label: "Donors", icon: HeartHandshake },
+  { href: "/agency/elements", label: "Elements", icon: Blocks },
   { href: "/agency/funnels", label: "Funnels", icon: Layers },
   { href: "/agency/websites", label: "Websites", icon: Globe },
   { href: "/agency/forms", label: "Forms", icon: ClipboardPen },

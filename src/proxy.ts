@@ -22,6 +22,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Next's own assets and the form embeds a site page loads stay on their real paths.
-  matcher: ["/((?!_next/|api/|form/|favicon.ico).*)"],
+  // Next's own assets, the form embeds and the donation elements a site page loads stay on their real paths.
+  matcher: ["/((?!_next/|api/|form/|e/|embed/|elements/|favicon.ico).*)"],
 };
