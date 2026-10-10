@@ -203,7 +203,7 @@ export function WebsitesBoard({ sites, clients, origin, nowIso, initialClientId 
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[400px] 2xl:w-[440px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <SitePanel item={selected} client={clientById.get(selected.site.accountId)} origin={origin} now={now} />
           </aside>
           {panelOpen && (

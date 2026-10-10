@@ -188,7 +188,7 @@ export function ResponsesView({ form, client, responses, stats, nowIso, initialI
 
         {view === "responses" && selected && (
           <>
-            <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[400px] 2xl:w-[440px]">
+            <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
               <ResponsePanel key={selected.id} form={form} r={selected} now={now} remove={remove} />
             </aside>
             {panelOpen && (

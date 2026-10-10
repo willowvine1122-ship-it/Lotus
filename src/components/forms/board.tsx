@@ -208,7 +208,7 @@ export function FormsBoard({ forms, clients, origin, nowIso, initialClientId }: 
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[400px] 2xl:w-[440px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <FormPanel item={selected} client={clientById.get(selected.form.accountId)} origin={origin} now={now} />
           </aside>
           {panelOpen && (

@@ -439,7 +439,7 @@ export function IntegrationsHub({ clients, data, origin, nowIso, initialTab }: {
 
       {current && (
         <>
-          <aside key={panelKey} className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[400px] 2xl:w-[440px]">
+          <aside key={panelKey} className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             {panel()}
           </aside>
           {panelOpen && (
