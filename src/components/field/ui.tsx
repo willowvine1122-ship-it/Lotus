@@ -43,7 +43,7 @@ export const inkControl = "h-7 rounded border border-rail-line bg-rail-2 px-2 te
 
 export function InkSelect<T extends string>({ label, value, onChange, options, className }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; className?: string }) {
   return (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)} className={cn(inkControl, "max-w-[160px]", className)}>
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)} className={cn(inkControl, "min-w-0 max-w-[160px] flex-1 md:flex-none", className)}>
       {options.map((o) => (
         <option key={o.value} value={o.value}>
           {o.label}
@@ -70,7 +70,7 @@ export function Kpi({ label, value, aside, tone }: { label: string; value: strin
         <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
         <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
       </div>
-      {aside && <div className={cn("num whitespace-nowrap text-xs sm:self-end sm:text-right", tone === "red" ? "font-medium text-red" : tone === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside}</div>}
+      <div className={cn("num min-h-4 whitespace-nowrap text-xs sm:self-end sm:text-right", tone === "red" ? "font-medium text-red" : tone === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside ?? "\u00a0"}</div>
     </div>
   );
 }

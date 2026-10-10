@@ -515,7 +515,29 @@ Reviews, review requests, the reports board, the report builder and the client's
 - Two series share an axis only when they share a unit and a scale.
 - A replied review stays selected after the reply even under the Needs reply filter, so the confirmation is visible.
 
-## Revision 12: Integrations (2026-10-10)
+## Revision 12: whole-app consistency pass (2026-10-10)
+
+Every module was built in its own thread; this revision pulls them to one grammar, with the Daily Diagnostic as the bar.
+
+### One board bar
+- Every board (Diagnostic, Clients, Tasks, Inbox, Calendars, Contacts, Donors, Funnels, Email, Jobs, Estimates, Invoices, Automations, Reputation, Reports, Settings) uses the 56px ink `TopBar` from `field/ui.tsx`: 18px/600 title, 12px tabular meta, a search slot (160–280px, `flex-1`), then controls at 28px. The 24px `PageHeader` is reserved for record pages (client page, add client, new-record forms).
+- The in-bar primary is 28px violet; its label shows from `xl` and collapses to the icon below. Secondary filters that do not fit the bar go in a paper filter row above the table (Reputation's Source and Everything | Needs reply, as Calendars' Upcoming | Needs outcome).
+- On phones the search is always the last row of the bar and selects shrink (`min-w-0 flex-1`).
+
+### Tables and tiles
+- Column heads are uppercase 11px tracked `fg-3` in every table; the sort button inherits the transform (`th > button` in globals.css), so sortable and plain heads read the same.
+- Rows are 52px. Columns that do not fit a phone hide below `sm` (Value, Balance, Status on Email) or `2xl` (Owner, Source) rather than widening the page; nothing scrolls horizontally at 390.
+- KPI tiles keep one shape: label, 20px figure, aside bottom-right on its own line (always reserved, so a strip stays one height). `tone` red/amber on the aside is the only colour.
+
+### Panel
+- The right panel is `w-[360px] xl:w-[384px] 2xl:w-[420px]` everywhere. Tasks puts its Add-a-task form there instead of a card in the work area.
+- The panel's main action is ink-filled (Jobs "Schedule", Invoices "Send a reminder", Calendars "Mark confirmed"); violet appears inside a panel only on boards with no bar primary (Inbox, Reports, Reputation, Tasks).
+- Contact tags are neutral everywhere (Diagnostic panel, Contacts, Inbox). Amber stays reserved for signals: Paused, Lapsed, Unconfirmed, Unscheduled, Needs reply.
+
+### Settings
+- The webhook sample is the first shipped use of Geist Mono: a `surface-2/50` bordered block, never an ink block inside the paper work area.
+
+## Revision 13: Integrations (2026-10-10)
 
 The integrations hub reuses the board grammar (ink top bar, KPI strip, table, right panel). Nothing new in colour: each app's own colour appears only on its small square mark, as identity, never as a signal.
 
@@ -534,7 +556,7 @@ The integrations hub reuses the board grammar (ink top bar, KPI strip, table, ri
 - Everything that arrives creates or fills a contact by email or phone and lands on its timeline, so the CRM stays the record.
 - Secrets are shown once or masked; outgoing webhooks are signed and refuse private network addresses.
 
-## Revision 13: Forms (2026-10-10)
+## Revision 14: Forms (2026-10-10)
 
 The forms board, builder and responses reuse the board grammar and the workflow header. The public form is the one place the client's brand leads: it renders in one of six themes (Paper, Ink, Violet, Sand, Forest, Sky) whose colours belong to the form, not to Lotus.
 
@@ -552,7 +574,7 @@ The forms board, builder and responses reuse the board grammar and the workflow 
 - Only answers on the respondent's actual path are saved; skipped questions are dropped.
 - A live form that is saved with an unfinished question goes back to draft rather than break for visitors.
 
-## Revision 14: Websites (2026-10-10)
+## Revision 15: Websites (2026-10-10)
 
 Websites extend funnels into multi-page sites: the same blocks and editor grammar, plus a site header with navigation, a site footer, per-page SEO and a custom domain. Like forms, the public site is where the client's brand leads; Lotus only signs the footer.
 
@@ -570,7 +592,7 @@ Websites extend funnels into multi-page sites: the same blocks and editor gramma
 - Each site serves its own sitemap.xml and robots.txt; pages hidden from search are left out of the first and disallowed in the second. A draft site answers 404 everywhere.
 - Custom domains: one CNAME to the Lotus sites host. Apex domains forward to their www subdomain at the registrar. Hosts are served when the app runs with LOTUS_APP_HOSTS set (src/proxy.ts).
 
-## Revision 15: Estimate builder (2026-10-10)
+## Revision 16: Estimate builder (2026-10-10)
 
 Estimates (Revision 10) gain a price book, templates, optional add-ons, terms, a deposit and an e-signature. The agency side keeps the field-service grammar; the customer's link keeps one violet action per step.
 

@@ -187,7 +187,7 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[352px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <ClientPanel row={selected} now={now} />
           </aside>
           {panelOpen && (

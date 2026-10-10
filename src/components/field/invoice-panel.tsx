@@ -100,7 +100,7 @@ export function InvoiceNextStep({ inv, today, actions }: { inv: Invoice; today: 
         </PanelButton>
       )}
       {d === "overdue" && (
-        <PanelButton disabled={pending} onClick={() => start(() => actions.send(inv.id))}>
+        <PanelButton tone="ink" disabled={pending} onClick={() => start(() => actions.send(inv.id))}>
           <Send className="size-3.5" strokeWidth={1.75} /> Send a reminder
         </PanelButton>
       )}

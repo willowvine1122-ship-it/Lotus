@@ -92,7 +92,7 @@ export function PanelHeader({ contact, client, pipeline, now, actions, onClose, 
         <StageSelect contact={contact} pipeline={pipeline} moveStage={actions.moveStage} />
         {stage.outcome === "won" && <Tag tone="neutral">{client.mode === "marketing" ? "Customer" : "Recurring"}</Tag>}
         {contact.tags.map((t) => (
-          <Tag key={t}>{t}</Tag>
+          <Tag key={t} tone="neutral">{t}</Tag>
         ))}
         <span className="num ml-auto text-2xs text-fg-3">Added {timeAgo(contact.createdAt, now)}</span>
       </div>

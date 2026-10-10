@@ -67,6 +67,7 @@ export function InvoicesBoard({
       key: "balance",
       label: "Balance",
       align: "right",
+      className: "hidden sm:table-cell",
       defaultDir: "desc",
       sort: (i) => (i.status === "void" ? -1 : invoiceMoney(i).balance),
       cell: (i) => {

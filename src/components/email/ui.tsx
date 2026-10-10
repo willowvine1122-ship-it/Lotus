@@ -18,12 +18,12 @@ export function StatusTag({ status }: { status: CampaignStatus }) {
 
 export function Kpi({ label, value, aside, asideTone }: { label: string; value: string; aside?: React.ReactNode; asideTone?: "red" | "amber" }) {
   return (
-    <div className="min-w-0 rounded border border-line bg-surface px-4 py-3">
-      <div className="truncate text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
-      <div className="mt-0.5 flex flex-col gap-x-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <span className="num text-xl font-semibold leading-7">{value}</span>
-        {aside && <span className={cn("num min-w-0 truncate text-xs", asideTone === "red" ? "font-medium text-red" : asideTone === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside}</span>}
+    <div className="flex min-w-0 flex-col gap-1 rounded border border-line bg-surface px-4 py-3 sm:gap-0.5">
+      <div className="min-w-0">
+        <div className="whitespace-nowrap text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{label}</div>
+        <div className="num mt-0.5 text-xl font-semibold leading-7">{value}</div>
       </div>
+      <div className={cn("num min-h-4 truncate whitespace-nowrap text-xs sm:self-end sm:text-right", asideTone === "red" ? "font-medium text-red" : asideTone === "amber" ? "font-medium text-amber" : "text-fg-3")}>{aside ?? "\u00a0"}</div>
     </div>
   );
 }

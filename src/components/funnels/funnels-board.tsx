@@ -246,7 +246,7 @@ export function FunnelsBoard({
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[380px] 2xl:w-[420px]">
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <FunnelPanel funnel={selected} client={clientById.get(selected.accountId)!} submissions={selectedSubs} now={now} origin={origin} actions={actions} />
           </aside>
           {panelOpen && (
