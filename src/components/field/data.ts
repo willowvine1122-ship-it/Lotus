@@ -1,7 +1,7 @@
 import { invoiceDisplay, invoiceMoney, localDate, localStamp } from "@/lib/field";
-import { trades } from "@/lib/data/demo-field";
+import { listPriceBook } from "@/lib/data/estimate-kit";
 import { clientTaxRate, fieldClients, findEstimate, findInvoice, listInvoices, listTechnicians } from "@/lib/data/field-store";
-import { findClient, listContacts } from "@/lib/data/store";
+import { listContacts } from "@/lib/data/store";
 import type { Crew, CustomerRef, FieldClientRef } from "./model";
 import type { BookItem } from "./line-items-editor";
 import type { Job } from "@/lib/types";
@@ -39,12 +39,13 @@ export function crewMap(now: Date): Crew {
   return Object.fromEntries(listTechnicians(now).map((t) => [t.id, t]));
 }
 
-export function priceBooks(now: Date, clients: FieldClientRef[]): Record<string, BookItem[]> {
+/** Each client's price book (the estimate builder keeps it), as suggestions for line items. */
+export function priceBooks(now: Date, clients: FieldClientRef[], kind: "item" | "addon" | "all" = "item"): Record<string, BookItem[]> {
   const out: Record<string, BookItem[]> = {};
   for (const c of clients) {
-    const rec = findClient(now, c.id);
-    const book = rec ? trades[rec.industry]?.book : undefined;
-    out[c.id] = (book ?? []).map(([name, dollars]) => ({ name, unitCents: Math.round(dollars * 100) }));
+    out[c.id] = listPriceBook(now, c.id)
+      .filter((i) => kind === "all" || i.kind === kind)
+      .map((i) => ({ name: i.name, unitCents: i.unitCents }));
   }
   return out;
 }

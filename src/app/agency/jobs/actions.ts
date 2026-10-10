@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/app/agency/contacts/actions";
-import { addTechnician, createJob, findJob, invoiceFromJob, scheduleJob, setJobStatus, updateJobDetails } from "@/lib/data/field-store";
+import { addTechnician, createJob, findJob, invoiceFromJob, recordPayment, scheduleJob, setJobStatus, updateJobDetails } from "@/lib/data/field-store";
+import { creditDeposit } from "@/lib/data/estimate-kit";
 import { actor, flatten, parseLines, stamp } from "@/lib/field-forms";
 import type { JobStatus } from "@/lib/types";
 import { jobCompleted } from "@/lib/data/automation-events";
@@ -121,8 +122,10 @@ export async function saveJobNotesAction(id: string, _prev: ActionState, fd: For
 }
 
 export async function invoiceJobAction(id: string): Promise<void> {
-  const inv = invoiceFromJob(new Date(), id, actor);
+  const now = new Date();
+  const inv = invoiceFromJob(now, id, actor);
   if (!inv) return;
+  creditDeposit(now, inv.estimateId, inv.id, recordPayment, (ref) => inv.payments.some((p) => p.reference === ref));
   refresh(id);
   redirect(`/agency/invoices/${inv.id}`);
 }

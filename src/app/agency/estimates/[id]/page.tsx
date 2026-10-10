@@ -13,6 +13,9 @@ import { EstimateTag, Ledger, LedgerRow, PanelSection } from "@/components/field
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { findEstimate, findJob } from "@/lib/data/field-store";
+import { estimateExtras, findTemplate } from "@/lib/data/estimate-kit";
+import { approvedTotal, depositFor, depositLabel } from "@/components/estimates/model";
+import { formatDollarsExact } from "@/lib/utils";
 import { listActivities } from "@/lib/data/store";
 import { estimateDisplay, formatDay, formatTaxRate } from "@/lib/field";
 import { approveEstimateAction, convertEstimateAction, declineEstimateAction, invoiceEstimateAction, sendEstimateAction } from "../actions";
@@ -29,6 +32,11 @@ async function EstimateView({ params }: { params: Promise<{ id: string }> }) {
   const job = e.jobId ? findJob(now, e.jobId) : undefined;
   const actions = { send: sendEstimateAction, approve: approveEstimateAction, decline: declineEstimateAction, convert: convertEstimateAction, invoice: invoiceEstimateAction };
   const activities = customer ? listActivities(now, customer.id).filter((a) => a.kind !== "stage") : [];
+  const ex = estimateExtras(now, e.id);
+  const template = ex.templateId ? findTemplate(now, ex.templateId) : undefined;
+  const chosenOption = e.options.find((o) => o.id === e.approvedOptionId);
+  const signedTotal = chosenOption ? approvedTotal(chosenOption, ex, e.taxRateBps).total : undefined;
+  const dueDeposit = signedTotal !== undefined ? depositFor(signedTotal, ex.depositPct) : undefined;
   const date = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "–");
   return (
     <>
@@ -95,6 +103,63 @@ async function EstimateView({ params }: { params: Promise<{ id: string }> }) {
               </LedgerRow>
             </Ledger>
           </PanelSection>
+          <PanelSection title="Customer sign-off" aside={<a href={`/p/estimates/${e.id}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-fg-2 hover:text-fg hover:underline">Customer link</a>}>
+            <Ledger>
+              {template && (
+                <LedgerRow label="Template">
+                  <Link href={`/agency/estimates/templates/${template.id}`} className="hover:underline">
+                    {template.name}
+                  </Link>
+                </LedgerRow>
+              )}
+              <LedgerRow label="Opened">{date(ex.viewedAt)}</LedgerRow>
+              <LedgerRow label="Deposit">
+                {ex.deposit ? (
+                  <span className="num">
+                    {formatDollarsExact(ex.deposit.amountCents)} paid <span className="text-fg-3">· {ex.deposit.reference}</span>
+                  </span>
+                ) : dueDeposit ? (
+                  <span className="num font-medium text-amber">{formatDollarsExact(dueDeposit)} not paid yet</span>
+                ) : (
+                  depositLabel(ex.depositPct)
+                )}
+              </LedgerRow>
+              <LedgerRow label="Signed">{ex.signature ? `${ex.signature.name}, ${date(ex.signature.at)}` : "–"}</LedgerRow>
+              {signedTotal !== undefined && (
+                <LedgerRow label="Approved total" strong>
+                  <span className="num">{formatDollarsExact(signedTotal)}</span>
+                </LedgerRow>
+              )}
+            </Ledger>
+            {ex.signature?.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ex.signature.image} alt={`Signature of ${ex.signature.name}`} className="mt-3 h-16 w-auto rounded border border-line bg-surface px-2" />
+            )}
+            {ex.signature?.ip && <p className="num mt-1.5 text-2xs text-fg-3">Signed from {ex.signature.ip}</p>}
+          </PanelSection>
+          {ex.addOns.length > 0 && (
+            <PanelSection title="Add-ons offered">
+              <ul className="flex flex-col divide-y divide-line rounded border border-line text-sm">
+                {ex.addOns.map((a) => {
+                  const on = ex.chosenAddOnIds.includes(a.id);
+                  return (
+                    <li key={a.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                      <span className={on ? "font-medium" : "text-fg-2"}>
+                        {a.name}
+                        {on && <span className="ml-2 text-2xs font-medium text-green">Added</span>}
+                      </span>
+                      <span className="num shrink-0">{formatDollarsExact(a.unitCents * a.quantity)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </PanelSection>
+          )}
+          {ex.terms && (
+            <PanelSection title="Terms">
+              <p className="max-h-[180px] overflow-y-auto whitespace-pre-line text-xs leading-relaxed text-fg-2">{ex.terms}</p>
+            </PanelSection>
+          )}
           {job && (
             <PanelSection title="Job">
               <Ledger>

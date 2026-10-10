@@ -569,3 +569,19 @@ Websites extend funnels into multi-page sites: the same blocks and editor gramma
 - Contact forms on a site create or update the contact (source Website, tag "Website lead"), log it on the timeline, fire "Form submitted" and count as a lead for the site. An embedded Lotus form records its responses in Forms.
 - Each site serves its own sitemap.xml and robots.txt; pages hidden from search are left out of the first and disallowed in the second. A draft site answers 404 everywhere.
 - Custom domains: one CNAME to the Lotus sites host. Apex domains forward to their www subdomain at the registrar. Hosts are served when the app runs with LOTUS_APP_HOSTS set (src/proxy.ts).
+
+## Revision 15: Estimate builder (2026-10-10)
+
+Estimates (Revision 10) gain a price book, templates, optional add-ons, terms, a deposit and an e-signature. The agency side keeps the field-service grammar; the customer's link keeps one violet action per step.
+
+### Components, added
+- **Price book and templates** (`/agency/estimates/library`, reached from "Price book" in the Estimates top bar): top bar with client select, Price book | Templates segmented control, and the violet Add price or New template. The price book is one table grouped by category (Labor and service, Equipment, Materials, Add-ons) with a count in each group header; a row opens in place as an edit row (name and customer-facing description, category, "offer as an optional add-on", price, unit) with an ink Save, cancel and delete. Templates list name, options (Good · Better · Best or One price), price range with tax, add-ons, deposit and times used, with Edit and an ink Use.
+- **Template editor**: the new-estimate form without a customer: name, work title, options, add-ons, message, terms, deposit, valid for.
+- **New estimate**: "Start from" template select at the top fills everything; new Add-ons section; Message and terms with a deposit select (None, 10, 25, 33, 50%, or in full) and valid-for. Line suggestions come from the price book.
+- **Estimate page**: a Customer sign-off section (template, opened, deposit with an amber "not paid yet" when due, signer and date, approved total, the drawn signature and signing IP), Add-ons offered with the ticked ones marked Added in green, and Terms.
+- **Customer link**: numbered steps (Choose an option, Add extras, Terms, Sign to approve) over a running summary (option, ticked extras, tax, total, deposit due). Signing needs a typed name, a drawn signature (pointer canvas with a dashed baseline and Clear) and a consent line that restates the option and total. Then the green confirmation and, when a deposit is set, the violet "Pay deposit" through the Stripe stub.
+
+### Rules
+- Prices on a sent estimate are copied, not linked: editing the price book never changes an estimate already out.
+- Ticked add-ons follow the approved option into the job and the invoice; a paid deposit is credited on the invoice as a card payment, once.
+- The first time a customer opens their link, "Estimate opened" lands on their timeline.

@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import { dayDiff, estimateDisplay, estimateRange, estimateValue, type EstimateDisplay } from "@/lib/field";
 import type { Estimate } from "@/lib/types";
 import { cn, formatCount, formatDollars, formatDollarsCompact, timeAgo } from "@/lib/utils";
 import { EstimatePanel, type EstimateActions } from "./estimate-panel";
 import type { CustomerRef, FieldClientRef } from "./model";
-import { DataTable, EstimateTag, InkSelect, Kpi, KpiStrip, PanelFrame, TopBar, TwoLine, useBoardState, useSorted, type Column } from "./ui";
+import { DataTable, EstimateTag, InkLink, InkSelect, Kpi, KpiStrip, PanelFrame, TopBar, TwoLine, useBoardState, useSorted, type Column } from "./ui";
 
 /* Estimates: what is out with customers, what came back, and what to chase. */
 
@@ -146,6 +146,7 @@ export function EstimatesBoard({
               { value: "all", label: "All estimates" },
             ]}
           />
+          <InkLink href={`/agency/estimates/library${clientId === "all" ? "" : `?client=${clientId}`}`} icon={BookOpen} label="Price book" />
           <ButtonLink href={clientId === "all" ? "/agency/estimates/new" : `/agency/estimates/new?client=${clientById.get(clientId)?.slug ?? ""}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
             <Plus className="size-3.5" strokeWidth={2.25} />
             <span className="hidden 2xl:inline">New estimate</span>

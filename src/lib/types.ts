@@ -1075,4 +1075,55 @@ export interface Website {
 /* Estimate templates: price book, templates, signatures, deposits      */
 /* ------------------------------------------------------------------ */
 
-// (estimate template types go here)
+/** A saved price the team picks from when building estimates. Add-ons are offered as optional extras. */
+export interface PriceBookItem {
+  id: string;
+  accountId: string;
+  name: string;
+  description?: string;
+  category: string;
+  unitCents: number;
+  /** "each", "per ft", "per hour"… shown after the price. */
+  unit?: string;
+  kind: "item" | "addon";
+  updatedAt: string;
+}
+
+/** A reusable estimate: options, optional add-ons, terms, deposit and validity. */
+export interface EstimateTemplate {
+  id: string;
+  accountId: string;
+  name: string;
+  title: string;
+  message?: string;
+  options: { name: string; lineItems: LineItem[] }[];
+  addOns: LineItem[];
+  terms: string;
+  /** Share of the approved total asked up front, 0 to 100. */
+  depositPct: number;
+  validDays: number;
+  uses: number;
+  updatedAt: string;
+}
+
+export interface EstimateSignature {
+  name: string;
+  /** PNG data URL of the drawn signature; absent when the customer typed their name. */
+  image?: string;
+  at: string;
+  ip?: string;
+  userAgent?: string;
+}
+
+/** What an estimate carries beyond its options: extras the customer can tick, terms, deposit, signature. */
+export interface EstimateExtras {
+  estimateId: string;
+  templateId?: string;
+  addOns: LineItem[];
+  chosenAddOnIds: string[];
+  terms?: string;
+  depositPct: number;
+  signature?: EstimateSignature;
+  deposit?: { amountCents: number; reference: string; at: string };
+  viewedAt?: string;
+}
