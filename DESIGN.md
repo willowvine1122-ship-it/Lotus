@@ -394,3 +394,22 @@ Contacts, the pipeline and the contact page reuse the board grammar (ink top bar
 ### Rules
 - Stage colour never encodes progress; the column position and the word do.
 - Logging a call, text or email records it; sending arrives with the Inbox and the form says so.
+
+## Revision 6: reputation and reporting (2026-10-09)
+
+Reviews, review requests, the reports board, the report builder and the client's own Reviews and Reports tabs reuse the board grammar and the form grammar. Nothing new in colour.
+
+### Components, added
+- **Stars**: five 8px squares (10px in headings) filled in ink up to the rating, the rest `line-strong`. A rating is not a health signal, so stars are never green, amber or red. The number sits beside them in tabular figures.
+- **Reputation board**: the top bar carries a Reviews | Requests switch (ink segmented control in `rail-2`), search, a client select and, in Reviews, a source select and an Everything | Needs reply select. KPI strip: Rating 30 days (with stars and "was x.x"), This month, Needs a reply (with the oldest), Requests 30 days (with the share that left a review). The Reviews table is Review (author over the first line of the body), Client, Source, Rating (stars + number), Status (neutral "Replied" / "Needs reply"), Posted. The Requests table is Contact, Client, Sent by, Trigger, Status (neutral Sent / Opened / Reviewed), Sent.
+- **Review panel**: sticky header (author with stars, source · client · time, status tag), the review quoted at 15px, a reply form (one textarea, "Post reply" primary) or the posted reply on `surface-2`, then the client's rating tiles (all time, last 30 days), a 12-week trend line (90-day cumulative average, `chart-1`) and a By-stars bar list.
+- **Requests panel**: belongs to a client, not a row. Sent | Opened | Reviewed tiles, a "Send a request now" card (contact select limited to people reachable on the chosen channel, channel select, primary button), then the Automatic requests form: event chips (ink when on), channel and wait selects, the message with `{first}` and `{client}` placeholders and a live preview, Google and Facebook review links, a secondary Save.
+- **Reports board**: top bar with the on/off count and search, the primary "Edit report" for the selected client; KPI strip (Weekly reports on, Sent 7 days, Due this week, Missing recipients); table of Client (range · section count), Schedule, Recipients, Last sent, Next, Status (neutral Weekly / No recipients / Off). The panel: Send now (primary) beside a bordered Edit report link, recipients list, section tags, send history.
+- **Report builder**: a 360–400px form column (weekly toggle card, Send on / At, recipients textarea, Covers, section chips, the note) with a sticky Save bar, beside the report on `surface-2` as a white sheet at 880px that updates as the form changes. The preview is the same component the client sees.
+- **Report body**: sections in a fixed order: Headline numbers (four tiles with change arrows), Performance over time (marketing: both costs on one axis; fundraising: raised per day and average gift as two charts, since their scales differ), Daily volume (columns), Month by month (table), Raised by country (fundraising only), Recent reviews (rating + three best cards), Note from your account manager (`surface-2` box with the manager's name as a tag). Empty note hides the section.
+- **Client portal tabs**: Results | Reviews | Reports under the client header, same 36px underline tabs as the client page. Reviews shows the rating tiles, trend, distribution and every review with the agency's reply quoted beneath. Reports shows the weekly report and the past sends.
+
+### Rules
+- Replies post as the client and are recorded now; delivery to Google and Facebook, and sending texts and emails, arrive with the Inbox and the email module. The forms say so in the muted footnote.
+- Two series share an axis only when they share a unit and a scale.
+- A replied review stays selected after the reply even under the Needs reply filter, so the confirmation is visible.
