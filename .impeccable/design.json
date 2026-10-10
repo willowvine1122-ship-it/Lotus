@@ -1,0 +1,567 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T19:31:46Z",
+  "title": "Design System: Lotus",
+  "extensions": {
+    "colorMeta": {
+      "rail": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(18.3% 0.031 263.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.017 263.4)",
+          "oklch(26.4% 0.021 263.4)",
+          "oklch(37.9% 0.026 263.4)",
+          "oklch(49.3% 0.031 263.4)",
+          "oklch(60.7% 0.027 263.4)",
+          "oklch(72.1% 0.022 263.4)",
+          "oklch(83.6% 0.017 263.4)",
+          "oklch(95.0% 0.013 263.4)"
+        ]
+      },
+      "rail-2": {
+        "role": "neutral",
+        "displayName": "Ink, raised",
+        "canonical": "oklch(26.8% 0.054 263.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.029 263.7)",
+          "oklch(26.4% 0.037 263.7)",
+          "oklch(37.9% 0.045 263.7)",
+          "oklch(49.3% 0.053 263.7)",
+          "oklch(60.7% 0.046 263.7)",
+          "oklch(72.1% 0.038 263.7)",
+          "oklch(83.6% 0.030 263.7)",
+          "oklch(95.0% 0.022 263.7)"
+        ]
+      },
+      "rail-line": {
+        "role": "neutral",
+        "displayName": "Ink rule",
+        "canonical": "oklch(33.1% 0.063 262.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.034 262.7)",
+          "oklch(26.4% 0.044 262.7)",
+          "oklch(37.9% 0.053 262.7)",
+          "oklch(49.3% 0.062 262.7)",
+          "oklch(60.7% 0.054 262.7)",
+          "oklch(72.1% 0.045 262.7)",
+          "oklch(83.6% 0.035 262.7)",
+          "oklch(95.0% 0.026 262.7)"
+        ]
+      },
+      "rail-fg": {
+        "role": "neutral",
+        "displayName": "Rail text",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "rail-fg-2": {
+        "role": "neutral",
+        "displayName": "Rail text, muted",
+        "canonical": "oklch(85.3% 0.024 264.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.013 264.4)",
+          "oklch(26.4% 0.017 264.4)",
+          "oklch(37.9% 0.020 264.4)",
+          "oklch(49.3% 0.024 264.4)",
+          "oklch(60.7% 0.021 264.4)",
+          "oklch(72.1% 0.017 264.4)",
+          "oklch(83.6% 0.013 264.4)",
+          "oklch(95.0% 0.010 264.4)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(97.6% 0.004 91.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.004 91.4)",
+          "oklch(26.4% 0.004 91.4)",
+          "oklch(37.9% 0.004 91.4)",
+          "oklch(49.3% 0.004 91.4)",
+          "oklch(60.7% 0.004 91.4)",
+          "oklch(72.1% 0.004 91.4)",
+          "oklch(83.6% 0.004 91.4)",
+          "oklch(95.0% 0.004 91.4)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Data ground",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Second surface",
+        "canonical": "oklch(95.2% 0.007 88.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.007 88.6)",
+          "oklch(26.4% 0.007 88.6)",
+          "oklch(37.9% 0.007 88.6)",
+          "oklch(49.3% 0.007 88.6)",
+          "oklch(60.7% 0.007 88.6)",
+          "oklch(72.1% 0.007 88.6)",
+          "oklch(83.6% 0.007 88.6)",
+          "oklch(95.0% 0.007 88.6)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(90.7% 0.011 89.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 89.7)",
+          "oklch(26.4% 0.011 89.7)",
+          "oklch(37.9% 0.011 89.7)",
+          "oklch(49.3% 0.011 89.7)",
+          "oklch(60.7% 0.011 89.7)",
+          "oklch(72.1% 0.011 89.7)",
+          "oklch(83.6% 0.011 89.7)",
+          "oklch(95.0% 0.011 89.7)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong hairline",
+        "canonical": "oklch(84.5% 0.010 267.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.010 267.3)",
+          "oklch(26.4% 0.010 267.3)",
+          "oklch(37.9% 0.010 267.3)",
+          "oklch(49.3% 0.010 267.3)",
+          "oklch(60.7% 0.010 267.3)",
+          "oklch(72.1% 0.010 267.3)",
+          "oklch(83.6% 0.010 267.3)",
+          "oklch(95.0% 0.010 267.3)"
+        ]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "oklch(20.9% 0.010 268.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.010 268.2)",
+          "oklch(26.4% 0.010 268.2)",
+          "oklch(37.9% 0.010 268.2)",
+          "oklch(49.3% 0.010 268.2)",
+          "oklch(60.7% 0.010 268.2)",
+          "oklch(72.1% 0.010 268.2)",
+          "oklch(83.6% 0.010 268.2)",
+          "oklch(95.0% 0.010 268.2)"
+        ]
+      },
+      "fg-2": {
+        "role": "neutral",
+        "displayName": "Text, secondary",
+        "canonical": "oklch(38.3% 0.016 266.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.016 266.5)",
+          "oklch(26.4% 0.016 266.5)",
+          "oklch(37.9% 0.016 266.5)",
+          "oklch(49.3% 0.016 266.5)",
+          "oklch(60.7% 0.016 266.5)",
+          "oklch(72.1% 0.016 266.5)",
+          "oklch(83.6% 0.016 266.5)",
+          "oklch(95.0% 0.016 266.5)"
+        ]
+      },
+      "fg-3": {
+        "role": "neutral",
+        "displayName": "Text, muted",
+        "canonical": "oklch(54.4% 0.015 262.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.015 262.3)",
+          "oklch(26.4% 0.015 262.3)",
+          "oklch(37.9% 0.015 262.3)",
+          "oklch(49.3% 0.015 262.3)",
+          "oklch(60.7% 0.015 262.3)",
+          "oklch(72.1% 0.015 262.3)",
+          "oklch(83.6% 0.015 262.3)",
+          "oklch(95.0% 0.015 262.3)"
+        ]
+      },
+      "brand": {
+        "role": "primary",
+        "displayName": "Lotus Violet",
+        "canonical": "oklch(53.5% 0.249 286.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.136 286.7)",
+          "oklch(26.4% 0.173 286.7)",
+          "oklch(37.9% 0.210 286.7)",
+          "oklch(49.3% 0.247 286.7)",
+          "oklch(60.7% 0.215 286.7)",
+          "oklch(72.1% 0.178 286.7)",
+          "oklch(83.6% 0.141 286.7)",
+          "oklch(95.0% 0.104 286.7)"
+        ]
+      },
+      "brand-hover": {
+        "role": "primary",
+        "displayName": "Lotus Violet, pressed",
+        "canonical": "oklch(47.7% 0.233 285.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.127 285.5)",
+          "oklch(26.4% 0.162 285.5)",
+          "oklch(37.9% 0.196 285.5)",
+          "oklch(49.3% 0.231 285.5)",
+          "oklch(60.7% 0.201 285.5)",
+          "oklch(72.1% 0.166 285.5)",
+          "oklch(83.6% 0.131 285.5)",
+          "oklch(95.0% 0.097 285.5)"
+        ]
+      },
+      "brand-soft": {
+        "role": "primary",
+        "displayName": "Violet Wash",
+        "canonical": "oklch(93.2% 0.037 297.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.020 297.5)",
+          "oklch(26.4% 0.026 297.5)",
+          "oklch(37.9% 0.031 297.5)",
+          "oklch(49.3% 0.037 297.5)",
+          "oklch(60.7% 0.032 297.5)",
+          "oklch(72.1% 0.026 297.5)",
+          "oklch(83.6% 0.021 297.5)",
+          "oklch(95.0% 0.015 297.5)"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Delay Red",
+        "canonical": "oklch(56.1% 0.202 21.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.110 21.6)",
+          "oklch(26.4% 0.140 21.6)",
+          "oklch(37.9% 0.170 21.6)",
+          "oklch(49.3% 0.200 21.6)",
+          "oklch(60.7% 0.174 21.6)",
+          "oklch(72.1% 0.144 21.6)",
+          "oklch(83.6% 0.114 21.6)",
+          "oklch(95.0% 0.084 21.6)"
+        ]
+      },
+      "red-soft": {
+        "role": "secondary",
+        "displayName": "Delay Red, soft",
+        "canonical": "oklch(94.0% 0.028 12.1)",
+        "tonalRamp": [
+          "oklch(15.0% 0.015 12.1)",
+          "oklch(26.4% 0.019 12.1)",
+          "oklch(37.9% 0.023 12.1)",
+          "oklch(49.3% 0.027 12.1)",
+          "oklch(60.7% 0.024 12.1)",
+          "oklch(72.1% 0.020 12.1)",
+          "oklch(83.6% 0.016 12.1)",
+          "oklch(95.0% 0.011 12.1)"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Watch Amber",
+        "canonical": "oklch(59.9% 0.137 62.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.075 62.6)",
+          "oklch(26.4% 0.095 62.6)",
+          "oklch(37.9% 0.115 62.6)",
+          "oklch(49.3% 0.136 62.6)",
+          "oklch(60.7% 0.118 62.6)",
+          "oklch(72.1% 0.098 62.6)",
+          "oklch(83.6% 0.077 62.6)",
+          "oklch(95.0% 0.057 62.6)"
+        ]
+      },
+      "amber-soft": {
+        "role": "secondary",
+        "displayName": "Watch Amber, soft",
+        "canonical": "oklch(95.9% 0.044 85.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.024 85.2)",
+          "oklch(26.4% 0.030 85.2)",
+          "oklch(37.9% 0.037 85.2)",
+          "oklch(49.3% 0.043 85.2)",
+          "oklch(60.7% 0.038 85.2)",
+          "oklch(72.1% 0.031 85.2)",
+          "oklch(83.6% 0.025 85.2)",
+          "oklch(95.0% 0.018 85.2)"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "On-Time Green",
+        "canonical": "oklch(56.0% 0.134 152.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.073 152.5)",
+          "oklch(26.4% 0.093 152.5)",
+          "oklch(37.9% 0.112 152.5)",
+          "oklch(49.3% 0.132 152.5)",
+          "oklch(60.7% 0.115 152.5)",
+          "oklch(72.1% 0.095 152.5)",
+          "oklch(83.6% 0.075 152.5)",
+          "oklch(95.0% 0.055 152.5)"
+        ]
+      },
+      "green-soft": {
+        "role": "secondary",
+        "displayName": "On-Time Green, soft",
+        "canonical": "oklch(94.8% 0.033 159.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.018 159.4)",
+          "oklch(26.4% 0.023 159.4)",
+          "oklch(37.9% 0.028 159.4)",
+          "oklch(49.3% 0.033 159.4)",
+          "oklch(60.7% 0.028 159.4)",
+          "oklch(72.1% 0.023 159.4)",
+          "oklch(83.6% 0.019 159.4)",
+          "oklch(95.0% 0.014 159.4)"
+        ]
+      },
+      "chart-1": {
+        "role": "data",
+        "displayName": "Series Blue",
+        "canonical": "#2f6fed",
+        "note": "Chart marks only; validated categorical pair with chart-2 (dataviz validator, light surface)."
+      },
+      "chart-2": {
+        "role": "data",
+        "displayName": "Series Orange",
+        "canonical": "#e8731c",
+        "note": "Chart marks only; contrast 2.96:1 on surface, so values are always labelled and a table view exists."
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The page title in the ink header band. The only large type in the product."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section titles on the client page, sitting on a hairline rule with a caption aside."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Client names (at 500) and the base size for board figures."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Running copy: notes, service notices, metric labels, nav items, button labels, header meta. 72ch cap."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Secondary lines under names, note and task metadata, chip labels, the demo-data footer."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase column headers of the board and client list, and mobile field labels. Column heads only."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Every figure on the board and in metric rows; tabular, 500, -0.01em via .num."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-1",
+        "value": "0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.04)",
+        "purpose": "Button lift. The primary button only; no other surface casts a shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "150ms",
+        "purpose": "Colour and background transitions on nav items, buttons and row hover. The only motion in the system."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid var(--brand); outline-offset: 2px",
+      "purpose": "Global :focus-visible ring in Lotus violet."
+    },
+    "fontFeatures": {
+      "body": "\"tnum\" 1, \"cv11\" 1",
+      "num": "font-variant-numeric: tabular-nums; letter-spacing: -0.01em"
+    },
+    "typeScale": {
+      "ratio": 1.2,
+      "unit": "rem, fixed (no fluid clamps)",
+      "steps": {
+        "2xs": "0.6875rem/1rem",
+        "xs": "0.75rem/1.125rem",
+        "sm": "0.8125rem/1.25rem",
+        "base": "0.9375rem/1.5rem",
+        "lg": "1.125rem/1.625rem (defined, unused)",
+        "xl": "1.375rem/1.75rem (defined, unused)",
+        "2xl": "1.625rem/2rem"
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action of a page, placed in the ink header band. Always routes somewhere.",
+      "html": "<a class=\"ds-btn-primary\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Add client</a>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--radius, 6px); background: var(--brand); color: #fff; font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; font-size: 0.8125rem; line-height: 1.25rem; font-weight: 500; text-decoration: none; box-shadow: var(--shadow-1); transition: background-color 150ms; } .ds-btn-primary:hover { background: var(--brand-hover); } .ds-btn-primary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action inside the ink frame, beside the primary.",
+      "html": "<div class=\"ds-ink-bed\"><button class=\"ds-btn-secondary\" type=\"button\">Export</button></div>",
+      "css": ".ds-ink-bed { display: inline-block; padding: 12px; background: var(--rail); } .ds-btn-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--radius, 6px); border: 1px solid var(--rail-line); background: var(--rail-2); color: var(--rail-fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; font-size: 0.8125rem; line-height: 1.25rem; font-weight: 500; cursor: pointer; transition: background-color 150ms; } .ds-btn-secondary:hover { background: var(--rail-line); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-red",
+      "description": "Three-state health chip: a soft signal fill, strong signal text, and a 6px square of the text colour leading the word.",
+      "html": "<span class=\"ds-chip ds-chip-red\"><i></i>Needs action</span> <span class=\"ds-chip ds-chip-amber\"><i></i>Watch</span> <span class=\"ds-chip ds-chip-green\"><i></i>On track</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 4px; font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; font-size: 0.75rem; line-height: 1.125rem; font-weight: 500; white-space: nowrap; } .ds-chip i { display: inline-block; width: 6px; height: 6px; border-radius: 1px; background: currentColor; } .ds-chip-red { background: var(--red-soft); color: var(--red); } .ds-chip-amber { background: var(--amber-soft); color: var(--amber); } .ds-chip-green { background: var(--green-soft); color: var(--green); }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "The ink rail: brand mark and name above a rule, six items, agency name pinned under a rule at the bottom.",
+      "html": "<aside class=\"ds-rail\"><a class=\"ds-rail-brand\" href=\"#\"><span class=\"ds-mark\">L</span>Lotus</a><nav class=\"ds-rail-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\" aria-current=\"page\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"/></svg>Daily Diagnostic</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\"/></svg>Clients</a></nav><div class=\"ds-rail-foot\">Lotus agency</div></aside>",
+      "css": ".ds-rail { display: flex; flex-direction: column; width: 224px; background: var(--rail); color: var(--rail-fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; } .ds-rail-brand { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--rail-line); color: var(--rail-fg); font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.025em; text-decoration: none; } .ds-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 5px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 600; } .ds-rail-nav { display: flex; flex-direction: column; padding: 12px; } .ds-nav-item { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--radius, 6px); color: var(--rail-fg-2); font-size: 0.8125rem; line-height: 1.25rem; text-decoration: none; transition: background-color 150ms, color 150ms; } .ds-nav-item:hover { background: color-mix(in srgb, var(--rail-2) 60%, transparent); color: var(--rail-fg); } .ds-nav-item-active, .ds-nav-item-active:hover { background: var(--rail-2); color: var(--rail-fg); } .ds-nav-item:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; } .ds-rail-foot { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--rail-line); color: var(--rail-fg-2); font-size: 0.75rem; line-height: 1.125rem; }"
+    },
+    {
+      "name": "Page Header Band",
+      "kind": "custom",
+      "refersTo": "page-header",
+      "description": "Ink band in the rail's colour with the headline title, a muted meta line, and the one primary action bottom-aligned at right.",
+      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-header-title\">Daily Diagnostic</h1><div class=\"ds-header-meta\"><span>Friday, October 9, yesterday's numbers</span><span aria-hidden=\"true\">\u00b7</span><span class=\"ds-num\">4 clients</span><span aria-hidden=\"true\">\u00b7</span><span class=\"ds-header-red\"><span class=\"ds-num\">1</span> needs action</span><span aria-hidden=\"true\">\u00b7</span><span class=\"ds-header-amber\"><span class=\"ds-num\">1</span> to watch</span></div></div><a class=\"ds-btn-primary\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Add client</a></header>",
+      "css": ".ds-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding: 24px 32px 20px; background: var(--rail); color: var(--rail-fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; } .ds-header-title { margin: 0; font-size: 1.625rem; line-height: 2rem; font-weight: 600; letter-spacing: -0.025em; } .ds-header-meta { display: flex; flex-wrap: wrap; gap: 0 12px; margin-top: 4px; color: var(--rail-fg-2); font-size: 0.8125rem; line-height: 1.25rem; } .ds-header-red { color: var(--red); font-weight: 500; } .ds-header-amber { color: var(--amber); font-weight: 500; } .ds-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; } .ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--radius, 6px); background: var(--brand); color: #fff; font-size: 0.8125rem; line-height: 1.25rem; font-weight: 500; text-decoration: none; box-shadow: var(--shadow-1); transition: background-color 150ms; } .ds-btn-primary:hover { background: var(--brand-hover); }"
+    },
+    {
+      "name": "Board Row with Service Notice",
+      "kind": "custom",
+      "refersTo": "board-row",
+      "description": "The departure-board row: status, client, three right-aligned figures, 7-day strip and delta, truncated note, task count; flagged rows carry an inline service notice indented to the client column.",
+      "html": "<div class=\"ds-board\"><div class=\"ds-board-head\" role=\"row\"><span>Status</span><span>Client</span><span class=\"ds-r\">Spend / raised</span><span class=\"ds-r\">Leads / donations</span><span class=\"ds-r\">Cost / gift</span><span>7 days</span><span>Latest note</span><span class=\"ds-r\">Tasks</span></div><div class=\"ds-row-wrap\"><div class=\"ds-row\"><span class=\"ds-chip ds-chip-red\"><i></i>Needs action</span><div class=\"ds-client\"><a href=\"#\">Summit Roofing Co.</a><div class=\"ds-mode\">Digital marketing</div></div><div class=\"ds-fig\">$960</div><div class=\"ds-fig\">5</div><div class=\"ds-fig\">$960</div><div class=\"ds-trend-cell\"><span class=\"ds-trend\" aria-hidden=\"true\"><i style=\"height:16px\"></i><i style=\"height:20px\"></i><i style=\"height:18px\"></i><i style=\"height:14px\"></i><i style=\"height:12px\"></i><i style=\"height:10px\"></i><i class=\"ds-trend-last\" style=\"height:8px\"></i></span><span class=\"ds-delta ds-delta-bad\">-52%</span></div><div class=\"ds-note\"><span><b>Afza (CMO)</b> Call with Mike at Summit. He approved the new creative but wants spend capped.</span></div><div class=\"ds-tasks\">2</div></div><div class=\"ds-notice\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><div><p><span class=\"ds-notice-alert\">CPA up 140% vs 7-day average \u00b7 Meta spend doubled while leads fell.</span> Spend doubled to $960 after the new Meta ad set launched, but leads dropped to 5. Suggest pausing ad set \"Storm Season v2\".</p><p class=\"ds-notice-note\"><b>Afza (CMO):</b> Call with Mike at Summit. He approved the new creative but wants spend capped at $500/day until CPL recovers.</p></div></div></div><div class=\"ds-row-wrap\"><div class=\"ds-row\"><span class=\"ds-chip ds-chip-green\"><i></i>On track</span><div class=\"ds-client\"><a href=\"#\">Brightside Dental</a><div class=\"ds-mode\">Digital marketing</div></div><div class=\"ds-fig\">$420</div><div class=\"ds-fig\">14</div><div class=\"ds-fig\">$70</div><div class=\"ds-trend-cell\"><span class=\"ds-trend\" aria-hidden=\"true\"><i style=\"height:10px\"></i><i style=\"height:12px\"></i><i style=\"height:11px\"></i><i style=\"height:14px\"></i><i style=\"height:13px\"></i><i style=\"height:16px\"></i><i class=\"ds-trend-last ds-trend-green\" style=\"height:20px\"></i></span><span class=\"ds-delta ds-delta-good\">+25%</span></div><div class=\"ds-note\"><span class=\"ds-muted\">No notes</span></div><div class=\"ds-tasks ds-muted\">0</div></div></div></div>",
+      "css": ".ds-board { background: var(--surface); color: var(--fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.5rem; min-width: 900px; } .ds-board-head, .ds-row { display: grid; grid-template-columns: 112px minmax(180px,1.4fr) minmax(90px,.8fr) minmax(96px,.7fr) minmax(100px,.9fr) 112px minmax(160px,1.6fr) 56px; column-gap: 16px; align-items: center; padding: 0 32px; } .ds-board-head { padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--fg-3); font-size: 0.6875rem; line-height: 1rem; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; } .ds-r { text-align: right; } .ds-row-wrap { border-bottom: 1px solid var(--line); } .ds-row { padding-top: 14px; padding-bottom: 14px; transition: background-color 150ms; } .ds-row:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); } .ds-client a { color: var(--fg); font-weight: 500; text-decoration: none; } .ds-client a:hover { text-decoration: underline; text-underline-offset: 3px; } .ds-mode, .ds-muted { color: var(--fg-3); font-size: 0.75rem; line-height: 1.125rem; } .ds-fig { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; } .ds-trend-cell { display: flex; align-items: center; gap: 8px; } .ds-trend { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; } .ds-trend i { display: block; width: 5px; border-radius: 1px; background: var(--line-strong); } .ds-trend-last { background: var(--red) !important; } .ds-trend-green { background: var(--green) !important; } .ds-delta { font-size: 0.75rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; } .ds-delta-bad { color: var(--red); } .ds-delta-good { color: var(--green); } .ds-note { min-width: 0; color: var(--fg-2); font-size: 0.8125rem; line-height: 1.25rem; } .ds-note > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-note b { color: var(--fg); font-weight: 500; } .ds-tasks { text-align: right; font-size: 0.8125rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; } .ds-notice { display: flex; gap: 12px; padding: 0 32px 14px calc(2rem + 112px + 1rem); color: var(--red); font-size: 0.8125rem; } .ds-notice svg { flex: none; margin-top: 2px; } .ds-notice p { margin: 0; max-width: 72ch; line-height: 1.625; color: var(--fg-2); } .ds-notice-alert { color: var(--red); font-weight: 500; } .ds-notice-note { margin-top: 6px !important; } .ds-notice-note b { color: var(--fg); font-weight: 500; } .ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 4px; font-size: 0.75rem; line-height: 1.125rem; font-weight: 500; white-space: nowrap; } .ds-chip i { display: inline-block; width: 6px; height: 6px; border-radius: 1px; background: currentColor; } .ds-chip-red { background: var(--red-soft); color: var(--red); } .ds-chip-green { background: var(--green-soft); color: var(--green); }"
+    },
+    {
+      "name": "Trend Strip and Delta",
+      "kind": "custom",
+      "refersTo": "board-row",
+      "description": "Seven 5px bars scaled to 20px, the last in the row's signal colour, beside a signed tabular delta coloured by direction.",
+      "html": "<span class=\"ds-trend-cell\"><span class=\"ds-trend\" aria-hidden=\"true\"><i style=\"height:10px\"></i><i style=\"height:12px\"></i><i style=\"height:11px\"></i><i style=\"height:14px\"></i><i style=\"height:13px\"></i><i style=\"height:16px\"></i><i class=\"ds-trend-last\" style=\"height:20px\"></i></span><span class=\"ds-delta ds-delta-good\">+25%</span></span> <span class=\"ds-trend-cell\"><span class=\"ds-trend\" aria-hidden=\"true\"><i style=\"height:16px\"></i><i style=\"height:14px\"></i><i style=\"height:14px\"></i><i style=\"height:12px\"></i><i style=\"height:12px\"></i><i style=\"height:13px\"></i><i class=\"ds-trend-last ds-trend-amber\" style=\"height:7px\"></i></span><span class=\"ds-delta ds-delta-bad\">-44%</span></span> <span class=\"ds-trend-cell\"><span class=\"ds-delta ds-delta-flat\">\u00b10%</span></span>",
+      "css": ".ds-trend-cell { display: inline-flex; align-items: center; gap: 8px; margin-right: 24px; font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; } .ds-trend { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; } .ds-trend i { display: block; width: 5px; border-radius: 1px; background: var(--line-strong); } .ds-trend-last { background: var(--green); } .ds-trend-amber { background: var(--amber); } .ds-delta { font-size: 0.75rem; line-height: 1.125rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; } .ds-delta-good { color: var(--green); } .ds-delta-bad { color: var(--red); } .ds-delta-flat { color: var(--fg-3); }"
+    },
+    {
+      "name": "Section Title and Metric Rows",
+      "kind": "custom",
+      "refersTo": "board-row",
+      "description": "Client-page section: a 13px semibold title on a hairline rule with a muted aside, then definition rows with the label left and the tabular figure right.",
+      "html": "<section class=\"ds-section\"><div class=\"ds-section-title\"><h2>Diagnostic</h2><span>Yesterday \u00b7 Needs action</span></div><dl class=\"ds-metrics\"><div><dt>Ad spend</dt><dd>$960</dd></div><div><dt>Leads</dt><dd>5</dd></div><div><dt>Cost per lead</dt><dd>$192</dd></div><div><dt>Booked appointments</dt><dd>1</dd></div></dl></section>",
+      "css": ".ds-section { background: var(--bg); padding: 24px 32px; color: var(--fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; min-width: 480px; } .ds-section-title { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--line); } .ds-section-title h2 { margin: 0; font-size: 0.8125rem; line-height: 1.25rem; font-weight: 600; } .ds-section-title span { color: var(--fg-3); font-size: 0.75rem; line-height: 1.125rem; } .ds-metrics { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; margin: 12px 0 0; } .ds-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); } .ds-metrics dt { color: var(--fg-2); font-size: 0.8125rem; line-height: 1.25rem; } .ds-metrics dd { margin: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }"
+    },
+    {
+      "name": "Task Row",
+      "kind": "custom",
+      "refersTo": "board-row",
+      "description": "Task list row: a 16px squared checkbox (green-filled when done), title, and caption metadata; done titles strike through in muted text.",
+      "html": "<ul class=\"ds-tasks-list\"><li><span class=\"ds-check\" aria-hidden=\"true\"></span><div><div class=\"ds-task-title\">Cap Meta daily budget at $500</div><div class=\"ds-task-meta\">To do \u00b7 Mahad \u00b7 due today</div></div></li><li><span class=\"ds-check ds-check-done\" aria-hidden=\"true\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><div><div class=\"ds-task-title ds-task-done\">Send October report</div><div class=\"ds-task-meta\">Done \u00b7 Afza</div></div></li></ul>",
+      "css": ".ds-tasks-list { list-style: none; margin: 0; padding: 0 32px; width: 300px; background: var(--bg); color: var(--fg); font-family: var(--font-geist-sans, Geist), system-ui, sans-serif; } .ds-tasks-list li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); } .ds-check { display: grid; place-items: center; flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 3px; border: 1px solid var(--line-strong); background: var(--surface); } .ds-check-done { border-color: var(--green); background: var(--green); color: #fff; } .ds-task-title { font-size: 0.8125rem; line-height: 1.25rem; } .ds-task-done { color: var(--fg-3); text-decoration: line-through; } .ds-task-meta { color: var(--fg-3); font-size: 0.75rem; line-height: 1.125rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Departure Board",
+    "overview": "Lotus is read the way a traveller reads a railway departure board: one aligned table, scanned top to bottom in seconds, delays at the top in red, each row telling you status, the number that matters, and the next action. The screen is framed by a single deep ink field (the left rail and the page header band are one colour, one frame) and everything inside that frame sits on paper. Nothing is boxed; rows are separated by hairline rules and columns by a grid that every row shares, so the eye reads down a column rather than across a card.\n\nThe palette is deliberately quiet so the three signal colours can speak. Red, amber and green are the only colours with meaning on the paper, and they mean exactly one thing each: needs action, watch, on track. Lotus violet is the brand, not a signal: it appears on the mark in the rail and on the one primary action per screen, and nowhere else. Density is high but calm, because the type is a single grotesk at a tight, fixed scale and every number is tabular.\n\nThe build rejects the category default of same-size metric cards with sparklines, drop-shadowed panels, and the GoHighLevel pattern of many competing surfaces. Depth is nearly absent by design; the one shadow in the system is a one-pixel lift on the primary button.",
+    "keyCharacteristics": [
+      "One ink frame (rail plus header band) around a paper work area; no second dark surface anywhere",
+      "Three-state signal palette with soft fills for chips and strong tints for text, bars and delta",
+      "Violet reserved for the brand mark and the primary action",
+      "One family, Geist, at a fixed 1.2-ratio rem scale, tabular numerals on every figure",
+      "Hairline rules and shared column grids in place of cards",
+      "The board row: leading status column, aligned figures, 7-day strip, truncated latest note, and an inline service notice under flagged rows"
+    ],
+    "rules": [
+      {
+        "name": "The One Frame Rule",
+        "body": "Rail and header band share one ink and read as a single frame. No other element on a screen may use the ink field; the work area is paper and white.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Signals Rule",
+        "body": "Red, amber and green mean needs action, watch and on track, and nothing else. Strong tint for text, bars, icons and deltas; soft tint only as a chip or notice fill behind the strong tint.",
+        "section": "colors"
+      },
+      {
+        "name": "The Violet Is Not A Signal Rule",
+        "body": "Violet appears on the brand mark and the single primary action of a page. It never colours a figure, a status or a trend.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any number that can be compared down a column is set with `.num`: tabular figures, 500 weight, -0.01em. A proportional figure in a column is a defect.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Geist only. Weight (400 / 500 / 600) and size carry the hierarchy; no italics, no second family, no display sizes beyond the headline.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "Surfaces are flat. Separation is a hairline (`line`) or a change of ground (`bg` to `surface` to `surface-2`), never a shadow or a border box. The only shadow in the product is on the primary button.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the rail and header band in one ink (`rail`) and everything inside the frame on `surface` or `bg`.",
+      "Do put every status in the leading column as a chip, and sort rows red, amber, green.",
+      "Do set every figure with `.num` (tabular, 500, -0.01em) and right-align figures in columns.",
+      "Do separate rows and sections with 1px `line` rules and share one grid template between a header row and its data rows.",
+      "Do carry alerts as an inline service notice under the row (icon, alert sentence in the signal colour, summary, note), capped at 72ch.",
+      "Do use violet only for the brand mark and the single primary action of a page.",
+      "Do keep uppercase 0.06em labels to column headers and mobile field labels.",
+      "Do use 6px as the default radius and nothing larger."
+    ],
+    "donts": [
+      "Don't put metrics in cards or boxed panels; the board is a table, not a dashboard of tiles.",
+      "Don't use red, amber or green for anything other than client health, delta direction or a done task.",
+      "Don't add a second dark surface inside the work area, or tint a row with ink.",
+      "Don't introduce a second typeface, italics, or sizes above the 1.625rem headline.",
+      "Don't add shadows to rows, chips, notices or panels; the primary button lift is the only shadow.",
+      "Don't use pills or circles; radii stay at 6px or below and the status dot is a 1px-radius square.",
+      "Don't write an uppercase label above a title as a kicker; the label style belongs to column heads only."
+    ]
+  }
+}

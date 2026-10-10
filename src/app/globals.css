@@ -1,26 +1,237 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/* Primitive tokens                                                    */
+/* ------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink-950: #0b1220;
+  --ink-900: #101a2d;
+  --ink-800: #182540;
+  --ink-700: #243556;
+  --ink-200: #c7cfdf;
+  --ink-100: #e6eaf2;
+
+  --paper-0: #ffffff;
+  --paper-50: #f8f7f4;
+  --paper-100: #f1efea;
+  --paper-200: #e3e0d8;
+
+  --gray-900: #16181d;
+  --gray-700: #3f434c;
+  --gray-500: #6b7079;
+  --gray-300: #c9ccd3;
+
+  --violet-600: #6d3df2;
+  --violet-700: #5b2fd6;
+  --violet-100: #ebe4ff;
+
+  --red-600: #d1283b;
+  --red-100: #fde4e6;
+  --amber-600: #b86a00;
+  --amber-100: #fff0d1;
+  --green-600: #1f8a4c;
+  --green-100: #dcf5e6;
+
+  /* Chart series. Validated as a categorical pair (dataviz validator, light). */
+  --blue-500: #2f6fed;
+  --orange-500: #e8731c;
+
+  /* ---------------------------------------------------------------- */
+  /* Semantic tokens                                                  */
+  /* ---------------------------------------------------------------- */
+  --bg: var(--paper-50);
+  --surface: var(--paper-0);
+  --surface-2: var(--paper-100);
+  --line: var(--paper-200);
+  --line-strong: var(--gray-300);
+  --fg: var(--gray-900);
+  --fg-2: var(--gray-700);
+  --fg-3: var(--gray-500);
+
+  --rail: var(--ink-950);
+  --rail-2: var(--ink-800);
+  --rail-fg: var(--paper-0);
+  --rail-fg-2: var(--ink-200);
+  --rail-line: var(--ink-700);
+
+  --brand: var(--violet-600);
+  --brand-hover: var(--violet-700);
+  --brand-soft: var(--violet-100);
+
+  --red: var(--red-600);
+  --red-soft: var(--red-100);
+  --amber: var(--amber-600);
+  --amber-soft: var(--amber-100);
+  --green: var(--green-600);
+  --green-soft: var(--green-100);
+
+  --chart-1: var(--blue-500);
+  --chart-2: var(--orange-500);
+
+  --radius: 6px;
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.04);
+  --shadow-2: 0 4px 12px -2px rgb(16 24 40 / 0.12), 0 2px 4px -1px rgb(16 24 40 / 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-rail: var(--rail);
+  --color-rail-2: var(--rail-2);
+  --color-rail-fg: var(--rail-fg);
+  --color-rail-fg-2: var(--rail-fg-2);
+  --color-rail-line: var(--rail-line);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Type scale, 1.2 ratio, fixed rem. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2rem;
+
+  --radius-DEFAULT: var(--radius);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+html {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink-950);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Tabular figures for anything numeric. */
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Hide scrollbars on horizontal chip rows without losing scroll. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Public forms: each question slides in from the direction of travel. */
+@keyframes form-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--form-from, 18px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sortable column heads: the sort button keeps the head's uppercase tracking. */
+th > button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+/* Donation elements: the donate button's heart beats, and the impact slider track. */
+@keyframes el-beat {
+  0%, 58%, 100% {
+    transform: scale(1);
+  }
+  64% {
+    transform: scale(1.22);
+  }
+  72% {
+    transform: scale(0.96);
+  }
+  80% {
+    transform: scale(1.12);
+  }
+}
+.el-pulse svg {
+  animation: el-beat 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .el-pulse svg {
+    animation: none;
+  }
+}
+.el-range {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--el-accent) var(--el-fill), rgb(0 0 0 / 0.08) var(--el-fill));
+  cursor: pointer;
+}
+.el-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--el-accent);
+  box-shadow: 0 1px 3px rgb(16 24 40 / 0.2);
+}
+.el-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--el-accent);
 }
