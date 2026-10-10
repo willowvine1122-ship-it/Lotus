@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Copy, EyeOff, ExternalLink, FileText, Globe, Loader2, Plus, RefreshCw, Settings2, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Copy, EyeOff, ExternalLink, FileText, Globe, LayoutTemplate, Loader2, Plus, RefreshCw, Settings2, Trash2 } from "lucide-react";
 import { Field, Input, Select, Textarea, controlClass } from "@/components/form";
 import { Button } from "@/components/page-header";
 import { Segmented } from "@/components/diagnostic/primitives";
@@ -399,67 +399,82 @@ export function WebsiteEditor({
                 Page settings
               </button>
             </div>
-            <ol className="mt-2 flex flex-col gap-0.5">
-              {page.blocks.map((b, i) => {
-                const active = b.id === blockSel && pane === "block";
-                return (
-                  <li key={b.id}>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        setBlockSel(b.id);
-                        setPane("block");
-                        document.querySelector(`[data-block="${b.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+            {site.pages.some((p) => p.id === page.id) ? (
+              <Link href={`/agency/websites/${site.id}/builder/${page.id}`} className="mt-3 flex items-center gap-2.5 rounded border border-brand/30 bg-brand-soft/50 px-3 py-2.5 transition-colors hover:border-brand/60 hover:bg-brand-soft">
+                <LayoutTemplate className="size-4 shrink-0 text-brand" strokeWidth={1.75} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-fg">{page.doc ? "Edit in the page builder" : "Design in the page builder"}</span>
+                  <span className="block text-2xs leading-4 text-fg-2">{page.doc ? "This page is built with sections and elements." : "Drag and drop sections, rows and elements."}</span>
+                </span>
+              </Link>
+            ) : (
+              <p className="mt-3 rounded border border-dashed border-line-strong px-3 py-2 text-2xs text-fg-3">Save the site to open this page in the page builder.</p>
+            )}
+            {!page.doc && (
+              <ol className="mt-2 flex flex-col gap-0.5">
+                {page.blocks.map((b, i) => {
+                  const active = b.id === blockSel && pane === "block";
+                  return (
+                    <li key={b.id}>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
                           setBlockSel(b.id);
                           setPane("block");
-                        }
-                      }}
-                      className={cn("group flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors duration-100", active ? "bg-brand-soft/60" : "hover:bg-surface-2")}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-medium">{websiteBlockLabel[b.type]}</span>
-                        <span className="block truncate text-xs text-fg-3">{websiteBlockSummary(b, formName) || "Empty"}</span>
-                      </span>
-                      <span className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                        <IconButton label="Move up" disabled={i === 0} onClick={() => moveBlock(b.id, -1)}>
-                          <ChevronUp className="size-3.5" strokeWidth={2} />
-                        </IconButton>
-                        <IconButton label="Move down" disabled={i === page.blocks.length - 1} onClick={() => moveBlock(b.id, 1)}>
-                          <ChevronDown className="size-3.5" strokeWidth={2} />
-                        </IconButton>
-                        <IconButton label="Remove block" danger onClick={() => removeBlock(b.id)}>
-                          <Trash2 className="size-3.5" strokeWidth={2} />
-                        </IconButton>
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-            <label className="mt-2 block">
-              <span className="sr-only">Add a block</span>
-              <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) addBlock(e.target.value as FunnelBlockType | "lotus_form");
-                }}
-                className={cn(controlClass, "h-8 text-xs")}
-              >
-                <option value="">Add a block…</option>
-                {blockTypes
-                  .filter((t) => t !== "footer")
-                  .map((t) => (
-                    <option key={t} value={t}>
-                      {websiteBlockLabel[t]}
-                    </option>
-                  ))}
-                <option value="lotus_form">{websiteBlockLabel.lotus_form} (from Forms)</option>
-              </select>
-            </label>
+                          document.querySelector(`[data-block="${b.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            setBlockSel(b.id);
+                            setPane("block");
+                          }
+                        }}
+                        className={cn("group flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors duration-100", active ? "bg-brand-soft/60" : "hover:bg-surface-2")}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-medium">{websiteBlockLabel[b.type]}</span>
+                          <span className="block truncate text-xs text-fg-3">{websiteBlockSummary(b, formName) || "Empty"}</span>
+                        </span>
+                        <span className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                          <IconButton label="Move up" disabled={i === 0} onClick={() => moveBlock(b.id, -1)}>
+                            <ChevronUp className="size-3.5" strokeWidth={2} />
+                          </IconButton>
+                          <IconButton label="Move down" disabled={i === page.blocks.length - 1} onClick={() => moveBlock(b.id, 1)}>
+                            <ChevronDown className="size-3.5" strokeWidth={2} />
+                          </IconButton>
+                          <IconButton label="Remove block" danger onClick={() => removeBlock(b.id)}>
+                            <Trash2 className="size-3.5" strokeWidth={2} />
+                          </IconButton>
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            {!page.doc && (
+              <label className="mt-2 block">
+                <span className="sr-only">Add a block</span>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) addBlock(e.target.value as FunnelBlockType | "lotus_form");
+                  }}
+                  className={cn(controlClass, "h-8 text-xs")}
+                >
+                  <option value="">Add a block…</option>
+                  {blockTypes
+                    .filter((t) => t !== "footer")
+                    .map((t) => (
+                      <option key={t} value={t}>
+                        {websiteBlockLabel[t]}
+                      </option>
+                    ))}
+                  <option value="lotus_form">{websiteBlockLabel.lotus_form} (from Forms)</option>
+                </select>
+              </label>
+            )}
           </section>
         </aside>
 

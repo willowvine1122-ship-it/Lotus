@@ -1,6 +1,6 @@
 import { resolve4, resolveCname } from "node:dns/promises";
 import { randomBytes } from "node:crypto";
-import type { DomainStatus, Website, WebsiteDay, WebsitePage } from "@/lib/types";
+import type { BuilderDoc, BuilderTheme, DomainStatus, Website, WebsiteDay, WebsitePage } from "@/lib/types";
 import { SITES_CNAME, siteTemplates } from "@/components/websites/model";
 import { slugify } from "@/components/forms/model";
 import { listClients } from "./store";
@@ -135,8 +135,24 @@ export function saveWebsite(now: Date, id: string, patch: WebsitePatch): { site?
   if (!site) return {};
   const slug = slugify(patch.slug);
   if (store(now).sites.some((s) => s.id !== id && s.slug === slug)) return { slugTaken: true };
-  Object.assign(site, { ...patch, slug, updatedAt: now.toISOString() });
+  // The settings editor does not carry builder pages, so keep each page's design.
+  const pages = patch.pages.map((p) => {
+    const doc = site.pages.find((x) => x.id === p.id)?.doc;
+    return doc ? { ...p, doc } : p;
+  });
+  Object.assign(site, { ...patch, pages, slug, updatedAt: now.toISOString() });
   return { site };
+}
+
+/** Save a page designed in the builder, and the site-wide theme with it. */
+export function savePageDoc(now: Date, id: string, pageId: string, doc: BuilderDoc, theme: BuilderTheme): Website | undefined {
+  const site = findWebsite(now, id);
+  const page = site?.pages.find((p) => p.id === pageId);
+  if (!site || !page) return undefined;
+  page.doc = doc;
+  site.theme = theme;
+  site.updatedAt = now.toISOString();
+  return site;
 }
 
 export function setWebsiteStatus(now: Date, id: string, status: Website["status"]) {

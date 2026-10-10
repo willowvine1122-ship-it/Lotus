@@ -349,13 +349,17 @@ export function deleteContact(now: Date, id: string) {
 
 /* ------------------------------ Funnels ------------------------------ */
 
-import type { Funnel, FunnelBlock, FunnelStep, FunnelSubmission } from "@/lib/types";
-import { demoFunnelsFor, templateFor } from "./demo-funnels";
+import type { BuilderDoc, BuilderTheme, Funnel, FunnelBlock, FunnelOrder, FunnelStep, FunnelStepKind, FunnelSubmission } from "@/lib/types";
+import { demoFunnelsFor, withDocs } from "./demo-funnels";
+import { funnelTemplate } from "@/components/builder/templates";
+import { reId, section, row, column, newElement, emptyDoc } from "@/components/builder/model";
+import { sectionTemplates } from "@/components/builder/templates";
 
 interface FunnelStore {
   seededFor: string;
   funnels: Funnel[];
   submissions: FunnelSubmission[];
+  orders?: FunnelOrder[];
 }
 
 const gf = globalThis as unknown as { __lotusFunnels?: FunnelStore };
@@ -367,7 +371,9 @@ function funnelStore(now: Date): FunnelStore {
       .filter((c) => !c.account.id.startsWith("new-"))
       .flatMap((c) => demoFunnelsFor(c, now));
     const kept = gf.__lotusFunnels?.funnels.filter((f) => f.id.startsWith("new-")) ?? [];
-    gf.__lotusFunnels = { seededFor: key, funnels: [...seeded, ...kept], submissions: gf.__lotusFunnels?.submissions ?? [] };
+    const all = [...seeded, ...kept];
+    for (const f of all) f.steps = withDocs(f.steps);
+    gf.__lotusFunnels = { seededFor: key, funnels: all, submissions: gf.__lotusFunnels?.submissions ?? [], orders: gf.__lotusFunnels?.orders ?? [] };
   }
   return gf.__lotusFunnels;
 }
@@ -384,7 +390,7 @@ export function findFunnel(now: Date, idOrSlug: string): Funnel | undefined {
 export function createFunnel(now: Date, input: { accountId: string; name: string; template: string }): Funnel | undefined {
   const c = findClient(now, input.accountId);
   if (!c) return undefined;
-  const t = templateFor(input.template);
+  const t = funnelTemplate(input.template);
   const id = `new-${Date.now().toString(36)}`;
   let slug = `${c.account.slug}-${slugify(input.name)}`;
   if (findFunnel(now, slug)) slug = `${slug}-${id.slice(-4)}`;
@@ -394,9 +400,9 @@ export function createFunnel(now: Date, input: { accountId: string; name: string
     name: input.name.trim(),
     slug,
     status: "draft",
-    template: t.id,
+    template: t.key,
     brandColor: c.account.brandColor ?? "#0f1221",
-    steps: t.steps({ name: c.account.name, industry: c.industry, location: c.location }),
+    steps: withDocs(t.build({ name: c.account.name, industry: c.industry, location: c.location })).map((s) => ({ ...s, stats: { a: { views: 0, conversions: 0, revenueCents: 0 } } })),
     days: [],
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -405,7 +411,7 @@ export function createFunnel(now: Date, input: { accountId: string; name: string
   return f;
 }
 
-export function updateFunnel(now: Date, id: string, patch: Partial<Pick<Funnel, "name" | "status" | "brandColor" | "slug">>): Funnel | undefined {
+export function updateFunnel(now: Date, id: string, patch: Partial<Pick<Funnel, "name" | "status" | "brandColor" | "slug" | "theme">>): Funnel | undefined {
   const f = findFunnel(now, id);
   if (!f) return undefined;
   Object.assign(f, patch, { updatedAt: now.toISOString() });
@@ -422,14 +428,159 @@ export function saveStepBlocks(now: Date, funnelId: string, stepId: string, bloc
   return s;
 }
 
-export function addStep(now: Date, funnelId: string, name: string): FunnelStep | undefined {
+/** A new step starts from the section that fits its job, so it is never blank. */
+function starterDoc(kind: FunnelStepKind, name: string, ctx: { name: string; industry: string; location: string }): BuilderDoc {
+  const pick = (key: string) => sectionTemplates.find((t) => t.key === key)?.build(ctx);
+  const keys: Record<FunnelStepKind, string[]> = {
+    optin: ["hero-split-form", "stats-strip", "footer"],
+    sales: ["hero-centered", "features-3", "testimonial-grid", "pricing-single", "faq", "footer"],
+    order: ["order-two-column", "footer"],
+    upsell: ["upsell", "footer"],
+    downsell: ["upsell", "footer"],
+    webinar: ["hero-split-form", "benefit-checklist", "footer"],
+    application: ["application", "footer"],
+    thankyou: [],
+    custom: [],
+  };
+  const secs = keys[kind].map(pick).filter((x): x is NonNullable<typeof x> => !!x);
+  if (secs.length) return { v: 1, sections: secs };
+  if (kind === "thankyou") {
+    const h = newElement("headline");
+    const p = newElement("text");
+    if (h.type === "headline") {
+      h.tag = "h1";
+      h.text = "Thank you. You're all set.";
+    }
+    if (p.type === "text") p.text = `We've sent the details to your inbox. ${ctx.name} will be in touch soon.`;
+    return { v: 1, sections: [section([row([column(12, [h, p])])], { name: "Thank you", style: { padTop: 120, padBottom: 120, maxWidth: 680, align: "center" } })] };
+  }
+  const d = emptyDoc();
+  const h = d.sections[0]?.rows[0]?.columns[0]?.elements[0];
+  if (h?.type === "headline") h.text = name;
+  return d;
+}
+
+export function addStep(now: Date, funnelId: string, name: string, kind: FunnelStepKind = "custom"): FunnelStep | undefined {
   const f = findFunnel(now, funnelId);
   if (!f) return undefined;
+  const c = findClient(now, f.accountId);
   const id = `s-${Date.now().toString(36)}`;
-  const s: FunnelStep = { id, name: name.trim(), path: slugify(name), blocks: [{ id: `${id}-b1`, type: "hero", headline: name.trim(), subhead: "Add blocks to build this step.", align: "center" }] };
+  let path = slugify(name) || "step";
+  while (f.steps.some((s) => s.path === path)) path = `${path}-2`;
+  const ctx = { name: c?.account.name ?? f.name, industry: c?.industry ?? "", location: c?.location ?? "" };
+  const s: FunnelStep = { id, name: name.trim(), path: f.steps.length ? path : "", kind, blocks: [], doc: starterDoc(kind, name.trim(), ctx), stats: { a: { views: 0, conversions: 0, revenueCents: 0 } } };
   f.steps.push(s);
   f.updatedAt = now.toISOString();
   return s;
+}
+
+export function updateStep(now: Date, funnelId: string, stepId: string, patch: Partial<Pick<FunnelStep, "name" | "path" | "kind">>): { step?: FunnelStep; error?: string } {
+  const f = findFunnel(now, funnelId);
+  const s = f?.steps.find((x) => x.id === stepId);
+  if (!f || !s) return { error: "Step not found." };
+  if (patch.path !== undefined) {
+    const path = slugify(patch.path);
+    if (f.steps[0] === s) patch.path = "";
+    else if (!path) return { error: "Give the step a path." };
+    else if (f.steps.some((x) => x !== s && x.path === path)) return { error: "Another step already uses that path." };
+    else patch.path = path;
+  }
+  Object.assign(s, patch);
+  f.updatedAt = now.toISOString();
+  return { step: s };
+}
+
+export function saveStepDoc(now: Date, funnelId: string, stepId: string, doc: BuilderDoc, variant: "a" | "b", theme?: BuilderTheme): FunnelStep | undefined {
+  const f = findFunnel(now, funnelId);
+  const s = f?.steps.find((x) => x.id === stepId);
+  if (!f || !s) return undefined;
+  if (variant === "b") {
+    if (!s.variant) return undefined;
+    s.variant.doc = doc;
+  } else s.doc = doc;
+  if (theme) f.theme = theme;
+  f.updatedAt = now.toISOString();
+  return s;
+}
+
+export function duplicateStep(now: Date, funnelId: string, stepId: string): FunnelStep | undefined {
+  const f = findFunnel(now, funnelId);
+  const i = f?.steps.findIndex((x) => x.id === stepId) ?? -1;
+  if (!f || i < 0) return undefined;
+  const src = f.steps[i]!;
+  let path = `${src.path || "page"}-copy`;
+  while (f.steps.some((s) => s.path === path)) path = `${path}-2`;
+  const copy: FunnelStep = { ...structuredClone(src), id: `s-${Date.now().toString(36)}`, name: `${src.name} copy`, path, variant: undefined, doc: src.doc ? reId(src.doc) : undefined, stats: { a: { views: 0, conversions: 0, revenueCents: 0 } } };
+  f.steps.splice(i + 1, 0, copy);
+  f.updatedAt = now.toISOString();
+  return copy;
+}
+
+/** Version B starts as a copy of A so the first change is the only difference. */
+export function startSplitTest(now: Date, funnelId: string, stepId: string) {
+  const f = findFunnel(now, funnelId);
+  const s = f?.steps.find((x) => x.id === stepId);
+  if (!f || !s || s.variant || !s.doc) return;
+  s.variant = { doc: reId(s.doc), split: 50, startedAt: now.toISOString() };
+  s.stats = { a: s.stats?.a ?? { views: 0, conversions: 0, revenueCents: 0 }, b: { views: 0, conversions: 0, revenueCents: 0 } };
+  f.updatedAt = now.toISOString();
+}
+
+export function setSplit(now: Date, funnelId: string, stepId: string, split: number) {
+  const s = findFunnel(now, funnelId)?.steps.find((x) => x.id === stepId);
+  if (s?.variant) s.variant.split = Math.min(95, Math.max(5, Math.round(split)));
+}
+
+/** Ends the test. The winner becomes the page; the loser is discarded. */
+export function endSplitTest(now: Date, funnelId: string, stepId: string, winner: "a" | "b") {
+  const f = findFunnel(now, funnelId);
+  const s = f?.steps.find((x) => x.id === stepId);
+  if (!f || !s?.variant) return;
+  if (winner === "b") s.doc = s.variant.doc;
+  const a = s.stats?.a ?? { views: 0, conversions: 0, revenueCents: 0 };
+  const b = s.stats?.b ?? { views: 0, conversions: 0, revenueCents: 0 };
+  s.stats = { a: { views: a.views + b.views, conversions: a.conversions + b.conversions, revenueCents: a.revenueCents + b.revenueCents } };
+  s.variant = undefined;
+  f.updatedAt = now.toISOString();
+}
+
+function bump(now: Date, funnelId: string, stepId: string, v: "a" | "b", k: "views" | "conversions", revenueCents = 0) {
+  const s = findFunnel(now, funnelId)?.steps.find((x) => x.id === stepId);
+  if (!s) return;
+  s.stats ??= { a: { views: 0, conversions: 0, revenueCents: 0 } };
+  const bucket = v === "b" && s.variant ? (s.stats.b ??= { views: 0, conversions: 0, revenueCents: 0 }) : s.stats.a;
+  bucket[k] += 1;
+  bucket.revenueCents += revenueCents;
+}
+
+export function recordStepView(now: Date, funnelId: string, stepId: string, v: "a" | "b") {
+  bump(now, funnelId, stepId, v, "views");
+  const f = findFunnel(now, funnelId);
+  if (f && f.steps[0]?.id === stepId) {
+    const today = now.toISOString().slice(0, 10);
+    const d = f.days.find((d) => d.day === today);
+    if (d) d.visitors += 1;
+    else f.days.push({ day: today, visitors: 1, leads: 0 });
+  }
+}
+
+export function recordStepConversion(now: Date, funnelId: string, stepId: string, v: "a" | "b", revenueCents = 0) {
+  bump(now, funnelId, stepId, v, "conversions", revenueCents);
+}
+
+export function recordOrder(now: Date, o: Omit<FunnelOrder, "id" | "at">): FunnelOrder {
+  const order: FunnelOrder = { ...o, id: `ord-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, at: now.toISOString() };
+  const st = funnelStore(now);
+  (st.orders ??= []).push(order);
+  return order;
+}
+
+export function findOrder(now: Date, id: string): FunnelOrder | undefined {
+  return funnelStore(now).orders?.find((o) => o.id === id);
+}
+
+export function listOrders(now: Date, funnelId: string): FunnelOrder[] {
+  return (funnelStore(now).orders ?? []).filter((o) => o.funnelId === funnelId).sort((a, b) => b.at.localeCompare(a.at));
 }
 
 export function moveStep(now: Date, funnelId: string, stepId: string, dir: -1 | 1) {
