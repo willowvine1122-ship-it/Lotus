@@ -412,6 +412,14 @@ export function ContentPanel({ e, onChange, refs, context }: { e: BuilderElement
           </Row>
         </Group>
       );
+    case "donation_element":
+      return (
+        <Group title="Donation element">
+          <Row label="Element" hint="Built in Elements. Edits there reach every page that places it.">
+            <Pick label="Element" value={e.elementId} onChange={(elementId) => set({ elementId })} options={[{ value: "", label: "Choose an element" }, ...(refs.elements ?? []).map((x) => ({ value: x.id, label: `${x.name} · ${x.typeLabel}${x.live ? "" : " (paused)"}` }))]} />
+          </Row>
+        </Group>
+      );
   }
 }
 

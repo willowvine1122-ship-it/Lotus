@@ -1393,6 +1393,7 @@ export type BuilderElement = BuilderStyled & { id: string } & (
     | { type: "html"; html: string; height: number }
     | { type: "lotus_form"; formId: string }
     | { type: "calendar"; calendarSlug: string }
+    | { type: "donation_element"; elementId: string }
   );
 
 export type BuilderElementType = BuilderElement["type"];

@@ -43,6 +43,7 @@ import {
   TrendingUp,
   Undo2,
   X,
+  HeartHandshake,
 } from "lucide-react";
 import type { BuilderColumn, BuilderDoc, BuilderElement, BuilderElementType, BuilderRow, BuilderSection, BuilderTheme } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ const elementIcon: Record<BuilderElementType, React.ComponentType<{ className?: 
   form: FileText,
   lotus_form: ClipboardList,
   calendar: CalendarDays,
+  donation_element: HeartHandshake,
   order: ShoppingCart,
   upsell: Sparkles,
   pricing: SquareStack,

@@ -139,6 +139,7 @@ export interface RenderRefs {
   nextHref?: string;
   forms?: { id: string; slug: string; name: string; live: boolean }[];
   calendars?: { slug: string; name: string }[];
+  elements?: { id: string; name: string; typeLabel: string; live: boolean; overlay: boolean }[];
 }
 
 export interface RenderActions {
@@ -554,6 +555,11 @@ function ElementView({ e, ctx }: { e: BuilderElement; ctx: Ctx }) {
       const c = ctx.refs.calendars?.find((x) => x.slug === e.calendarSlug);
       if (c && !ctx.editing) return <iframe className="lb-frame" src={`/book/${c.slug}`} title={c.name} loading="lazy" style={{ height: 720 }} />;
       return <div className="lb-ph" style={{ minHeight: 320 }}>{c ? `${c.name} booking calendar shows here on the live page.` : "Pick a calendar in the panel."}</div>;
+    }
+    case "donation_element": {
+      const x = ctx.refs.elements?.find((y) => y.id === e.elementId);
+      if (x && x.live && !ctx.editing) return <iframe className="lb-frame" src={`/e/${x.id}`} title={x.name} loading="lazy" style={{ height: x.overlay ? 160 : 640 }} />;
+      return <div className="lb-ph" style={{ minHeight: 160 }}>{x ? (x.live ? `${x.name} (${x.typeLabel}) shows here on the live page.` : `${x.name} is paused. Turn it on in Elements to show it here.`) : "Pick a donation element in the panel."}</div>;
     }
   }
 }

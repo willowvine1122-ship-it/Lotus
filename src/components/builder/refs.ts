@@ -1,8 +1,10 @@
 import { listCalendars } from "@/lib/data/calendars";
 import { listForms } from "@/lib/data/forms";
+import { elementOptions } from "@/components/elements/block";
+import { isOverlay } from "@/lib/elements";
 import type { RenderRefs } from "./render";
 
-/* Server-side: the client's forms and calendars that builder elements can embed. */
+/* Server-side: the client's forms, calendars and donation elements that builder elements can embed. */
 
 export function builderRefs(now: Date, accountId: string, nextHref?: string): RenderRefs {
   return {
@@ -11,5 +13,6 @@ export function builderRefs(now: Date, accountId: string, nextHref?: string): Re
     calendars: listCalendars(now)
       .filter((c) => c.accountId === accountId)
       .map((c) => ({ slug: c.slug, name: c.name })),
+    elements: elementOptions(now, accountId).map((e) => ({ id: e.id, name: e.name, typeLabel: e.typeLabel, live: e.status === "live", overlay: isOverlay(e.type) })),
   };
 }

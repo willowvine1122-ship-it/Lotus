@@ -137,7 +137,7 @@ export function videoEmbed(url: string): string | null {
   return null;
 }
 
-const elementTypes: BuilderElementType[] = ["headline", "text", "button", "image", "video", "list", "form", "divider", "spacer", "countdown", "testimonial", "faq", "stat", "pricing", "order", "upsell", "progress", "logos", "html", "lotus_form", "calendar"];
+const elementTypes: BuilderElementType[] = ["headline", "text", "button", "image", "video", "list", "form", "divider", "spacer", "countdown", "testimonial", "faq", "stat", "pricing", "order", "upsell", "progress", "logos", "html", "lotus_form", "calendar", "donation_element"];
 
 /**
  * Structural check on a page coming back from the browser. Content is escaped
@@ -195,6 +195,7 @@ export const elementCatalog: { type: BuilderElementType; label: string; group: E
   { type: "form", label: "Opt-in form", group: "Forms", hint: "Lands in Contacts" },
   { type: "lotus_form", label: "Lotus form", group: "Forms", hint: "A form from Forms" },
   { type: "calendar", label: "Calendar", group: "Forms", hint: "Booking widget" },
+  { type: "donation_element", label: "Donation element", group: "Sell", hint: "A live element from Elements" },
   { type: "order", label: "Order form", group: "Sell", hint: "Products and a bump" },
   { type: "upsell", label: "One-click upsell", group: "Sell", hint: "Yes / no offer" },
   { type: "pricing", label: "Pricing card", group: "Sell", hint: "Plan and features" },
@@ -271,6 +272,8 @@ export function newElement(type: BuilderElementType): BuilderElement {
       return { id, type, formId: "" };
     case "calendar":
       return { id, type, calendarSlug: "" };
+    case "donation_element":
+      return { id, type, elementId: "" };
   }
 }
 
