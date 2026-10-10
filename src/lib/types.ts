@@ -417,6 +417,13 @@ export interface FunnelStep {
   /** Path segment after the funnel slug; the first step is the root. */
   path: string;
   blocks: FunnelBlock[];
+  /** What the step is for; drives its stats and the elements it suggests. */
+  kind?: FunnelStepKind;
+  /** The visual builder's page. When present it replaces `blocks`. */
+  doc?: BuilderDoc;
+  /** A running split test: version B of the page and the share of visitors it gets. */
+  variant?: FunnelVariant;
+  stats?: FunnelStepStats;
 }
 
 export interface FunnelDay {
@@ -434,6 +441,8 @@ export interface Funnel {
   template: string;
   /** Brand colour for the public pages; falls back to the account's. */
   brandColor: string;
+  /** Fonts, colours and corners shared by every step built in the visual builder. */
+  theme?: BuilderTheme;
   steps: FunnelStep[];
   days: FunnelDay[]; // oldest first
   createdAt: string;
@@ -1030,6 +1039,8 @@ export interface WebsitePage {
   /** Path after the site root; "" is the home page. */
   path: string;
   blocks: WebsiteBlock[];
+  /** The visual builder's page. When present it replaces `blocks`. */
+  doc?: BuilderDoc;
   inNav: boolean;
   seo: { title?: string; description?: string; noindex?: boolean };
 }
@@ -1058,6 +1069,7 @@ export interface Website {
   status: "draft" | "live";
   template: string;
   brandColor: string;
+  theme?: BuilderTheme;
   /** Wordmark text in the header; the client's name by default. */
   logoText: string;
   header: { ctaLabel?: string; ctaHref?: string; phone?: string };
@@ -1291,4 +1303,161 @@ export interface DonationElementBlock {
   id: string;
   type: "donation_element";
   elementId: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Visual page builder: sections > rows > columns > elements            */
+/* ------------------------------------------------------------------ */
+
+export type BuilderFont = "geist" | "inter" | "manrope" | "dm-sans" | "space-grotesk" | "fraunces" | "playfair" | "lora";
+
+/** Shared look for a funnel or site. Elements read these unless they set their own. */
+export interface BuilderTheme {
+  primary: string;
+  ink: string;
+  muted: string;
+  background: string;
+  headingFont: BuilderFont;
+  bodyFont: BuilderFont;
+  /** Corner radius for cards, inputs and images, px. */
+  radius: number;
+  buttonRadius: number;
+}
+
+/** Style shared by every node. Mobile overrides use the same shape. Numbers are px. */
+export interface BuilderStyle {
+  bg?: string;
+  bgImage?: string;
+  /** 0 to 0.9: an ink wash over the background image so text stays readable. */
+  overlay?: number;
+  color?: string;
+  padTop?: number;
+  padBottom?: number;
+  padX?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  radius?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  shadow?: "none" | "sm" | "md" | "lg";
+  align?: "left" | "center" | "right";
+  fontSize?: number;
+  weight?: 400 | 500 | 600 | 700;
+  lineHeight?: number;
+  /** Section content width, px. */
+  maxWidth?: number;
+  hidden?: boolean;
+}
+
+export interface BuilderStyled {
+  style?: BuilderStyle;
+  mobile?: BuilderStyle;
+}
+
+export type BuilderFieldKey = "name" | "first_name" | "email" | "phone" | "address" | "company" | "message" | "amount" | "website";
+
+export interface BuilderFormField {
+  key: BuilderFieldKey;
+  label: string;
+  required: boolean;
+}
+
+export interface BuilderProduct {
+  id: string;
+  name: string;
+  priceCents: number;
+  interval?: "once" | "month" | "year";
+}
+
+export type BuilderButtonAction = "link" | "next" | "scroll" | "popup";
+
+export type BuilderElement = BuilderStyled & { id: string } & (
+    | { type: "headline"; text: string; tag: "h1" | "h2" | "h3" | "h4" }
+    | { type: "text"; text: string }
+    | { type: "button"; label: string; sub?: string; action: BuilderButtonAction; href?: string; variant: "solid" | "outline"; size: "md" | "lg"; full?: boolean }
+    | { type: "image"; src: string; alt: string; ratio: "auto" | "16/9" | "4/3" | "1/1" | "3/4"; href?: string }
+    | { type: "video"; url: string }
+    | { type: "list"; items: string[]; icon: "check" | "dot" | "arrow" | "x" }
+    | { type: "form"; fields: BuilderFormField[]; buttonLabel: string; note?: string }
+    | { type: "divider" }
+    | { type: "spacer"; height: number }
+    | { type: "countdown"; mode: "date" | "evergreen"; until?: string; minutes?: number; expired: string }
+    | { type: "testimonial"; quote: string; name: string; detail?: string; avatar?: string; rating?: number }
+    | { type: "faq"; items: { q: string; a: string }[] }
+    | { type: "stat"; value: string; label: string }
+    | { type: "pricing"; name: string; price: string; period?: string; blurb?: string; features: string[]; buttonLabel: string; action: BuilderButtonAction; href?: string; featured?: boolean }
+    | { type: "order"; products: BuilderProduct[]; bump?: { product: BuilderProduct; pitch: string }; buttonLabel: string; guarantee?: string }
+    | { type: "upsell"; product: BuilderProduct; yesLabel: string; noLabel: string }
+    | { type: "progress"; value: number; label: string }
+    | { type: "logos"; names: string[] }
+    | { type: "html"; html: string; height: number }
+    | { type: "lotus_form"; formId: string }
+    | { type: "calendar"; calendarSlug: string }
+  );
+
+export type BuilderElementType = BuilderElement["type"];
+
+export interface BuilderColumn extends BuilderStyled {
+  id: string;
+  /** Share of a 12-column grid. Columns stack on phones. */
+  span: number;
+  valign?: "top" | "center" | "bottom";
+  elements: BuilderElement[];
+}
+
+export interface BuilderRow extends BuilderStyled {
+  id: string;
+  gap?: number;
+  columns: BuilderColumn[];
+}
+
+export interface BuilderSection extends BuilderStyled {
+  id: string;
+  name?: string;
+  rows: BuilderRow[];
+}
+
+export interface BuilderPopup {
+  enabled: boolean;
+  trigger: "exit" | "delay";
+  delaySeconds?: number;
+  sections: BuilderSection[];
+}
+
+export interface BuilderDoc {
+  v: 1;
+  sections: BuilderSection[];
+  popup?: BuilderPopup;
+}
+
+export type FunnelStepKind = "optin" | "sales" | "order" | "upsell" | "downsell" | "thankyou" | "webinar" | "application" | "custom";
+
+export interface FunnelVariantStats {
+  views: number;
+  conversions: number;
+  revenueCents: number;
+}
+
+export interface FunnelStepStats {
+  a: FunnelVariantStats;
+  b?: FunnelVariantStats;
+}
+
+export interface FunnelVariant {
+  doc: BuilderDoc;
+  /** Percent of visitors sent to version B, 5 to 95. */
+  split: number;
+  startedAt: string;
+}
+
+export interface FunnelOrder {
+  id: string;
+  funnelId: string;
+  stepId: string;
+  contactId?: string;
+  name: string;
+  email: string;
+  items: { name: string; priceCents: number; kind: "main" | "bump" | "upsell" }[];
+  totalCents: number;
+  at: string;
 }

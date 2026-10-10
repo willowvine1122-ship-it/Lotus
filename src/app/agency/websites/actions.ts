@@ -7,7 +7,8 @@ import { hostError, normaliseHost, pathIssues, siteTemplates } from "@/component
 import { formSubmitted } from "@/lib/data/automation-events";
 import { upsertContact } from "@/lib/data/integrations";
 import { addActivity, findClient } from "@/lib/data/store";
-import { checkDomain, createWebsite, deleteWebsite, findWebsite, recordLead, saveWebsite, setDomain, setWebsiteStatus } from "@/lib/data/websites";
+import { parseDoc, themeOf } from "@/components/builder/model";
+import { checkDomain, createWebsite, deleteWebsite, findWebsite, recordLead, savePageDoc, saveWebsite, setDomain, setWebsiteStatus } from "@/lib/data/websites";
 
 /* Websites actions. zod in, { ok, message } out, like the rest of Lotus. The public one is marked. */
 
@@ -105,6 +106,23 @@ export async function saveWebsiteAction(siteId: string, input: unknown): Promise
   return { ok: true, message: "Saved" };
 }
 
+export async function savePageDocAction(siteId: string, pageId: string, docJson: string, themeJson: string): Promise<SiteResult> {
+  const doc = parseDoc(docJson);
+  if (!doc) return { ok: false, message: "Could not read the page. Nothing was saved." };
+  const now = new Date();
+  let theme;
+  try {
+    theme = themeOf(JSON.parse(themeJson), findWebsite(now, siteId)?.brandColor ?? "#0f1221");
+  } catch {
+    return { ok: false, message: "Could not read the theme." };
+  }
+  const site = savePageDoc(now, siteId, pageId, doc, theme);
+  if (!site) return { ok: false, message: "That page no longer exists." };
+  touch(site.id);
+  revalidatePath(`/s/${site.slug}`, "layout");
+  return { ok: true, message: "Saved" };
+}
+
 export async function setWebsiteStatusAction(siteId: string, status: "draft" | "live"): Promise<SiteResult> {
   const site = setWebsiteStatus(new Date(), z.string().max(80).parse(siteId), status);
   if (!site) return { ok: false, message: "That site was deleted." };
@@ -154,7 +172,8 @@ export async function submitSiteFormAction(siteId: string, pageId: string, back:
   if (!site || site.status !== "live" || !pg) return;
   const values: Record<string, string> = {};
   for (const [k, v] of formData.entries()) if (typeof v === "string" && v.trim() && !k.startsWith("$")) values[k] = v.trim().slice(0, 1000);
-  const [firstName, ...rest] = (values.name ?? "").split(/\s+/);
+  // Builder forms send first_name and last_name; the older blocks send name.
+  const [firstName, ...rest] = (values.name ?? [values.first_name, values.last_name].filter(Boolean).join(" ")).split(/\s+/);
   const email = values.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email) ? values.email.toLowerCase() : undefined;
   const { contact, created } = upsertContact(now, site.accountId, { firstName: firstName || undefined, lastName: rest.join(" ") || undefined, email, phone: values.phone, city: values.address }, "website", ["Website lead"]);
   if (contact) {

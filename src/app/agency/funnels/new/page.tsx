@@ -6,7 +6,8 @@ import { funnelClients } from "@/components/funnels/data";
 import { NewFunnelForm } from "@/components/funnels/new-funnel-form";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { templates } from "@/lib/data/demo-funnels";
+import { funnelTemplates } from "@/components/builder/templates";
+import { stepKindLabel } from "@/components/builder/model";
 import { createFunnelAction } from "../actions";
 
 export const metadata = { title: "New funnel" };
@@ -22,15 +23,15 @@ async function Form({ searchParams }: { searchParams: Promise<{ client?: string 
         <NewFunnelForm
           action={createFunnelAction}
           clients={clients}
-          templates={templates.map((t) => ({ id: t.id, name: t.name, description: t.description, mode: t.mode }))}
+          templates={funnelTemplates.map((t) => ({ id: t.key, name: t.label, description: t.blurb, mode: t.mode, steps: t.steps.map((s) => s.name), kinds: t.steps.map((s) => stepKindLabel[s.kind]) }))}
           initialClientId={clients.find((c) => c.id === client || c.slug === client)?.id}
         />
       </div>
       <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
         <h2 className="text-sm font-semibold text-fg">What happens next</h2>
         <ol className="mt-3 flex list-decimal flex-col gap-2 pl-4">
-          <li>The funnel opens in the editor as a draft with the template&apos;s pages filled in.</li>
-          <li>Change the words, blocks and colour, then publish to get a public link.</li>
+          <li>The funnel opens as a draft with every step&apos;s page already built.</li>
+          <li>Open any step in the page builder: drag sections and elements, edit text in place, set phone sizes.</li>
           <li>Every form submission becomes a contact on the client&apos;s pipeline.</li>
         </ol>
       </aside>

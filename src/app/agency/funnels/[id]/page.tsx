@@ -1,15 +1,28 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { FunnelEditor } from "@/components/funnels/editor";
 import { funnelClients } from "@/components/funnels/data";
+import { FunnelOverview } from "@/components/funnels/overview";
 import { Shell } from "@/components/shell";
-import { findFunnel } from "@/lib/data/store";
-import { addStepAction, deleteFunnelAction, moveStepAction, removeStepAction, renameFunnelAction, saveStepAction, setFunnelStatusAction } from "../actions";
+import { findFunnel, listOrders } from "@/lib/data/store";
+import {
+  addStepAction,
+  deleteFunnelAction,
+  duplicateStepAction,
+  endSplitTestAction,
+  moveStepAction,
+  removeStepAction,
+  renameFunnelAction,
+  setFunnelStatusAction,
+  setSplitAction,
+  startSplitTestAction,
+  updateStepAction,
+} from "../actions";
 
-export const metadata = { title: "Edit funnel" };
+export const metadata = { title: "Funnel" };
 
-async function Editor({ params }: { params: Promise<{ id: string }> }) {
+async function Overview({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
   const now = new Date();
@@ -17,30 +30,38 @@ async function Editor({ params }: { params: Promise<{ id: string }> }) {
   if (!funnel) notFound();
   const client = funnelClients(now).find((c) => c.id === funnel.accountId);
   if (!client) notFound();
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"}`;
   return (
-    <FunnelEditor
+    <FunnelOverview
       key={funnel.updatedAt}
       funnel={funnel}
       client={client}
+      orders={listOrders(now, funnel.id)}
       nowIso={now.toISOString()}
+      origin={origin}
       actions={{
-        saveStep: saveStepAction,
         setStatus: setFunnelStatusAction,
         rename: renameFunnelAction,
         addStep: addStepAction,
+        updateStep: updateStepAction,
+        duplicateStep: duplicateStepAction,
         moveStep: moveStepAction,
         removeStep: removeStepAction,
         deleteFunnel: deleteFunnelAction,
+        startSplit: startSplitTestAction,
+        setSplit: setSplitAction,
+        endSplit: endSplitTestAction,
       }}
     />
   );
 }
 
-export default function FunnelEditorPage({ params }: { params: Promise<{ id: string }> }) {
+export default function FunnelPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <Shell current="/agency/funnels">
       <Suspense fallback={<div className="h-14 bg-rail" />}>
-        <Editor params={params} />
+        <Overview params={params} />
       </Suspense>
     </Shell>
   );

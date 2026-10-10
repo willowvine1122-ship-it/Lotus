@@ -1,4 +1,6 @@
-import type { ClientRecord, Funnel, FunnelBlock, FunnelDay, FunnelStep } from "@/lib/types";
+import type { ClientRecord, Funnel, FunnelBlock, FunnelDay, FunnelStep, FunnelStepKind, FunnelStepStats } from "@/lib/types";
+import { blocksToDoc, reId } from "@/components/builder/model";
+import { funnelTemplate } from "@/components/builder/templates";
 
 /*
  * Funnel templates and a seeded funnel per client. Templates are plain
@@ -124,26 +126,88 @@ function isoDaysAgo(now: Date, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
+/** How many of a step's visitors do what the step asks, by kind. Demo rates. */
+const stepRate: Record<FunnelStepKind, [number, number]> = {
+  optin: [0.05, 0.09],
+  webinar: [0.18, 0.3],
+  application: [0.08, 0.14],
+  sales: [0.12, 0.22],
+  order: [0.08, 0.16],
+  upsell: [0.18, 0.32],
+  downsell: [0.12, 0.2],
+  thankyou: [0, 0],
+  custom: [0.05, 0.12],
+};
+
+const stepPrice: Partial<Record<FunnelStepKind, number>> = { order: 4700, upsell: 9700, downsell: 2700 };
+
+/**
+ * Visitors flow down the steps: each step's views are the conversions of the
+ * one before (an upsell's "no" still moves on, so it passes everyone through).
+ */
+export function seedStepStats(steps: FunnelStep[], days: FunnelDay[], r: () => number, split?: { stepIndex: number; lift: number }) {
+  let flow = days.reduce((a, d) => a + d.visitors, 0);
+  const first = days.reduce((a, d) => a + d.leads, 0);
+  steps.forEach((s, i) => {
+    const kind = s.kind ?? (i === steps.length - 1 && i > 0 ? "thankyou" : "optin");
+    const [lo, hi] = stepRate[kind];
+    const views = Math.round(flow);
+    let conversions = i === 0 && (kind === "optin" || kind === "webinar") ? first : Math.round(views * (lo + r() * (hi - lo)));
+    if (kind === "thankyou") conversions = 0;
+    const price = stepPrice[kind] ?? 0;
+    const stats: FunnelStepStats = { a: { views, conversions, revenueCents: conversions * price } };
+    if (split && split.stepIndex === i && s.variant) {
+      const share = s.variant.split / 100;
+      const bViews = Math.round(views * share);
+      const aViews = views - bViews;
+      const aRate = views ? conversions / views : 0;
+      const bConv = Math.round(bViews * aRate * split.lift);
+      const aConv = Math.round(aViews * aRate);
+      stats.a = { views: aViews, conversions: aConv, revenueCents: aConv * price };
+      stats.b = { views: bViews, conversions: bConv, revenueCents: bConv * price };
+      conversions = aConv + bConv;
+    }
+    s.stats = stats;
+    flow = kind === "upsell" || kind === "downsell" ? views : conversions;
+  });
+}
+
+const tplName: Record<string, { name: string; key: string }> = {
+  quote: { name: "Free quote", key: "quote" },
+  booking: { name: "Book a visit", key: "booking" },
+  appeal: { name: "Winter appeal", key: "appeal" },
+};
+
 export function demoFunnelsFor(c: ClientRecord, now: Date): Funnel[] {
   if (c.days.length === 0) return [];
   const seed = [...c.account.id].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   const r = rng(seed * 31);
   const tpl = c.mode === "marketing" ? (r() < 0.7 ? "quote" : "booking") : "appeal";
-  const t = templateFor(tpl);
-  const steps = t.steps({ name: c.account.name, industry: c.industry, location: c.location });
-  const days: FunnelDay[] = [];
-  const base = 40 + r() * 140;
-  for (let i = 59; i >= 0; i--) {
-    const visitors = Math.round(base * (0.7 + r() * 0.6) * (i % 7 >= 5 ? 0.7 : 1));
-    const leads = Math.round(visitors * (0.04 + r() * 0.05));
-    days.push({ day: isoDaysAgo(now, i), visitors, leads });
+  const ctx = { name: c.account.name, industry: c.industry, location: c.location };
+  const steps = funnelTemplate(tplName[tpl]!.key).build(ctx);
+  const series = (base: number, rate: [number, number]) => {
+    const out: FunnelDay[] = [];
+    for (let i = 59; i >= 0; i--) {
+      const visitors = Math.round(base * (0.7 + r() * 0.6) * (i % 7 >= 5 ? 0.7 : 1));
+      out.push({ day: isoDaysAgo(now, i), visitors, leads: Math.round(visitors * (rate[0] + r() * (rate[1] - rate[0]))) });
+    }
+    return out;
+  };
+  const days = series(40 + r() * 140, [0.04, 0.09]);
+  // Every seeded funnel's first step runs a headline test, so the split-test view has data.
+  const testFirst = r() < 0.5;
+  if (testFirst && steps[0]?.doc) {
+    const b = reId(steps[0].doc);
+    const h = b.sections[0]?.rows[0]?.columns[0]?.elements.find((e) => e.type === "headline");
+    if (h && h.type === "headline") h.text = c.mode === "marketing" ? `${c.account.name}: ${tpl === "quote" ? "your quote today, your job this week" : "pick a time that suits you"}` : "Your gift this winter keeps the doors open";
+    steps[0].variant = { doc: b, split: 50, startedAt: new Date(now.getTime() - 12 * 86400000).toISOString() };
   }
-  const name = c.mode === "marketing" ? (tpl === "quote" ? "Free quote" : "Book a visit") : "Winter appeal";
+  seedStepStats(steps, days, r, testFirst ? { stepIndex: 0, lift: 0.85 + r() * 0.5 } : undefined);
   const funnels: Funnel[] = [
     {
       id: `${c.account.id}-f1`,
       accountId: c.account.id,
-      name,
+      name: tplName[tpl]!.name,
       slug: `${c.account.slug}-${tpl}`,
       status: "live",
       template: tpl,
@@ -154,23 +218,47 @@ export function demoFunnelsFor(c: ClientRecord, now: Date): Funnel[] {
       updatedAt: new Date(now.getTime() - Math.floor(r() * 10) * 86400000).toISOString(),
     },
   ];
+  if (c.mode === "marketing" && r() < 0.35) {
+    const ps = funnelTemplate("product").build(ctx);
+    const pd = series(30 + r() * 60, [0.1, 0.2]);
+    seedStepStats(ps, pd, r);
+    funnels.push({
+      id: `${c.account.id}-f3`,
+      accountId: c.account.id,
+      name: "Starter kit offer",
+      slug: `${c.account.slug}-starter-kit`,
+      status: "live",
+      template: "product",
+      brandColor: c.account.brandColor ?? "#0f1221",
+      steps: ps,
+      days: pd,
+      createdAt: new Date(now.getTime() - 25 * 86400000).toISOString(),
+      updatedAt: new Date(now.getTime() - Math.floor(r() * 6) * 86400000).toISOString(),
+    });
+  }
   if (r() < 0.4) {
-    const t2 = templateFor("blank");
+    const ds = funnelTemplate("lead-magnet").build(ctx);
+    seedStepStats(ds, [], r);
     funnels.push({
       id: `${c.account.id}-f2`,
       accountId: c.account.id,
       name: c.mode === "marketing" ? "Spring promo" : "Giving Tuesday",
       slug: `${c.account.slug}-draft`,
       status: "draft",
-      template: "blank",
+      template: "lead-magnet",
       brandColor: c.account.brandColor ?? "#0f1221",
-      steps: t2.steps({ name: c.account.name, industry: c.industry, location: c.location }),
+      steps: ds,
       days: [],
       createdAt: new Date(now.getTime() - 3 * 86400000).toISOString(),
       updatedAt: new Date(now.getTime() - 1 * 86400000).toISOString(),
     });
   }
   return funnels;
+}
+
+/** Steps saved before the visual builder get a builder page made from their blocks. */
+export function withDocs(steps: FunnelStep[]): FunnelStep[] {
+  return steps.map((s, i) => ({ ...s, kind: s.kind ?? (i === 0 ? "optin" : i === steps.length - 1 ? "thankyou" : "custom"), doc: s.doc ?? blocksToDoc(s.blocks) }));
 }
 
 export function newBlock(type: FunnelBlock["type"]): FunnelBlock {

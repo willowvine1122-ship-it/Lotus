@@ -8,6 +8,7 @@ import { submitSiteFormAction } from "@/app/agency/websites/actions";
 import { listForms } from "@/lib/data/forms";
 import { findPage, findWebsiteByHost, findWebsiteBySlug, recordView } from "@/lib/data/websites";
 import { pageHref, siteUrl } from "./model";
+import { builderRefs } from "@/components/builder/refs";
 import { SitePage } from "./site";
 
 /*
@@ -63,7 +64,7 @@ export async function SiteRoute({ refP, segments, sent }: { refP: SiteRef; segme
   const { gaId, metaPixelId } = site.analytics;
   return (
     <div className="min-h-dvh">
-      <SitePage site={site} page={page} base={base} forms={forms} sent={sent} formAction={submitSiteFormAction.bind(null, site.id, page.id, back)} />
+      <SitePage site={site} page={page} base={base} forms={forms} refs={builderRefs(now, site.accountId)} sent={sent} formAction={submitSiteFormAction.bind(null, site.id, page.id, back)} />
       {gaId && (
         <>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />

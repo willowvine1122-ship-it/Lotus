@@ -607,3 +607,26 @@ Estimates (Revision 10) gain a price book, templates, optional add-ons, terms, a
 - Prices on a sent estimate are copied, not linked: editing the price book never changes an estimate already out.
 - Ticked add-ons follow the approved option into the job and the invoice; a paid deposit is credited on the invoice as a card payment, once.
 - The first time a customer opens their link, "Estimate opened" lands on their timeline.
+
+## Revision 17: Page builder for funnels and websites (2026-10-10)
+
+Funnel steps and website pages are now designed in one visual builder, modelled on GoHighLevel's but denser and calmer. The editor is an Operate surface (Lotus chrome, ink top bar, 12-13px controls); the page on the canvas is a Persuade surface in the client's theme, so the two never share colours.
+
+### Model
+- A page is sections > rows > columns (12-column spans, presets 1/2/3/4 columns, 1:2, 2:1, 1:3) > elements. Every node has a style and a phone style; phone fields left empty follow desktop. A page can also carry one popup (on exit intent or after a delay).
+- Elements: Headline, Paragraph, Bullet list, Button, Image, Video (YouTube, Vimeo, Loom), Logo bar, Opt-in form, Lotus form, Calendar, Order form, One-click upsell, Pricing card, Countdown (date or evergreen), Testimonial, Number, FAQ, Progress bar, Divider, Spacer, Custom code (sandboxed).
+- The theme (brand, ink, muted, background, heading and body fonts from a short list of eight, corner and button radius) is per funnel or per site, and every swatch in the inspector points at a theme colour first, so a rebrand is one change.
+
+### Components, added
+- **Editor** (`/agency/funnels/<id>/builder/<step>`, `/agency/websites/<id>/builder/<page>`, full screen, no sidebar): ink top bar with back, page name and context line, Desktop | Phone, Page | Popup, undo and redo, Theme, Preview (saves first) and the violet Save ("Saved" when clean). Left panel tabs Add (searchable element tiles in groups, row layouts, 23 section templates with mini wireframes), Layers (the tree, click to select) and Steps or Pages. The canvas sits on a dotted surface-2 with the page at desktop width (zoomed to fit) or in a 390px phone frame. Right inspector: breadcrumb (Section > Row > Column > Element), Content and Style tabs; on Phone the Style tab has an amber dot and an amber "Phone only" strip.
+- **Canvas overlay**: hover outline, selection outline coloured by kind (section ink, row teal, column amber, element violet) with a chip carrying a drag grip, move up and down, duplicate and delete; an "Add section" pill between sections; a violet drop line while dragging. Double-click text to type in place; Escape selects the parent.
+- **Funnel overview** (`/agency/funnels/<id>`): ink header (back, name, status, View live, Settings, Publish, violet Edit page), KPI strip (Visitors, first-step conversions, Revenue, End to end), the steps table (Step, Type, Views with a bar, Converted, Rate, Revenue) with an add-step row (type select and name), and the step panel: page thumbnail that opens the builder, Edit page and Duplicate, the public link, result tiles, the split test card, latest orders and step settings.
+- **Split test card**: A and B rows with views, conversions and rate, a green Leading badge, lift and confidence in words (from a two-proportion test), a traffic slider, Keep A and Keep B.
+- **Order form**: contact fields, product radios, a dashed amber order bump, the Stripe test-mode card note, a live total and a guarantee line. **One-click upsell**: violet yes button with a sub-line, plain "No thanks" link.
+- **Website editor**: the page list keeps its blocks view for pages not yet in the builder, with a brand-soft "Design in the page builder" card; builder pages show "Edit in the page builder" instead. Website pages in the builder show the site header and footer on the canvas.
+
+### Rules
+- One renderer for editor, preview and public page; the editor only adds data attributes and an overlay.
+- Visitors are split A/B by the step's split and kept on their version with a cookie; conversions count against the version they saw. Ending a test keeps the winner and folds its numbers into the step.
+- Orders are recorded in test mode until Stripe keys are added. An upsell adds to the visitor's order; taking it skips the downsell that follows.
+- Pages saved before the builder keep rendering from their blocks until someone opens them in the builder, which converts them.

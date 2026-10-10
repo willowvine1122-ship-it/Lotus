@@ -12,6 +12,8 @@ export interface TemplateOption {
   name: string;
   description: string;
   mode: "marketing" | "fundraising" | "both";
+  steps?: string[];
+  kinds?: string[];
 }
 
 export function NewFunnelForm({ action, clients, templates, initialClientId }: { action: (prev: ActionState, fd: FormData) => Promise<ActionState>; clients: ClientRef[]; templates: TemplateOption[]; initialClientId?: string }) {
@@ -58,6 +60,16 @@ export function NewFunnelForm({ action, clients, templates, initialClientId }: {
               >
                 <span className="text-sm font-semibold">{t.name}</span>
                 <span className={cn("text-xs leading-relaxed", active ? "text-rail-fg-2" : "text-fg-3")}>{t.description}</span>
+                {t.steps && t.steps.length > 0 && (
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1">
+                    {t.steps.map((st, i) => (
+                      <span key={i} className="flex items-center gap-1">
+                        {i > 0 && <span aria-hidden className={cn("text-[10px]", active ? "text-rail-fg-2" : "text-fg-3")}>→</span>}
+                        <span className={cn("rounded-[4px] px-1.5 py-px text-[11px] font-medium", active ? "bg-rail-2 text-rail-fg" : "bg-surface-2 text-fg-2")}>{st}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
               </button>
             );
           })}
