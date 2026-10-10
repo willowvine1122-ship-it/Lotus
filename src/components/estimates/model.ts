@@ -4,11 +4,23 @@ import { totals } from "@/lib/field";
 /* Pure helpers for the estimate builder, shared by the agency pages and the customer's link. */
 
 /** The chosen option plus the add-ons the customer ticked, with tax. */
-export function approvedLines(option: Pick<EstimateOption, "lineItems">, extras: Pick<EstimateExtras, "addOns" | "chosenAddOnIds">, chosen = extras.chosenAddOnIds): LineItem[] {
-  return [...option.lineItems, ...extras.addOns.filter((a) => chosen.includes(a.id))];
+export function approvedLines(
+  option: Pick<EstimateOption, "lineItems">,
+  extras: Pick<EstimateExtras, "addOns" | "chosenAddOnIds">,
+  chosen = extras.chosenAddOnIds,
+): LineItem[] {
+  return [
+    ...option.lineItems,
+    ...extras.addOns.filter((a) => chosen.includes(a.id)),
+  ];
 }
 
-export function approvedTotal(option: Pick<EstimateOption, "lineItems">, extras: Pick<EstimateExtras, "addOns" | "chosenAddOnIds">, taxRateBps: number, chosen?: string[]) {
+export function approvedTotal(
+  option: Pick<EstimateOption, "lineItems">,
+  extras: Pick<EstimateExtras, "addOns" | "chosenAddOnIds">,
+  taxRateBps: number,
+  chosen?: string[],
+) {
   return totals(approvedLines(option, extras, chosen), taxRateBps);
 }
 
@@ -21,7 +33,16 @@ export function depositFor(totalCents: number, pct: number) {
 export const depositChoices = [0, 10, 25, 33, 50, 100] as const;
 
 export function depositLabel(pct: number) {
-  return pct === 0 ? "No deposit" : pct === 100 ? "Pay in full up front" : `${pct}% deposit`;
+  return pct === 0
+    ? "No deposit"
+    : pct === 100
+      ? "Pay in full up front"
+      : `${pct}% deposit`;
 }
 
-export const priceCategories = ["Labor and service", "Equipment", "Materials", "Add-ons"] as const;
+export const priceCategories = [
+  "Labor and service",
+  "Equipment",
+  "Materials",
+  "Add-ons",
+] as const;

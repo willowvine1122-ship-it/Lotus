@@ -126,6 +126,7 @@ export function EstimatesBoard({
           search={{ value: query, onChange: setQuery, placeholder: "Search estimates, customers" }}
         >
           <InkSelect
+            className="max-w-[120px] sm:max-w-[160px]"
             label="Client"
             value={clientId}
             onChange={(v) => {
@@ -135,6 +136,7 @@ export function EstimatesBoard({
             options={[{ value: "all", label: "All clients" }, ...clients.map((c) => ({ value: c.id, label: c.name }))]}
           />
           <InkSelect<Scope>
+            className="max-w-[120px] sm:max-w-[160px]"
             label="Show"
             value={scope}
             onChange={setScope}

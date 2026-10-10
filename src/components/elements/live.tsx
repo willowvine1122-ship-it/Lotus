@@ -26,13 +26,27 @@ export interface PlacedElement {
 
 type Track = (id: string, kind: "view" | "open") => Promise<void>;
 
-const accentVars = (accent: string) => ({ ["--brand" as string]: accent, ["--brand-hover" as string]: `color-mix(in srgb, ${accent} 88%, black)` }) as React.CSSProperties;
+const accentVars = (accent: string) =>
+  ({
+    ["--brand" as string]: accent,
+    ["--brand-hover" as string]: `color-mix(in srgb, ${accent} 88%, black)`,
+  }) as React.CSSProperties;
 
 function post(msg: Record<string, unknown>) {
   window.parent.postMessage({ lotus: true, ...msg }, "*");
 }
 
-export function LiveElement({ element, live, nowIso, track }: { element: PlacedElement; live: ElementLive; nowIso: string; track?: Track }) {
+export function LiveElement({
+  element,
+  live,
+  nowIso,
+  track,
+}: {
+  element: PlacedElement;
+  live: ElementLive;
+  nowIso: string;
+  track?: Track;
+}) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const { id, type, config: c } = element;
   const overlay = isOverlay(type);
@@ -66,7 +80,18 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
       overlay,
       type,
       position: c.position,
-      rules: overlay ? { trigger: c.trigger, delay: c.delaySeconds, scroll: c.scrollPercent, devices: c.devices, startsOn: c.startsOn, endsOn: c.endsOn, showOn: c.showOn, hideOn: c.hideOn } : null,
+      rules: overlay
+        ? {
+            trigger: c.trigger,
+            delay: c.delaySeconds,
+            scroll: c.scrollPercent,
+            devices: c.devices,
+            startsOn: c.startsOn,
+            endsOn: c.endsOn,
+            showOn: c.showOn,
+            hideOn: c.hideOn,
+          }
+        : null,
     });
     const onMsg = (e: MessageEvent) => {
       const d = e.data as { lotus?: boolean; kind?: string; id?: string };
@@ -95,7 +120,11 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
   // On a Lotus page an overlay runs its own trigger.
   useEffect(() => {
     if (!overlay || framed || closed) return;
-    if (c.devices !== "all" && (window.innerWidth < 768) !== (c.devices === "mobile")) return;
+    if (
+      c.devices !== "all" &&
+      window.innerWidth < 768 !== (c.devices === "mobile")
+    )
+      return;
     const show = () => setShown(true);
     if (c.trigger === "load") return void setTimeout(show, 0);
     if (c.trigger === "delay") {
@@ -124,7 +153,15 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
 
   const donate = (intent: DonateIntent) => {
     track?.(id, "open").catch(() => {});
-    if (framed) post({ kind: "donate", id, campaign: live.campaign.slug, amount: intent.amountCents ?? 0, frequency: intent.frequency ?? "", accent: c.accent });
+    if (framed)
+      post({
+        kind: "donate",
+        id,
+        campaign: live.campaign.slug,
+        amount: intent.amountCents ?? 0,
+        frequency: intent.frequency ?? "",
+        accent: c.accent,
+      });
     else setOpen(intent);
   };
   const close = () => {
@@ -141,7 +178,19 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
       now={now}
       onDonate={donate}
       onClose={overlay && type !== "sticky_button" ? close : undefined}
-      form={type === "donation_form" ? <Checkout campaign={live.campaign} orgName={live.orgName} defaultCountry={live.defaultCountry} start={{ elementId: id, frequency: c.frequency === "campaign" ? undefined : c.frequency }} /> : undefined}
+      form={
+        type === "donation_form" ? (
+          <Checkout
+            campaign={live.campaign}
+            orgName={live.orgName}
+            defaultCountry={live.defaultCountry}
+            start={{
+              elementId: id,
+              frequency: c.frequency === "campaign" ? undefined : c.frequency,
+            }}
+          />
+        ) : undefined
+      }
     />
   );
 
@@ -151,11 +200,21 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
     // The host sizes and places the frame; the element just fills it.
     body = shown ? (
       type === "popup" ? (
-        <div ref={box} className="fixed inset-0 grid place-items-center bg-black/45 p-4" onClick={(e) => e.target === e.currentTarget && close()}>
+        <div
+          ref={box}
+          className="fixed inset-0 grid place-items-center bg-black/45 p-4"
+          onClick={(e) => e.target === e.currentTarget && close()}
+        >
           {view}
         </div>
       ) : (
-        <div ref={box} className={cn("inline-block p-3", type === "message_bar" && "block w-full p-0")}>
+        <div
+          ref={box}
+          className={cn(
+            "inline-block p-3",
+            type === "message_bar" && "block w-full p-0",
+          )}
+        >
           {view}
         </div>
       )
@@ -163,34 +222,74 @@ export function LiveElement({ element, live, nowIso, track }: { element: PlacedE
       <div ref={box} />
     );
   } else {
-    body = shown ? <OverlayPlacement type={type} position={c.position} onBackdrop={close}>{view}</OverlayPlacement> : null;
+    body = shown ? (
+      <OverlayPlacement type={type} position={c.position} onBackdrop={close}>
+        {view}
+      </OverlayPlacement>
+    ) : null;
   }
 
   return (
     <>
       {body}
-      {open && <CheckoutModal live={live} accent={c.accent} start={{ ...open, elementId: id }} onClose={() => setOpen(null)} />}
+      {open && (
+        <CheckoutModal
+          live={live}
+          accent={c.accent}
+          start={{ ...open, elementId: id }}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </>
   );
 }
 
 /** Where an overlay sits when it is drawn on the page itself. */
-export function OverlayPlacement({ type, position, onBackdrop, contained, children }: { type: DonationElementType; position: DonationElementConfig["position"]; onBackdrop?: () => void; contained?: boolean; children: React.ReactNode }) {
+export function OverlayPlacement({
+  type,
+  position,
+  onBackdrop,
+  contained,
+  children,
+}: {
+  type: DonationElementType;
+  position: DonationElementConfig["position"];
+  onBackdrop?: () => void;
+  contained?: boolean;
+  children: React.ReactNode;
+}) {
   const pos = contained ? "absolute" : "fixed";
   if (type === "popup") {
     return (
-      <div className={cn(pos, "inset-0 z-40 grid place-items-center bg-black/45 p-4")} onClick={(e) => e.target === e.currentTarget && onBackdrop?.()}>
+      <div
+        className={cn(
+          pos,
+          "inset-0 z-40 grid place-items-center bg-black/45 p-4",
+        )}
+        onClick={(e) => e.target === e.currentTarget && onBackdrop?.()}
+      >
         {children}
       </div>
     );
   }
   if (type === "message_bar") {
-    return <div className={cn(pos, "inset-x-0 z-40", position === "bottom" ? "bottom-0" : "top-0")}>{children}</div>;
+    return (
+      <div
+        className={cn(
+          pos,
+          "inset-x-0 z-40",
+          position === "bottom" ? "bottom-0" : "top-0",
+        )}
+      >
+        {children}
+      </div>
+    );
   }
   const corner = {
     bottom_right: "bottom-4 right-4",
     bottom_left: "bottom-4 left-4",
-    right_edge: "right-0 top-1/2 -translate-y-1/2 [&_.el-btn]:origin-bottom-right",
+    right_edge:
+      "right-0 top-1/2 -translate-y-1/2 [&_.el-btn]:origin-bottom-right",
     top: "top-4 right-4",
     bottom: "bottom-4 right-4",
   }[position];
@@ -198,7 +297,19 @@ export function OverlayPlacement({ type, position, onBackdrop, contained, childr
 }
 
 /** The checkout over the page, in the element's colour. */
-export function CheckoutModal({ live, accent, start, onClose, framed }: { live: ElementLive; accent: string; start: DonateIntent & { elementId?: string }; onClose: () => void; framed?: boolean }) {
+export function CheckoutModal({
+  live,
+  accent,
+  start,
+  onClose,
+  framed,
+}: {
+  live: ElementLive;
+  accent: string;
+  start: DonateIntent & { elementId?: string };
+  onClose: () => void;
+  framed?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -212,8 +323,22 @@ export function CheckoutModal({ live, accent, start, onClose, framed }: { live: 
     };
   }, [onClose]);
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center", framed ? "bg-black/50" : "bg-black/45")} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Donate to ${live.orgName}`} className="my-auto w-full max-w-[440px] outline-none focus-visible:outline-none" style={accentVars(accent)}>
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center",
+        framed ? "bg-black/50" : "bg-black/45",
+      )}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        ref={ref}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Donate to ${live.orgName}`}
+        className="my-auto w-full max-w-[440px] outline-none focus-visible:outline-none"
+        style={accentVars(accent)}
+      >
         <div className="mb-2 flex items-center justify-between gap-3 text-white">
           <p className="min-w-0 truncate text-sm font-medium">{live.orgName}</p>
           <span className="flex items-center gap-2">
@@ -221,15 +346,27 @@ export function CheckoutModal({ live, accent, start, onClose, framed }: { live: 
               <Lock className="size-3" strokeWidth={2} />
               Secure
             </span>
-            <button type="button" aria-label="Close" onClick={onClose} className="grid size-8 place-items-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="grid size-8 place-items-center rounded-full bg-white/15 transition-colors hover:bg-white/25"
+            >
               <X className="size-4" strokeWidth={2} />
             </button>
           </span>
         </div>
         <div className="shadow-[0_24px_60px_-12px_rgb(0_0_0/0.5)]">
-          <Checkout campaign={live.campaign} orgName={live.orgName} defaultCountry={live.defaultCountry} start={start} />
+          <Checkout
+            campaign={live.campaign}
+            orgName={live.orgName}
+            defaultCountry={live.defaultCountry}
+            start={start}
+          />
         </div>
-        <p className="mt-2 text-center text-xs text-white/70">Powered by Lotus</p>
+        <p className="mt-2 text-center text-xs text-white/70">
+          Powered by Lotus
+        </p>
       </div>
     </div>
   );

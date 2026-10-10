@@ -29,14 +29,23 @@ export interface ElementLive {
   recent: LiveGift[];
 }
 
-export function elementLive(now: Date, e: Pick<DonationElement, "accountId" | "campaignId">): ElementLive | null {
+export function elementLive(
+  now: Date,
+  e: Pick<DonationElement, "accountId" | "campaignId">,
+): ElementLive | null {
   const found = campaignFor(now, e);
   if (!found) return null;
   const { campaign, client, data } = found;
-  const gifts = data.donations.filter((d) => d.campaignId === campaign.id && d.status === "succeeded");
-  const plans = data.plans.filter((p) => p.campaignId === campaign.id && p.status === "active");
+  const gifts = data.donations.filter(
+    (d) => d.campaignId === campaign.id && d.status === "succeeded",
+  );
+  const plans = data.plans.filter(
+    (p) => p.campaignId === campaign.id && p.status === "active",
+  );
   const recent: LiveGift[] = [];
-  for (const g of [...gifts].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+  for (const g of [...gifts].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  )) {
     if (recent.length >= 12) break;
     const donor = data.donors.find((d) => d.id === g.donorId);
     if (!donor || donor.anonymous) continue;
@@ -82,5 +91,10 @@ export interface ElementStats {
 
 export function elementStats(now: Date, id: string): ElementStats {
   const days = elementDays(now, id);
-  return { days, last30: totals(days), last7: totals(days.slice(-7)), prev7: totals(days.slice(-14, -7)) };
+  return {
+    days,
+    last30: totals(days),
+    last7: totals(days.slice(-7)),
+    prev7: totals(days.slice(-14, -7)),
+  };
 }
