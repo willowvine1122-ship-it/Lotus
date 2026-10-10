@@ -533,3 +533,21 @@ The integrations hub reuses the board grammar (ink top bar, KPI strip, table, ri
 ### Rules
 - Everything that arrives creates or fills a contact by email or phone and lands on its timeline, so the CRM stays the record.
 - Secrets are shown once or masked; outgoing webhooks are signed and refuse private network addresses.
+
+## Revision 13: Forms (2026-10-10)
+
+The forms board, builder and responses reuse the board grammar and the workflow header. The public form is the one place the client's brand leads: it renders in one of six themes (Paper, Ink, Violet, Sand, Forest, Sky) whose colours belong to the form, not to Lotus.
+
+### Components, added
+- **Forms board**: top bar (status select, client select, violet "New form"), KPI strip (Live forms, Responses · 7 days with change, Completion · 30 days, Time to finish median), table of Form (name over /form/slug), Client, Status, 7 days (14-day sparkline + count), Completion, Last response. The panel: Edit form (ink), Responses with count, Open; the link with copy; 30-day tiles and a per-day sparkline; "Where people stop" as one bar per question with an amber "−N%" where a fifth or more drop out; latest responses.
+- **Form status tag**: Live is neutral with a small green dot; Draft is the dashed outline; Closed is muted.
+- **Builder**: the ink header (back link · client, name with status, meta with "Unsaved changes", Build | Responses tabs). The single violet button is the next state change: Save while there are edits, else Publish. Three columns: an outline (Welcome screen, numbered questions with type glyphs and a branch glyph where jumps exist, a dashed "Add question" with a grouped menu, Closing screens, Settings and sharing), the live preview on `surface-2` in a framed desktop or phone width, and the editor panel. Below xl the preview opens full screen from a Preview button.
+- **Question editor**: type, question, description, required switch, choices with letter keys (and points in quiz mode), stars or scale, placeholder, "Save the answer to the contact as", then Jumps: each rule reads "If the answer [is] [value] go to [question]", forward only, with the fall-through stated underneath.
+- **Settings**: name, link, theme swatches, quiz scoring, tags, hidden fields, notify email, the link and an iframe embed snippet, duplicate and delete.
+- **Responses**: KPI strip (adds Average score for quizzes), Responses | Summary and range segmented controls, search. The ledger shows Contact (name over email), up to three answers, Score, Source, Submitted; the panel is the full answer sheet with files that open, hidden fields, and delete. Summary charts each question: bars for choices and yes/no, average (and NPS for 0–10) with a distribution for ratings, latest answers for text.
+- **Public form**: one question at a time, centred at 640px, a 3px progress line, the accent number arrow before each question, 44px choice rows with letter keys, Enter to continue, up/down buttons bottom right, the error as a tinted line under the field. Choices, yes/no, ratings and scales move on by themselves after a pick.
+
+### Rules
+- A submission finds the contact by email, then phone, fills only empty fields, adds the form's tags, logs the answers on the timeline and fires "Form submitted" (filterable by form).
+- Only answers on the respondent's actual path are saved; skipped questions are dropped.
+- A live form that is saved with an unfinished question goes back to draft rather than break for visitors.

@@ -897,7 +897,123 @@ export interface IntegrationLog {
 /* Forms: Typeform-style forms, one question at a time                  */
 /* ------------------------------------------------------------------ */
 
-// (forms types go here)
+export type FormQuestionType =
+  | "short_text"
+  | "long_text"
+  | "email"
+  | "phone"
+  | "number"
+  | "multiple_choice"
+  | "checkboxes"
+  | "dropdown"
+  | "yes_no"
+  | "rating"
+  | "opinion_scale"
+  | "date"
+  | "file_upload"
+  | "statement";
+
+/** Contact fields a question can fill. "name" splits into first and last. */
+export type FormContactField = "name" | "firstName" | "lastName" | "email" | "phone" | "company" | "city";
+
+export interface FormChoice {
+  id: string;
+  label: string;
+  /** Quiz points for picking this choice. */
+  score?: number;
+}
+
+/** "If the answer {op} {value}, jump to {goTo}". Rules run top to bottom; the first match wins. */
+export interface FormLogicRule {
+  id: string;
+  op: "is" | "is_not" | "contains" | "gt" | "lt" | "answered";
+  value: string;
+  /** A question id, or "end" to finish the form. */
+  goTo: string;
+}
+
+export interface FormQuestion {
+  id: string;
+  type: FormQuestionType;
+  title: string;
+  description?: string;
+  required: boolean;
+  choices?: FormChoice[];
+  /** Rating: number of stars (3 to 10). Opinion scale: top of the 0..N scale. */
+  steps?: number;
+  placeholder?: string;
+  mapTo?: FormContactField;
+  logic?: FormLogicRule[];
+}
+
+/** A closing screen. With scoring on, the first ending whose minScore the total reaches is shown. */
+export interface FormEnding {
+  id: string;
+  title: string;
+  body: string;
+  minScore?: number;
+  buttonLabel?: string;
+  buttonUrl?: string;
+}
+
+export type FormStatus = "draft" | "live" | "closed";
+export type FormThemeKey = "paper" | "ink" | "violet" | "sand" | "forest" | "sky";
+
+export interface FormDefinition {
+  id: string;
+  accountId: string;
+  name: string;
+  slug: string;
+  status: FormStatus;
+  welcome: { enabled: boolean; title: string; body: string; button: string };
+  questions: FormQuestion[];
+  endings: FormEnding[];
+  /** URL parameters saved with each response, e.g. utm_source. */
+  hiddenFields: string[];
+  theme: FormThemeKey;
+  /** Quiz mode: add up choice scores and pick an ending by score. */
+  scoring: boolean;
+  /** Tags added to the contact on submit. */
+  tags: string[];
+  /** Email the team on each response. */
+  notify?: string;
+  template?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FormAnswer = string | string[];
+
+export interface FormFile {
+  id: string;
+  questionId: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+export interface FormResponse {
+  id: string;
+  formId: string;
+  accountId: string;
+  contactId?: string;
+  answers: Record<string, FormAnswer>;
+  hidden: Record<string, string>;
+  files: FormFile[];
+  score?: number;
+  endingId?: string;
+  startedAt: string;
+  submittedAt: string;
+}
+
+/** A visit that opened the form; drop-off is read from lastQuestionId. */
+export interface FormVisit {
+  id: string;
+  formId: string;
+  at: string;
+  lastQuestionId?: string;
+  completed: boolean;
+}
 
 /* ------------------------------------------------------------------ */
 /* Websites: multi-page sites with navigation, domain and SEO           */

@@ -88,7 +88,7 @@ export function matchContact(now: Date, accountId: string, f: { email?: string; 
 }
 
 /** Create or fill in a contact from outside data. Never overwrites a field the contact already has. */
-function upsertContact(now: Date, accountId: string, f: Partial<Record<ContactFieldKey, string>>, source: ContactSource, tags: string[]): { contact?: Contact; created: boolean } {
+export function upsertContact(now: Date, accountId: string, f: Partial<Record<ContactFieldKey, string>>, source: ContactSource, tags: string[]): { contact?: Contact; created: boolean } {
   const existing = matchContact(now, accountId, f);
   if (existing) {
     const patch: Partial<Contact> = {};

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { findWorkflow, listRuns } from "@/lib/data/automations";
 import { IntegrationOptionsProvider } from "@/components/automations/integration-options";
+import { listForms } from "@/lib/data/forms";
 import { listConnections, listHooksIn, listHooksOut } from "@/lib/data/integrations";
 import { getPipeline } from "@/lib/data/store";
 import { deleteWorkflowAction, duplicateWorkflowAction, saveWorkflowAction, setWorkflowStatusAction, testRunAction } from "../actions";
@@ -41,7 +42,7 @@ async function Builder({ params }: { params: Promise<{ id: string }> }) {
     connectedApps: listConnections(now, client.id).map((c) => c.appId),
     hooksIn: listHooksIn(now, client.id).map((h) => ({ id: h.id, name: h.name })),
     hooksOut: listHooksOut(now, client.id).map((h) => ({ id: h.id, name: h.name, url: h.url })),
-    forms: [] as { id: string; name: string }[],
+    forms: listForms(now, client.id).map((f) => ({ id: f.id, name: f.name })),
   };
 
   return (
