@@ -157,7 +157,7 @@ export function ContactsBoard({
               <option value="all">Everyone</option>
             </select>
             <Link
-              href={clientId === "all" ? "/agency/contacts/pipeline" : `/agency/contacts/pipeline?client=${clientById.get(clientId)?.slug ?? ""}`}
+              href={clientId === "all" ? "/agency/opportunities" : `/agency/opportunities?client=${clientById.get(clientId)?.slug ?? ""}`}
               className="inline-flex h-7 items-center gap-1.5 rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line"
             >
               <KanbanSquare className="size-3.5" strokeWidth={1.75} />

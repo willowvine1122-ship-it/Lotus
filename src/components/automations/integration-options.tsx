@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo } from "react";
+import type { Pipeline } from "@/lib/types";
 import type { NameLookup } from "./model";
 
 /*
@@ -14,6 +15,8 @@ export interface IntegrationOptions {
   hooksIn: { id: string; name: string }[];
   hooksOut: { id: string; name: string; url: string }[];
   forms: { id: string; name: string }[];
+  /** The client's pipelines, for opportunity triggers. */
+  pipelines?: Pipeline[];
 }
 
 const empty: IntegrationOptions = { connectedApps: [], hooksIn: [], hooksOut: [], forms: [] };
@@ -34,6 +37,7 @@ export function useNames(): NameLookup {
     if (!o) return {};
     const hooks = new Map([...o.hooksIn, ...o.hooksOut].map((h) => [h.id, h.name]));
     const forms = new Map(o.forms.map((f) => [f.id, f.name]));
-    return { hook: (id: string) => hooks.get(id), form: (id: string) => forms.get(id) };
+    const pipelines = new Map((o.pipelines ?? []).map((p) => [p.id, p]));
+    return { hook: (id: string) => hooks.get(id), form: (id: string) => forms.get(id), pipeline: (id: string) => pipelines.get(id) };
   }, [o]);
 }

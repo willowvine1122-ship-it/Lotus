@@ -77,7 +77,9 @@ const draftSchema = z.object({
   name: z.string().trim().min(2, "Name the workflow").max(80),
   allowReentry: z.boolean(),
   trigger: z.object({
-    type: z.enum(["contact_created", "form_submitted", "tag_added", "stage_changed", "appointment_booked", "appointment_no_show", "donation_received", "message_received", "email_opened", "email_clicked", "job_completed", "webhook_received", "app_event"]),
+    type: z.enum(["contact_created", "form_submitted", "tag_added", "stage_changed", "appointment_booked", "appointment_no_show", "donation_received", "message_received", "email_opened", "email_clicked", "job_completed", "webhook_received", "app_event", "opportunity_created", "opportunity_status_changed"]),
+    pipelineId: text(80).optional(),
+    status: z.enum(["open", "won", "lost", "abandoned"]).optional(),
     tag: text(40).optional(),
     stageId: text(60).optional(),
     source: z.enum(["meta", "google", "website", "referral", "donation-page", "import", "manual"]).optional(),

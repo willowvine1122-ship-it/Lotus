@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { Field, Input, MoneyInput, Select, controlClass } from "@/components/form";
 import { mergeTags } from "@/components/email/model";
 import { sourceLabel } from "@/components/crm/model";
-import type { AccountMode, Channel, ConditionField, ContactSource, Pipeline, TriggerType, WorkflowStep, WorkflowTrigger } from "@/lib/types";
+import type { AccountMode, Channel, ConditionField, ContactSource, OpportunityStatus, Pipeline, TriggerType, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { cn, formatCount } from "@/lib/utils";
 import { conditionFieldLabel, triggerGroups, triggerLabel } from "./model";
 import { appEvent, apps, findApp } from "@/components/integrations/catalog";
@@ -172,18 +172,7 @@ export function TriggerEditor({
           <TagInput id={`${id}-tag`} value={trigger.tag ?? ""} onChange={(v) => onChange({ ...trigger, tag: v || undefined })} tags={tags} />
         </Field>
       )}
-      {trigger.type === "stage_changed" && (
-        <Field label="Moves to" htmlFor={`${id}-stage`}>
-          <Select id={`${id}-stage`} value={trigger.stageId ?? ""} onChange={(e) => onChange({ ...trigger, stageId: e.target.value || undefined })}>
-            <option value="">Any stage</option>
-            {pipeline?.stages.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      )}
+      <OpportunityTriggerFields id={id} trigger={trigger} onChange={onChange} pipeline={pipeline} />
       {trigger.type === "message_received" && (
         <Field label="Channel" htmlFor={`${id}-channel`}>
           <Select id={`${id}-channel`} value={trigger.channel ?? ""} onChange={(e) => onChange({ ...trigger, channel: (e.target.value || undefined) as Channel | undefined })}>
@@ -673,3 +662,55 @@ export function StepControls({ canUp, canDown, onUp, onDown, onRemove, label }: 
   );
 }
 
+
+/** Pipeline, stage and status narrowing for the opportunity triggers. */
+function OpportunityTriggerFields({ id, trigger, onChange, pipeline }: { id: string; trigger: WorkflowTrigger; onChange: (t: WorkflowTrigger) => void; pipeline?: Pipeline }) {
+  const o = useIntegrationOptions();
+  if (trigger.type !== "stage_changed" && trigger.type !== "opportunity_created" && trigger.type !== "opportunity_status_changed") return null;
+  const pipelines = o.pipelines?.length ? o.pipelines : pipeline ? [pipeline] : [];
+  const chosen = pipelines.find((p) => p.id === trigger.pipelineId) ?? (trigger.type === "stage_changed" ? pipelines.find((p) => p.primary) ?? pipeline : undefined);
+  return (
+    <>
+      {pipelines.length > 1 && (
+        <Field label="Pipeline" htmlFor={`${id}-pipeline`} hint={trigger.type === "stage_changed" ? "The primary pipeline is where every contact's stage lives." : "Leave on any pipeline to catch them all."}>
+          <Select
+            id={`${id}-pipeline`}
+            value={trigger.pipelineId ?? ""}
+            onChange={(e) => onChange({ ...trigger, pipelineId: e.target.value || undefined, stageId: undefined })}
+          >
+            <option value="">Any pipeline</option>
+            {pipelines.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.primary ? " (primary)" : ""}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {trigger.type === "stage_changed" && (
+        <Field label="Moves to" htmlFor={`${id}-stage`}>
+          <Select id={`${id}-stage`} value={trigger.stageId ?? ""} onChange={(e) => onChange({ ...trigger, stageId: e.target.value || undefined })}>
+            <option value="">Any stage</option>
+            {chosen?.stages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {trigger.type === "opportunity_status_changed" && (
+        <Field label="Marked" htmlFor={`${id}-status`}>
+          <Select id={`${id}-status`} value={trigger.status ?? ""} onChange={(e) => onChange({ ...trigger, status: (e.target.value || undefined) as OpportunityStatus | undefined })}>
+            <option value="">Any status</option>
+            <option value="won">Won</option>
+            <option value="lost">Lost</option>
+            <option value="abandoned">Abandoned</option>
+            <option value="open">Reopened</option>
+          </Select>
+        </Field>
+      )}
+    </>
+  );
+}

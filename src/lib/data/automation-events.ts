@@ -21,8 +21,38 @@ export function tagsChanged(now: Date, contactId: string, before: string[], afte
 
 export function stageChanged(now: Date, contact: Contact, fromStageId: string) {
   if (contact.stageId === fromStageId) return;
-  const name = getPipeline(now, contact.accountId)?.stages.find((s) => s.id === contact.stageId)?.name ?? contact.stageId;
-  fireTrigger(now, { type: "stage_changed", contactId: contact.id, stageId: contact.stageId, label: `Moved to ${name}` });
+  const p = getPipeline(now, contact.accountId);
+  const name = p?.stages.find((s) => s.id === contact.stageId)?.name ?? contact.stageId;
+  fireTrigger(now, { type: "stage_changed", contactId: contact.id, stageId: contact.stageId, pipelineId: p?.id, label: `Moved to ${name}` });
+}
+
+/* --------------------------- opportunities --------------------------- */
+
+import type { Opportunity } from "@/lib/types";
+import { findPipeline, type StageMove } from "./opportunities";
+
+export function opportunityCreated(now: Date, o: Opportunity) {
+  const p = findPipeline(now, o.pipelineId);
+  fireTrigger(now, { type: "opportunity_created", contactId: o.contactId, pipelineId: o.pipelineId, stageId: o.stageId, opportunityId: o.id, label: `Opportunity “${o.name}” created${p ? ` in ${p.name}` : ""}` });
+}
+
+/**
+ * A stage move or a status change on an opportunity. A move in the primary
+ * pipeline also moves the contact; it still fires stage_changed once, here,
+ * and the caller does not call stageChanged for the contact as well.
+ */
+export function opportunityChanged(now: Date, move: StageMove | undefined) {
+  if (!move) return;
+  const o = move.opportunity;
+  const p = findPipeline(now, o.pipelineId);
+  if (o.stageId !== move.fromStageId) {
+    const stage = p?.stages.find((s) => s.id === o.stageId);
+    fireTrigger(now, { type: "stage_changed", contactId: o.contactId, pipelineId: o.pipelineId, stageId: o.stageId, opportunityId: o.id, label: `Moved to ${stage?.name ?? "a stage"}${p && !p.primary ? ` in ${p.name}` : ""}` });
+  }
+  if (o.status !== move.fromStatus) {
+    const word = o.status === "open" ? "Reopened" : `Marked ${o.status}`;
+    fireTrigger(now, { type: "opportunity_status_changed", contactId: o.contactId, pipelineId: o.pipelineId, status: o.status, opportunityId: o.id, label: `${word}: ${o.name}` });
+  }
 }
 
 /* ------------------- events from the other modules ------------------- */

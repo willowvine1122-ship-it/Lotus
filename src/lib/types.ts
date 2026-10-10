@@ -651,7 +651,9 @@ export type TriggerType =
   | "email_clicked"
   | "job_completed"
   | "webhook_received"
-  | "app_event";
+  | "app_event"
+  | "opportunity_created"
+  | "opportunity_status_changed";
 
 /** What starts a workflow. Optional fields narrow it; empty means "any". */
 export interface WorkflowTrigger {
@@ -1126,4 +1128,65 @@ export interface EstimateExtras {
   signature?: EstimateSignature;
   deposit?: { amountCents: number; reference: string; at: string };
   viewedAt?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* CRM: opportunities and multiple pipelines                             */
+/* ------------------------------------------------------------------ */
+
+/** Declaration merge: stages carry a win probability for the weighted forecast. */
+export interface PipelineStage {
+  /** Chance an opportunity in this stage closes won, 0 to 100. */
+  probability?: number;
+}
+
+/** Declaration merge: a client can run several pipelines; the primary one mirrors the contact's stage. */
+export interface Pipeline {
+  /** The client's main pipeline. A contact's stage is its place in this one. */
+  primary?: boolean;
+  /** An open opportunity this many days in one stage is "watch"; twice as long is "needs action". */
+  staleDays?: number;
+  position?: number;
+}
+
+export type OpportunityStatus = "open" | "won" | "lost" | "abandoned";
+
+export interface OpportunityEvent {
+  kind: "created" | "stage" | "status" | "value" | "owner" | "note";
+  /** Plain words: "Moved to Booked", "Marked lost: Price", "Value $4,200 → $5,100". */
+  label: string;
+  /** Stage the opportunity entered, for kind "stage" and "created"; used for time-in-stage. */
+  stageId?: string;
+  body?: string;
+  by?: string;
+  at: string;
+}
+
+/** A deal (or a gift being cultivated) for one contact, in one pipeline. A contact can have several. */
+export interface Opportunity {
+  id: string;
+  accountId: string;
+  pipelineId: string;
+  stageId: string;
+  contactId: string;
+  name: string;
+  valueCents: number;
+  status: OpportunityStatus;
+  ownerName?: string;
+  source: ContactSource;
+  tags: string[];
+  lostReason?: string;
+  /** Expected close date, YYYY-MM-DD. */
+  closeOn?: string;
+  createdAt: string;
+  updatedAt: string;
+  stageEnteredAt: string;
+  closedAt?: string;
+  history: OpportunityEvent[];
+}
+
+/** Declaration merge: automation triggers can narrow to one pipeline and one opportunity status. */
+export interface WorkflowTrigger {
+  pipelineId?: string;
+  status?: OpportunityStatus;
 }

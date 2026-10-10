@@ -1,4 +1,4 @@
-import type { AccountMode, Channel, ConditionField, Contact, ContactSource, Pipeline, RunStatus, StepType, TriggerType, WaitUnit, WorkflowCondition, WorkflowStatus, WorkflowStep, WorkflowTrigger } from "@/lib/types";
+import type { AccountMode, Channel, OpportunityStatus, ConditionField, Contact, ContactSource, Pipeline, RunStatus, StepType, TriggerType, WaitUnit, WorkflowCondition, WorkflowStatus, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { sourceLabel, stageOf } from "@/components/crm/model";
 import { formatDollars } from "@/lib/utils";
 import { appAction, appEvent, findApp } from "@/components/integrations/catalog";
@@ -26,12 +26,15 @@ export const triggerLabel: Record<TriggerType, string> = {
   job_completed: "Job completed",
   webhook_received: "Webhook received",
   app_event: "Event in a connected app",
+  opportunity_created: "Opportunity created",
+  opportunity_status_changed: "Opportunity status changed",
 };
 
 /** Triggers grouped for the picker, filtered by the client's mode. */
 export function triggerGroups(mode: AccountMode): { label: string; types: TriggerType[] }[] {
   return [
-    { label: "Contacts", types: ["contact_created", "form_submitted", "tag_added", "stage_changed"] },
+    { label: "Contacts", types: ["contact_created", "form_submitted", "tag_added"] },
+    { label: "Opportunities", types: ["stage_changed", "opportunity_created", "opportunity_status_changed"] },
     { label: mode === "marketing" ? "Appointments and jobs" : "Giving", types: mode === "marketing" ? ["appointment_booked", "appointment_no_show", "job_completed"] : ["donation_received"] },
     { label: "Conversations", types: ["message_received", "email_opened", "email_clicked"] },
     { label: "Apps and webhooks", types: ["app_event", "webhook_received"] },
@@ -44,7 +47,11 @@ const channelName: Record<Channel, string> = { sms: "SMS", email: "email", whats
 export interface NameLookup {
   form?: (id: string) => string | undefined;
   hook?: (id: string) => string | undefined;
+  /** Pipelines by id, for triggers that narrow to one. */
+  pipeline?: (id: string) => Pipeline | undefined;
 }
+
+const statusWord: Record<string, string> = { open: "reopened", won: "won", lost: "lost", abandoned: "abandoned" };
 
 /** “Name” when the lookup knows it, a plain noun when there is no lookup, and says so when the thing is gone. */
 function quoted(lookup: ((id: string) => string | undefined) | undefined, id: string, noun: string) {
@@ -61,8 +68,19 @@ export function triggerSummary(t: WorkflowTrigger, pipeline?: Pipeline, names: N
       return t.formId ? `A contact fills in ${quoted(names.form, t.formId, "a form")}` : "A contact fills in any form or funnel page";
     case "tag_added":
       return t.tag ? `The tag “${t.tag}” is added to a contact` : "Any tag is added to a contact";
-    case "stage_changed":
-      return t.stageId ? `A contact moves to ${stageOf(pipeline, t.stageId).name}` : "A contact moves to any stage";
+    case "stage_changed": {
+      const p = (t.pipelineId && names.pipeline?.(t.pipelineId)) || pipeline;
+      const where = t.pipelineId && p && !p.primary ? ` in ${p.name}` : "";
+      return t.stageId ? `An opportunity moves to ${stageOf(p, t.stageId).name}${where}` : `An opportunity moves to any stage${where}`;
+    }
+    case "opportunity_created": {
+      const p = t.pipelineId ? names.pipeline?.(t.pipelineId) : undefined;
+      return p ? `An opportunity is created in ${p.name}` : "An opportunity is created in any pipeline";
+    }
+    case "opportunity_status_changed": {
+      const p = t.pipelineId ? names.pipeline?.(t.pipelineId) : undefined;
+      return `An opportunity is ${t.status ? `marked ${statusWord[t.status]}` : "won, lost, abandoned or reopened"}${p ? ` in ${p.name}` : ""}`;
+    }
     case "appointment_booked":
       return "A contact books an appointment";
     case "appointment_no_show":
@@ -91,6 +109,8 @@ export function triggerMatches(t: WorkflowTrigger, e: TriggerEvent): boolean {
   if (t.type !== e.type) return false;
   if (t.tag && e.tag !== t.tag) return false;
   if (t.stageId && e.stageId !== t.stageId) return false;
+  if (t.pipelineId && e.pipelineId !== t.pipelineId) return false;
+  if (t.status && e.status !== t.status) return false;
   if (t.source && e.source !== t.source) return false;
   if (t.channel && e.channel !== t.channel) return false;
   if (t.minAmountCents && (e.amountCents ?? 0) < t.minAmountCents) return false;
@@ -114,6 +134,10 @@ export interface TriggerEvent {
   hookId?: string;
   /** "app.event" for app_event. */
   appEvent?: string;
+  /** Opportunity events: where it happened and the status it now has. */
+  pipelineId?: string;
+  status?: OpportunityStatus;
+  opportunityId?: string;
   /** How the run history describes it: "Booked a call", "Gift of $50". */
   label: string;
 }

@@ -10,6 +10,7 @@ import { IntegrationOptionsProvider } from "@/components/automations/integration
 import { listForms } from "@/lib/data/forms";
 import { listConnections, listHooksIn, listHooksOut } from "@/lib/data/integrations";
 import { getPipeline } from "@/lib/data/store";
+import { listPipelines } from "@/lib/data/opportunities";
 import { deleteWorkflowAction, duplicateWorkflowAction, saveWorkflowAction, setWorkflowStatusAction, testRunAction } from "../actions";
 
 const DAY = 86400000;
@@ -43,6 +44,7 @@ async function Builder({ params }: { params: Promise<{ id: string }> }) {
     hooksIn: listHooksIn(now, client.id).map((h) => ({ id: h.id, name: h.name })),
     hooksOut: listHooksOut(now, client.id).map((h) => ({ id: h.id, name: h.name, url: h.url })),
     forms: listForms(now, client.id).map((f) => ({ id: f.id, name: f.name })),
+    pipelines: listPipelines(now, client.id),
   };
 
   return (

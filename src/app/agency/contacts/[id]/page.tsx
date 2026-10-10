@@ -11,6 +11,8 @@ import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { findContact, getPipeline, listActivities } from "@/lib/data/store";
 import { personFor } from "@/components/crm/model";
+import { ContactOpportunities } from "@/components/opportunities/contact-opportunities";
+import { listOpportunities, listPipelines } from "@/lib/data/opportunities";
 import { logActivityAction, moveStageAction, toggleDndAction } from "../actions";
 
 async function ContactView({ params }: { params: Promise<{ id: string }> }) {
@@ -67,6 +69,7 @@ async function ContactView({ params }: { params: Promise<{ id: string }> }) {
         </section>
         <aside className="flex flex-col gap-6">
           <ContactDetails contact={contact} client={client} team={teamDirectory} actions={actions} />
+          <ContactOpportunities contactId={contact.id} clientSlug={client.slug} opportunities={listOpportunities(now, { contactId: contact.id })} pipelines={listPipelines(now, contact.accountId)} />
           {contact.tags.length > 0 && (
             <section className="flex flex-col gap-2">
               <SectionTitle>Tags</SectionTitle>

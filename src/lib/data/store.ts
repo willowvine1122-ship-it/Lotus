@@ -205,7 +205,8 @@ export function initialsOf(name: string) {
 /* ------------------------------- CRM -------------------------------- */
 
 import type { ActivityKind, Contact, ContactActivity, ContactSource, Pipeline } from "@/lib/types";
-import { demoContactsFor, pipelineFor } from "./demo-contacts";
+import { demoContactsFor } from "./demo-contacts";
+import { contactDeleted, contactStageMoved, primaryPipeline } from "./opportunities";
 
 interface CrmStore {
   seededFor: string;
@@ -234,9 +235,9 @@ function crm(now: Date): CrmStore {
   return gc.__lotusCrm;
 }
 
+/** The client's primary pipeline: the one a contact's stage lives in. */
 export function getPipeline(now: Date, accountId: string): Pipeline | undefined {
-  const c = findClient(now, accountId);
-  return c ? pipelineFor(c) : undefined;
+  return findClient(now, accountId) ? primaryPipeline(now, accountId) : undefined;
 }
 
 export function listContacts(now: Date, accountId?: string): Contact[] {
@@ -295,6 +296,7 @@ export function createContact(now: Date, input: NewContactInput): Contact | unde
   const s = crm(now);
   s.contacts.push(contact);
   s.activities.push({ id: `${id}-a1`, contactId: id, kind: "form", title: "Added by hand", by: "System", at });
+  contactStageMoved(now, id, contact.stageId, input.ownerName || "System");
   return contact;
 }
 
@@ -315,6 +317,7 @@ export function moveContactStage(now: Date, id: string, stageId: string, by: str
   if (!stage) return c;
   c.stageId = stageId;
   addActivity(now, id, { kind: "stage", title: `Moved to ${stage.name}`, by });
+  contactStageMoved(now, id, stageId, by);
   return c;
 }
 
@@ -345,6 +348,7 @@ export function deleteContact(now: Date, id: string) {
   const s = crm(now);
   s.contacts = s.contacts.filter((c) => c.id !== id);
   s.activities = s.activities.filter((a) => a.contactId !== id);
+  contactDeleted(now, id);
 }
 
 /* ------------------------------ Funnels ------------------------------ */
