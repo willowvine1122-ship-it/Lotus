@@ -1,6 +1,7 @@
 import type { AccountMode, Channel, ConditionField, Contact, ContactSource, Pipeline, RunStatus, StepType, TriggerType, WaitUnit, WorkflowCondition, WorkflowStatus, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { sourceLabel, stageOf } from "@/components/crm/model";
 import { formatDollars } from "@/lib/utils";
+import { appAction, appEvent, findApp } from "@/components/integrations/catalog";
 
 /*
  * Shared, framework-free helpers for automations: labels, the plain-English
@@ -23,6 +24,8 @@ export const triggerLabel: Record<TriggerType, string> = {
   email_opened: "Campaign email opened",
   email_clicked: "Campaign email clicked",
   job_completed: "Job completed",
+  webhook_received: "Webhook received",
+  app_event: "Event in a connected app",
 };
 
 /** Triggers grouped for the picker, filtered by the client's mode. */
@@ -31,17 +34,31 @@ export function triggerGroups(mode: AccountMode): { label: string; types: Trigge
     { label: "Contacts", types: ["contact_created", "form_submitted", "tag_added", "stage_changed"] },
     { label: mode === "marketing" ? "Appointments and jobs" : "Giving", types: mode === "marketing" ? ["appointment_booked", "appointment_no_show", "job_completed"] : ["donation_received"] },
     { label: "Conversations", types: ["message_received", "email_opened", "email_clicked"] },
+    { label: "Apps and webhooks", types: ["app_event", "webhook_received"] },
   ];
 }
 
 const channelName: Record<Channel, string> = { sms: "SMS", email: "email", whatsapp: "WhatsApp", facebook: "Facebook" };
 
-export function triggerSummary(t: WorkflowTrigger, pipeline?: Pipeline): string {
+/** Names for ids a trigger or step points at (forms, webhooks), passed in by whoever has them. */
+export interface NameLookup {
+  form?: (id: string) => string | undefined;
+  hook?: (id: string) => string | undefined;
+}
+
+/** “Name” when the lookup knows it, a plain noun when there is no lookup, and says so when the thing is gone. */
+function quoted(lookup: ((id: string) => string | undefined) | undefined, id: string, noun: string) {
+  if (!lookup) return noun;
+  const name = lookup(id);
+  return name ? `“${name}”` : `${noun} that was removed`;
+}
+
+export function triggerSummary(t: WorkflowTrigger, pipeline?: Pipeline, names: NameLookup = {}): string {
   switch (t.type) {
     case "contact_created":
       return t.source ? `A new contact arrives from ${sourceLabel[t.source]}` : "A new contact is added, from any source";
     case "form_submitted":
-      return "A contact fills in a form or funnel page";
+      return t.formId ? `A contact fills in ${quoted(names.form, t.formId, "a form")}` : "A contact fills in any form or funnel page";
     case "tag_added":
       return t.tag ? `The tag “${t.tag}” is added to a contact` : "Any tag is added to a contact";
     case "stage_changed":
@@ -60,6 +77,12 @@ export function triggerSummary(t: WorkflowTrigger, pipeline?: Pipeline): string 
       return "A contact clicks a link in a campaign email";
     case "job_completed":
       return "A job for the contact is marked completed";
+    case "webhook_received":
+      return t.hookId ? `Something posts to ${quoted(names.hook, t.hookId, "a webhook")}` : "Something posts to any incoming webhook";
+    case "app_event": {
+      const ev = appEvent(t.appEvent);
+      return ev ? `${ev.trigger.summary}` : "Pick the app and the event";
+    }
   }
 }
 
@@ -71,6 +94,9 @@ export function triggerMatches(t: WorkflowTrigger, e: TriggerEvent): boolean {
   if (t.source && e.source !== t.source) return false;
   if (t.channel && e.channel !== t.channel) return false;
   if (t.minAmountCents && (e.amountCents ?? 0) < t.minAmountCents) return false;
+  if (t.formId && e.formId !== t.formId) return false;
+  if (t.hookId && e.hookId !== t.hookId) return false;
+  if (t.type === "app_event" && e.appEvent !== t.appEvent) return false;
   return true;
 }
 
@@ -84,6 +110,10 @@ export interface TriggerEvent {
   amountCents?: number;
   /** The Lotus form (or funnel) that was filled in, for form_submitted. */
   formId?: string;
+  /** The incoming webhook that received it, for webhook_received. */
+  hookId?: string;
+  /** "app.event" for app_event. */
+  appEvent?: string;
   /** How the run history describes it: "Booked a call", "Gift of $50". */
   label: string;
 }
@@ -101,12 +131,15 @@ export const stepLabel: Record<StepType, string> = {
   notify: "Notify the team",
   wait: "Wait",
   branch: "If / else",
+  send_webhook: "Send to a webhook",
+  app_action: "Do something in an app",
 };
 
 export const stepGroups: { label: string; types: StepType[] }[] = [
   { label: "Message", types: ["send_sms", "send_email"] },
   { label: "Update the contact", types: ["add_tag", "remove_tag", "move_stage", "assign_owner"] },
   { label: "Team", types: ["create_task", "notify"] },
+  { label: "Apps", types: ["app_action", "send_webhook"] },
   { label: "Flow", types: ["wait", "branch"] },
 ];
 
@@ -173,7 +206,7 @@ export function conditionHolds(c: WorkflowCondition, contact: Contact): boolean 
 }
 
 /** One line that says what a step does, as it reads in the builder. */
-export function stepSummary(s: WorkflowStep, pipeline?: Pipeline, mode?: AccountMode): string {
+export function stepSummary(s: WorkflowStep, pipeline?: Pipeline, mode?: AccountMode, names: NameLookup = {}): string {
   switch (s.type) {
     case "send_sms":
       return s.body || "No message yet";
@@ -195,6 +228,14 @@ export function stepSummary(s: WorkflowStep, pipeline?: Pipeline, mode?: Account
       return `Wait ${waitText(s.amount, s.unit)}`;
     case "branch":
       return conditionSummary(s.condition, pipeline, mode);
+    case "send_webhook":
+      return s.hookId ? `Post the contact to ${quoted(names.hook, s.hookId, "a webhook")}` : "No webhook picked";
+    case "app_action": {
+      const a = appAction(s.app, s.action);
+      if (!a) return s.app ? `${findApp(s.app)?.name ?? "App"}: pick an action` : "No app picked";
+      const first = a.action.fields.find((f) => s.fields[f.key]?.trim());
+      return `${a.app.name}: ${a.action.label}${first ? ` · ${s.fields[first.key]}` : ""}`;
+    }
   }
 }
 
@@ -220,6 +261,10 @@ export function newStep(type: StepType, mode: AccountMode): WorkflowStep {
       return { id, type, amount: 1, unit: "days" };
     case "branch":
       return { id, type, condition: { field: "tag", op: "is", value: "" }, yes: [], no: [] };
+    case "send_webhook":
+      return { id, type, hookId: "" };
+    case "app_action":
+      return { id, type, app: "", action: "", fields: {} };
   }
 }
 
@@ -287,6 +332,7 @@ export function laneOf(steps: WorkflowStep[], id: string): { index: number; leng
 export function workflowIssues(trigger: WorkflowTrigger, steps: WorkflowStep[]): Record<string, string> {
   const out: Record<string, string> = {};
   if (trigger.type === "donation_received" && trigger.minAmountCents !== undefined && trigger.minAmountCents < 0) out.trigger = "Enter an amount";
+  if (trigger.type === "app_event" && !appEvent(trigger.appEvent)) out.trigger = "Pick the app and the event";
   if (steps.length === 0) out.steps = "Add at least one step";
   for (const s of flatten(steps)) {
     const need = (ok: unknown, msg: string) => {
@@ -325,6 +371,15 @@ export function workflowIssues(trigger: WorkflowTrigger, steps: WorkflowStep[]):
         need(s.condition.field === "has_email" || s.condition.field === "has_phone" || s.condition.field === "owner" || s.condition.value.trim(), "Finish the condition");
         need(s.yes.length + s.no.length > 0, "Add a step to Yes or No");
         break;
+      case "send_webhook":
+        need(s.hookId, "Pick a webhook");
+        break;
+      case "app_action": {
+        const a = appAction(s.app, s.action);
+        need(a, s.app ? "Pick what to do" : "Pick an app");
+        if (a) for (const f of a.action.fields) if (!f.hint?.startsWith("Leave empty")) need(s.fields[f.key]?.trim(), `Fill in ${f.label.toLowerCase()}`);
+        break;
+      }
     }
   }
   return out;

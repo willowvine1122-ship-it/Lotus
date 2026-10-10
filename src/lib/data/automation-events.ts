@@ -64,3 +64,15 @@ export function jobCompleted(now: Date, accountId: string, contactId: string, jo
   fireTrigger(now, { type: "job_completed", contactId, label: `Job ${jobNumber} completed` });
   autoReviewRequest(now, accountId, contactId, "job");
 }
+
+/* ------------------------- integrations ------------------------- */
+
+/** Something posted to one of the client's incoming webhooks. */
+export function webhookReceived(now: Date, contactId: string, hookId: string, label: string) {
+  return fireTrigger(now, { type: "webhook_received", contactId, hookId, label });
+}
+
+/** A connected app sent an event ("meta_lead_ads.new_lead"). */
+export function appEventReceived(now: Date, contactId: string, appEvent: string, label: string) {
+  return fireTrigger(now, { type: "app_event", contactId, appEvent, label });
+}

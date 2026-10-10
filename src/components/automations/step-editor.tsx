@@ -8,6 +8,9 @@ import { sourceLabel } from "@/components/crm/model";
 import type { AccountMode, Channel, ConditionField, ContactSource, Pipeline, TriggerType, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { cn, formatCount } from "@/lib/utils";
 import { conditionFieldLabel, triggerGroups, triggerLabel } from "./model";
+import { appEvent, apps, findApp } from "@/components/integrations/catalog";
+import { useIntegrationOptions } from "./integration-options";
+import Link from "next/link";
 
 /*
  * The right-hand panel's forms: one for the trigger, one per step type.
@@ -49,6 +52,7 @@ function MergeField({
   error,
   maxLength,
   placeholder,
+  contactTags,
 }: {
   id: string;
   label: string;
@@ -60,6 +64,8 @@ function MergeField({
   error?: string;
   maxLength?: number;
   placeholder?: string;
+  /** Also offer email and phone, for fields that go to other apps. */
+  contactTags?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
   const insert = (tag: string) => {
@@ -80,7 +86,7 @@ function MergeField({
           {label}
         </label>
         <span className="flex gap-1">
-          {mergeTags.map((t) => (
+          {[...mergeTags, ...(contactTags ? [{ tag: "{{email}}", label: "Email" }, { tag: "{{phone}}", label: "Phone" }] : [])].map((t) => (
             <button
               key={t.tag}
               type="button"
@@ -204,6 +210,8 @@ export function TriggerEditor({
         </Field>
       )}
 
+      <IntegrationTriggerFields id={id} trigger={trigger} onChange={onChange} />
+
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1.5 text-sm font-medium">Each contact can go through</legend>
         {[
@@ -222,6 +230,74 @@ export function TriggerEditor({
 
       <p className="num text-xs text-fg-3">{started ? `${formatCount(started)} contacts started in the last 30 days.` : "No one has started yet."}</p>
     </div>
+  );
+}
+
+/** Form, webhook and app-event pickers; their choices come from what the client has set up. */
+function IntegrationTriggerFields({ id, trigger, onChange }: { id: string; trigger: WorkflowTrigger; onChange: (t: WorkflowTrigger) => void }) {
+  const o = useIntegrationOptions();
+  if (trigger.type === "form_submitted") {
+    return (
+      <Field label="Form" htmlFor={`${id}-form`} hint="Leave on any form to catch every form and funnel page.">
+        <Select id={`${id}-form`} value={trigger.formId ?? ""} onChange={(e) => onChange({ ...trigger, formId: e.target.value || undefined })}>
+          <option value="">Any form</option>
+          {o.forms.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </Select>
+      </Field>
+    );
+  }
+  if (trigger.type === "webhook_received") {
+    return (
+      <Field label="Webhook" htmlFor={`${id}-hook`} hint={o.hooksIn.length ? "Each post creates or updates the contact first." : undefined}>
+        <Select id={`${id}-hook`} value={trigger.hookId ?? ""} onChange={(e) => onChange({ ...trigger, hookId: e.target.value || undefined })}>
+          <option value="">Any incoming webhook</option>
+          {o.hooksIn.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </Select>
+        {!o.hooksIn.length && <NoneYet what="incoming webhooks" tab="webhooks" />}
+      </Field>
+    );
+  }
+  if (trigger.type === "app_event") {
+    const current = appEvent(trigger.appEvent);
+    const withTriggers = apps.filter((a) => a.triggers.length);
+    return (
+      <Field label="App and event" htmlFor={`${id}-app`} error={current && !o.connectedApps.includes(current.app.id) ? `${current.app.name} isn't connected for this client, so this won't start until it is.` : undefined}>
+        <Select id={`${id}-app`} value={trigger.appEvent ?? ""} onChange={(e) => onChange({ ...trigger, appEvent: e.target.value || undefined })}>
+          <option value="">Pick an event</option>
+          {withTriggers.map((a) => (
+            <optgroup key={a.id} label={`${a.name}${o.connectedApps.includes(a.id) ? "" : " (not connected)"}`}>
+              {a.triggers.map((t) => (
+                <option key={t.key} value={`${a.id}.${t.key}`}>
+                  {a.name}: {t.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+        <NoneYet what="" tab="apps" always />
+      </Field>
+    );
+  }
+  return null;
+}
+
+function NoneYet({ what, tab, always }: { what: string; tab: string; always?: boolean }) {
+  return (
+    <p className="text-xs text-fg-3">
+      {always ? "Connect apps in " : `No ${what} yet. Add one in `}
+      <Link href={`/agency/integrations?tab=${tab}`} className="font-medium text-fg-2 underline-offset-2 hover:underline">
+        Integrations
+      </Link>
+      .
+    </p>
   );
 }
 
@@ -397,7 +473,99 @@ export function StepEditor({
       );
     case "branch":
       return <ConditionEditor step={step} onChange={onChange} mode={mode} pipeline={pipeline} tags={tags} team={team} error={error} />;
+    case "send_webhook":
+      return <WebhookStepEditor step={step} onChange={onChange} error={error} />;
+    case "app_action":
+      return <AppActionEditor step={step} onChange={onChange} error={error} />;
   }
+}
+
+function WebhookStepEditor({ step, onChange, error }: { step: Extract<WorkflowStep, { type: "send_webhook" }>; onChange: (s: WorkflowStep) => void; error?: string }) {
+  const id = useId();
+  const o = useIntegrationOptions();
+  const hook = o.hooksOut.find((h) => h.id === step.hookId);
+  return (
+    <div className="flex flex-col gap-3">
+      <Field label="Webhook" htmlFor={`${id}-hook`} error={error}>
+        <Select id={`${id}-hook`} value={step.hookId} onChange={(e) => onChange({ ...step, hookId: e.target.value })} aria-invalid={!!error || undefined}>
+          <option value="">Pick a webhook</option>
+          {o.hooksOut.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </Select>
+        {!o.hooksOut.length && <NoneYet what="outgoing webhooks" tab="webhooks" />}
+      </Field>
+      {hook && <p className="num break-all rounded border border-line bg-surface-2/50 px-3 py-2 text-xs text-fg-2">POST {hook.url}</p>}
+      <p className="text-xs leading-relaxed text-fg-3">Sends the contact as JSON (name, email, phone, tags, stage, value), signed with the webhook&apos;s secret. Every delivery and its response code shows in Integrations › Activity.</p>
+    </div>
+  );
+}
+
+function AppActionEditor({ step, onChange, error }: { step: Extract<WorkflowStep, { type: "app_action" }>; onChange: (s: WorkflowStep) => void; error?: string }) {
+  const id = useId();
+  const o = useIntegrationOptions();
+  const app = findApp(step.app);
+  const action = app?.actions.find((a) => a.key === step.action);
+  const withActions = apps.filter((a) => a.actions.length);
+  const connected = app ? o.connectedApps.includes(app.id) : true;
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="App" htmlFor={`${id}-app`}>
+          <Select
+            id={`${id}-app`}
+            value={step.app}
+            onChange={(e) => {
+              const next = findApp(e.target.value);
+              onChange({ ...step, app: e.target.value, action: next?.actions.length === 1 ? next.actions[0]!.key : "", fields: {} });
+            }}
+            aria-invalid={(!step.app && !!error) || undefined}
+          >
+            <option value="">Pick an app</option>
+            {withActions.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+                {o.connectedApps.includes(a.id) ? "" : " (not connected)"}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Do" htmlFor={`${id}-action`}>
+          <Select id={`${id}-action`} value={step.action} disabled={!app} onChange={(e) => onChange({ ...step, action: e.target.value, fields: {} })} aria-invalid={(!!step.app && !step.action && !!error) || undefined}>
+            <option value="">Pick an action</option>
+            {app?.actions.map((a) => (
+              <option key={a.key} value={a.key}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      {app && !connected && (
+        <p role="alert" className="rounded border border-amber/25 bg-amber-soft/60 px-3 py-2 text-xs leading-relaxed text-amber">
+          {app.name} isn&apos;t connected for this client. The step will fail until it is.{" "}
+          <Link href="/agency/integrations?tab=apps" className="font-medium underline underline-offset-2">
+            Connect it
+          </Link>
+        </p>
+      )}
+      {action?.fields.map((f, i) => {
+        const v = step.fields[f.key] ?? "";
+        const set = (value: string) => onChange({ ...step, fields: { ...step.fields, [f.key]: value } });
+        const missing = !!error && !v.trim() && !f.hint?.startsWith("Leave empty") && action.fields.findIndex((x) => !(step.fields[x.key] ?? "").trim() && !x.hint?.startsWith("Leave empty")) === i;
+        return f.merge ? (
+          <MergeField key={f.key} id={`${id}-${f.key}`} label={f.label} value={v} onChange={set} multiline={f.multiline} rows={f.multiline ? 4 : undefined} placeholder={f.placeholder} hint={f.hint} error={missing ? error : undefined} maxLength={2000} contactTags />
+        ) : (
+          <Field key={f.key} label={f.label} htmlFor={`${id}-${f.key}`} hint={f.hint} error={missing ? error : undefined}>
+            <Input id={`${id}-${f.key}`} value={v} onChange={(e) => set(e.target.value)} placeholder={f.placeholder} maxLength={200} aria-invalid={missing || undefined} />
+          </Field>
+        );
+      })}
+      {action && <p className="text-xs leading-relaxed text-fg-3">Recorded in Integrations › Activity with exactly what was sent. Delivery to {app!.name} starts once its sign-in is live; nothing is sent from the demo.</p>}
+    </div>
+  );
 }
 
 const fields: ConditionField[] = ["tag", "stage", "source", "owner", "value", "has_email", "has_phone"];

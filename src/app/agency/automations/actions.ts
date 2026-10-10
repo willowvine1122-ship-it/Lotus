@@ -68,6 +68,8 @@ const step: z.ZodType<WorkflowStep> = z.lazy(() =>
       yes: z.array(step).max(30),
       no: z.array(step).max(30),
     }),
+    z.object({ id, type: z.literal("send_webhook"), hookId: text(80) }),
+    z.object({ id, type: z.literal("app_action"), app: text(40), action: text(40), fields: z.record(z.string().max(40), text(2000)) }),
   ]),
 );
 
@@ -75,12 +77,15 @@ const draftSchema = z.object({
   name: z.string().trim().min(2, "Name the workflow").max(80),
   allowReentry: z.boolean(),
   trigger: z.object({
-    type: z.enum(["contact_created", "form_submitted", "tag_added", "stage_changed", "appointment_booked", "appointment_no_show", "donation_received", "message_received", "email_opened", "email_clicked", "job_completed"]),
+    type: z.enum(["contact_created", "form_submitted", "tag_added", "stage_changed", "appointment_booked", "appointment_no_show", "donation_received", "message_received", "email_opened", "email_clicked", "job_completed", "webhook_received", "app_event"]),
     tag: text(40).optional(),
     stageId: text(60).optional(),
     source: z.enum(["meta", "google", "website", "referral", "donation-page", "import", "manual"]).optional(),
     channel: z.enum(["sms", "email", "whatsapp", "facebook"]).optional(),
     minAmountCents: z.number().int().min(0).optional(),
+    formId: text(80).optional(),
+    hookId: text(80).optional(),
+    appEvent: text(80).optional(),
   }),
   steps: z.array(step).max(60),
 });

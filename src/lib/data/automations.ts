@@ -5,6 +5,7 @@ import { formatDollars } from "@/lib/utils";
 import { cloneSteps, findWorkflowTemplate } from "./automation-templates";
 import { listSends } from "./email";
 import { listThreads, startConversation, findConversation, assignConversation } from "./inbox";
+import { stepAppAction, stepSendWebhook } from "./integrations";
 import { addActivity, addTask, findClient, findContact, getPipeline, listActivities, listClients, listContacts, moveContactStage, updateContact } from "./store";
 
 /*
@@ -106,6 +107,12 @@ function vars(contact: Contact, client: ClientRecord | undefined) {
   return { first_name: contact.firstName, last_name: contact.lastName, client_name: client?.account.name };
 }
 
+/** App fields can also use the contact's email, phone and company. */
+function renderAppField(text: string, contact: Contact, client: ClientRecord | undefined) {
+  const extra: Record<string, string> = { email: contact.email ?? "", phone: contact.phone ?? "", company: contact.company ?? "", city: contact.city ?? "" };
+  return renderMerge(text, vars(contact, client)).replace(/\{\{\s*(email|phone|company|city)\s*\}\}/g, (_, k: string) => extra[k] ?? "");
+}
+
 function clip(text: string, n = 90) {
   const t = text.replace(/\s+/g, " ").trim();
   return t.length > n ? `${t.slice(0, n - 1)}…` : t;
@@ -200,6 +207,17 @@ function act(ctx: Ctx, wf: Workflow, step: Exclude<WorkflowStep, { type: "wait" 
       const message = m(step.message);
       log(ctx, at, contact.id, { kind: "note", title: `${step.to} notified`, body: message });
       return { status: "done", detail: `Told ${step.to}: ${clip(message, 70)}` };
+    }
+    case "send_webhook": {
+      const r = stepSendWebhook(ctx.now, wf.accountId, step.hookId, contact, wf.name, { replay, at });
+      if (r.status === "done") log(ctx, at, contact.id, { kind: "note", title: "Sent to a webhook", body: r.detail });
+      return r;
+    }
+    case "app_action": {
+      const fields = Object.fromEntries(Object.entries(step.fields).map(([k, v]) => [k, renderAppField(v, contact, client)]));
+      const r = stepAppAction(ctx.now, wf.accountId, step.app, step.action, fields, contact, { replay, at });
+      if (r.status === "done") log(ctx, at, contact.id, { kind: "note", title: r.detail });
+      return r;
     }
   }
 }

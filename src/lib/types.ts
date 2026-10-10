@@ -649,7 +649,9 @@ export type TriggerType =
   | "message_received"
   | "email_opened"
   | "email_clicked"
-  | "job_completed";
+  | "job_completed"
+  | "webhook_received"
+  | "app_event";
 
 /** What starts a workflow. Optional fields narrow it; empty means "any". */
 export interface WorkflowTrigger {
@@ -659,6 +661,12 @@ export interface WorkflowTrigger {
   source?: ContactSource;
   channel?: Channel;
   minAmountCents?: number;
+  /** form_submitted: only this form. */
+  formId?: string;
+  /** webhook_received: only this incoming webhook. */
+  hookId?: string;
+  /** app_event: "app.event", e.g. "meta_lead_ads.new_lead". */
+  appEvent?: string;
 }
 
 export type ConditionField = "tag" | "stage" | "source" | "has_email" | "has_phone" | "value" | "owner";
@@ -682,7 +690,9 @@ export type WorkflowStep =
   | { id: string; type: "create_task"; title: string; assigneeName?: string; dueInDays: number }
   | { id: string; type: "notify"; to: string; message: string }
   | { id: string; type: "wait"; amount: number; unit: WaitUnit }
-  | { id: string; type: "branch"; condition: WorkflowCondition; yes: WorkflowStep[]; no: WorkflowStep[] };
+  | { id: string; type: "branch"; condition: WorkflowCondition; yes: WorkflowStep[]; no: WorkflowStep[] }
+  | { id: string; type: "send_webhook"; hookId: string }
+  | { id: string; type: "app_action"; app: string; action: string; fields: Record<string, string> };
 
 export type StepType = WorkflowStep["type"];
 
@@ -815,7 +825,73 @@ export interface ReportSend {
 /* Integrations: connected apps, webhooks in and out, API keys          */
 /* ------------------------------------------------------------------ */
 
-// (integrations types go here)
+/** A client's link to an outside app. Sign-in is stubbed until each app is registered; actions are recorded, not delivered. */
+export interface IntegrationConnection {
+  id: string;
+  accountId: string;
+  appId: string;
+  /** The outside account it signed in as: "ops@brightsmile.com", "#leads workspace". */
+  accountLabel: string;
+  connectedAt: string;
+  connectedBy: string;
+}
+
+/** A URL any outside tool can post to; each post creates or updates a contact. */
+export interface IncomingWebhook {
+  id: string;
+  accountId: string;
+  name: string;
+  /** Secret path segment: POST /api/hooks/{token}. */
+  token: string;
+  /** Contact field to payload key, e.g. { email: "contact.email" }. Empty keys are guessed. */
+  mapping: Partial<Record<"firstName" | "lastName" | "email" | "phone" | "company" | "city", string>>;
+  tags: string[];
+  createdAt: string;
+}
+
+/** A URL Lotus posts contact data to from a workflow step. Signed with HMAC-SHA256. */
+export interface OutgoingWebhook {
+  id: string;
+  accountId: string;
+  name: string;
+  url: string;
+  secret: string;
+  createdAt: string;
+}
+
+/** A client's key for the REST API. Only the hash is kept; the key is shown once. */
+export interface ApiKey {
+  id: string;
+  accountId: string;
+  label: string;
+  /** First characters, shown in lists: "lts_4f9a". */
+  prefix: string;
+  hash: string;
+  createdAt: string;
+  createdBy: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
+}
+
+export type IntegrationLogKind = "webhook_in" | "webhook_out" | "app_event" | "app_action" | "api" | "import";
+
+/** One thing that crossed the boundary, in or out, in plain words. */
+export interface IntegrationLog {
+  id: string;
+  accountId: string;
+  kind: IntegrationLogKind;
+  /** App id, webhook id or key id. */
+  ref: string;
+  title: string;
+  status: "ok" | "failed";
+  detail: string;
+  /** JSON as sent or received, pretty-printed and capped. */
+  payload?: string;
+  /** HTTP status for webhooks out and API calls. */
+  code?: number;
+  contactId?: string;
+  at: string;
+}
 
 /* ------------------------------------------------------------------ */
 /* Forms: Typeform-style forms, one question at a time                  */

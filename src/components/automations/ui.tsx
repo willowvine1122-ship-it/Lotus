@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CircleCheck, CircleDashed, CircleSlash, CircleX, Clock3, ListTodo, Mail, MessageSquare, MoveRight, Split, Tag, TagX, UserCheck, Zap, type LucideIcon } from "lucide-react";
+import { AppWindow, Bell, CircleCheck, CircleDashed, CircleSlash, CircleX, Clock3, ListTodo, Mail, MessageSquare, MoveRight, Split, Tag, TagX, UserCheck, Webhook, Zap, type LucideIcon } from "lucide-react";
 import type { AccountMode, Pipeline, RunStatus, RunStepStatus, StepType, WorkflowStatus, WorkflowStep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MergeText } from "@/components/email/ui";
@@ -20,6 +20,8 @@ export const stepIcon: Record<StepType | "trigger", LucideIcon> = {
   notify: Bell,
   wait: Clock3,
   branch: Split,
+  send_webhook: Webhook,
+  app_action: AppWindow,
 };
 
 /** Active is the normal state, so it stays quiet; Paused is amber, like a paused client; Draft is a dashed outline. */

@@ -514,3 +514,22 @@ Reviews, review requests, the reports board, the report builder and the client's
 - Replies post as the client and are recorded now; delivery to Google and Facebook, and sending texts and emails, arrive with the Inbox and the email module. The forms say so in the muted footnote.
 - Two series share an axis only when they share a unit and a scale.
 - A replied review stays selected after the reply even under the Needs reply filter, so the confirmation is visible.
+
+## Revision 12: Integrations (2026-10-10)
+
+The integrations hub reuses the board grammar (ink top bar, KPI strip, table, right panel). Nothing new in colour: each app's own colour appears only on its small square mark, as identity, never as a signal.
+
+### Components, added
+- **Hub header**: title over "{client} · N apps connected", search, client select and the single violet "New workflow". The four sections (Apps, Webhooks, API keys, Activity) are underline tabs at the bottom of the ink band with neutral `rail-2` counts; Activity's count is red and reads "N failed" only when something failed in the last 7 days.
+- **KPI strip**: Connected apps (of the catalog), Events in · 7 days, Sent out · 7 days, Failures · 7 days (red only when above zero).
+- **App mark**: a 28px 6px-radius square in the app's colour with its initials in white.
+- **Apps table**: App (mark, name, connected account or one-line blurb), Category, Status (neutral "Connected" / dashed "Not connected"), 7 days, Last activity. Columns fall away below xl and 2xl.
+- **App panel**: connect form (one field naming the account, ink button, a muted note that sign-in runs in demo mode), the app's triggers each with "Send a test", the workflow steps it adds, "Use in a workflow", import (Mailchimp, Calendly), the last 30 days of activity with expandable payloads, and Disconnect behind a confirm.
+- **Webhook panels**: incoming shows the secret URL with copy, a curl sample, field mapping (six fields, dots for nested keys), tags to add, "Send a test" with its result inline, deliveries and delete. Outgoing shows the URL, the signing secret (masked until revealed), a verification snippet, a test delivery that really posts, deliveries and delete.
+- **API key panel**: a new key is shown once in an amber notice with copy and ready curl samples, then only its prefix.
+- **Activity**: a paper segmented filter by kind (App event, App action, Webhook in, Webhook out, API, Failed) and a ledger of When, What, Source, Contact, Result (neutral code, red "Failed · code").
+- **Automations**: new trigger group "Apps and webhooks" (Form submitted picks a form, Webhook received picks a hook, App event picks an app trigger) and step group "Apps" (Send to a webhook, app actions with merge fields). Pickers say "(not connected)" and link to the hub when a choice is missing.
+
+### Rules
+- Everything that arrives creates or fills a contact by email or phone and lands on its timeline, so the CRM stays the record.
+- Secrets are shown once or masked; outgoing webhooks are signed and refuse private network addresses.

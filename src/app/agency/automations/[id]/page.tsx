@@ -6,6 +6,8 @@ import { automationClients, contactOptions, runRow, stepStats, tagOptions, teamN
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { findWorkflow, listRuns } from "@/lib/data/automations";
+import { IntegrationOptionsProvider } from "@/components/automations/integration-options";
+import { listConnections, listHooksIn, listHooksOut } from "@/lib/data/integrations";
 import { getPipeline } from "@/lib/data/store";
 import { deleteWorkflowAction, duplicateWorkflowAction, saveWorkflowAction, setWorkflowStatusAction, testRunAction } from "../actions";
 
@@ -35,7 +37,15 @@ async function Builder({ params }: { params: Promise<{ id: string }> }) {
     }
   }
 
+  const options = {
+    connectedApps: listConnections(now, client.id).map((c) => c.appId),
+    hooksIn: listHooksIn(now, client.id).map((h) => ({ id: h.id, name: h.name })),
+    hooksOut: listHooksOut(now, client.id).map((h) => ({ id: h.id, name: h.name, url: h.url })),
+    forms: [] as { id: string; name: string }[],
+  };
+
   return (
+    <IntegrationOptionsProvider value={options}>
     <WorkflowBuilder
       workflow={structuredClone(workflow)}
       client={client}
@@ -55,6 +65,7 @@ async function Builder({ params }: { params: Promise<{ id: string }> }) {
       nowIso={now.toISOString()}
       actions={{ save: saveWorkflowAction, setStatus: setWorkflowStatusAction, test: testRunAction, duplicate: duplicateWorkflowAction, remove: deleteWorkflowAction }}
     />
+    </IntegrationOptionsProvider>
   );
 }
 

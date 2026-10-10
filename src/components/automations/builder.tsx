@@ -11,6 +11,7 @@ import type { AutomationActionState, WorkflowDraft } from "@/app/agency/automati
 import type { Pipeline, StepType, Workflow, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
 import type { ContactLite, RunRow, StepStats } from "./data";
+import { useNames } from "./integration-options";
 import { findStep, insertStep, laneOf, moveStep, newStep, removeStep, replaceStep, stepGroups, stepLabel, stepSummary, triggerLabel, triggerSummary, workflowIssues, type Lane } from "./model";
 import { StepControls, StepEditor, TriggerEditor } from "./step-editor";
 import { RunStatusTag, RunStepMark, StepGlyph, stepIcon } from "./ui";
@@ -288,6 +289,7 @@ function nodeState(selected: boolean, error?: string) {
 }
 
 function TriggerNode({ trigger, pipeline, started, selected, error, onSelect }: { trigger: WorkflowTrigger; pipeline?: Pipeline; started: number; selected: boolean; error?: string; onSelect: () => void }) {
+  const names = useNames();
   return (
     <button type="button" onClick={onSelect} aria-pressed={selected} className={cn(nodeBase, nodeState(selected, error))}>
       <StepGlyph type="trigger" />
@@ -296,7 +298,7 @@ function TriggerNode({ trigger, pipeline, started, selected, error, onSelect }: 
           <span className="text-sm font-semibold">{triggerLabel[trigger.type]}</span>
           <span className="ml-auto num shrink-0 text-2xs text-fg-3">{started ? `${formatCount(started)} started` : ""}</span>
         </span>
-        <span className="block text-xs leading-relaxed text-fg-2">{triggerSummary(trigger, pipeline)}</span>
+        <span className="block text-xs leading-relaxed text-fg-2">{triggerSummary(trigger, pipeline, names)}</span>
         {error && <NodeError text={error} />}
       </span>
     </button>
@@ -356,6 +358,7 @@ function LaneView({
   onAdd: (lane: Lane, index: number, type: StepType) => void;
 }) {
   const nested = lane.side !== "main";
+  const names = useNames();
   return (
     <>
       <Connector onAdd={(t) => onAdd(lane, 0, t)} allowBranch={!nested} />
@@ -374,7 +377,7 @@ function LaneView({
                   </span>
                 </span>
                 <span className={cn("line-clamp-2 block text-xs leading-relaxed", isBlank(s) ? "text-fg-3" : "text-fg-2")}>
-                  <MergeText text={stepSummary(s, pipeline, client.mode)} />
+                  <MergeText text={stepSummary(s, pipeline, client.mode, names)} />
                 </span>
                 {issues[s.id] && <NodeError text={issues[s.id]!} />}
               </span>
@@ -399,6 +402,8 @@ function isBlank(s: WorkflowStep) {
     case "move_stage": return !s.stageId;
     case "assign_owner": return !s.ownerName;
     case "notify": return !s.to;
+    case "send_webhook": return !s.hookId;
+    case "app_action": return !s.app;
     default: return false;
   }
 }
