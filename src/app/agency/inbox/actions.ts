@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
@@ -15,11 +15,10 @@ import { findContact, teamDirectory } from "@/lib/data/store";
 
 /*
  * Server actions for the inbox. Inputs are validated with zod; the composer
- * actions return { ok, errors } for useActionState. No auth yet: the demo
- * user is Afza, as on the client pages.
+ * actions return { ok, errors } for useActionState. Messages are signed
+ * with the name of whoever is signed in.
  */
 
-const ME = "Afza";
 
 export type InboxActionState = { ok: boolean; errors?: Record<string, string>; message?: string; conversationId?: string; at?: number } | null;
 
@@ -79,7 +78,7 @@ export async function replyAction(_prev: InboxActionState, formData: FormData): 
       const problem = channelProblem(now, conv.contactId, d.channel);
       if (problem) return { ok: false, errors: { channel: problem } };
     }
-    sendMessage(now, d.conversationId, { channel: d.channel, body: d.body, subject: d.subject, authorName: ME, kind: d.kind });
+    sendMessage(now, d.conversationId, { channel: d.channel, body: d.body, subject: d.subject, authorName: actorName(), kind: d.kind });
     revalidatePath("/agency/inbox");
     return { ok: true, conversationId: d.conversationId, at: Date.now() };
   });
@@ -109,7 +108,7 @@ export async function startConversationAction(_prev: InboxActionState, formData:
     const now = new Date();
     const problem = channelProblem(now, d.contactId, d.channel);
     if (problem) return { ok: false, errors: { channel: problem } };
-    const conv = startConversation(now, { ...d, authorName: ME });
+    const conv = startConversation(now, { ...d, authorName: actorName() });
     if (!conv) return { ok: false, errors: { contactId: "That contact was not found" } };
     revalidatePath("/agency/inbox");
     return { ok: true, conversationId: conv.id, at: Date.now() };

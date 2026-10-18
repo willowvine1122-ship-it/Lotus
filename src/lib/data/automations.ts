@@ -175,6 +175,7 @@ function act(ctx: Ctx, wf: Workflow, step: Exclude<WorkflowStep, { type: "wait" 
       return { status: "done", detail: `Moved to ${stage.name}` };
     }
     case "assign_owner": {
+      if (!step.ownerName) return { status: "skipped", detail: "Skipped: no owner picked in this step" };
       if (contact.ownerName === step.ownerName) return { status: "skipped", detail: `Skipped: ${step.ownerName} already owns it` };
       if (!replay) updateContact(ctx.now, contact.id, { ownerName: step.ownerName });
       log(ctx, at, contact.id, { kind: "note", title: `Owner set to ${step.ownerName}` });

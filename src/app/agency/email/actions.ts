@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -23,7 +23,6 @@ import { audienceMembers, reachOf } from "@/components/email/model";
 
 export type EmailActionState = { ok: boolean; errors?: Record<string, string>; message?: string; id?: string } | null;
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 function flatten(err: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
@@ -134,7 +133,7 @@ export async function sendCampaignAction(id: string, draft: CampaignDraft): Prom
     if (isState(r)) return r;
     const blocked = readyToSend(id, r);
     if (blocked) return blocked;
-    const result = sendCampaign(new Date(), id, actor);
+    const result = sendCampaign(new Date(), id, actorName());
     if (!result) return { ok: false, message: "This campaign could not be sent." };
     touch(id);
     revalidatePath("/agency/contacts");

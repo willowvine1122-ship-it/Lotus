@@ -11,7 +11,7 @@ export const metadata = { title: "Tasks" };
 
 async function Board() {
   await connection();
-  await openWorkspace();
+  const session = await openWorkspace();
   const now = new Date();
   const clients = listClients(now);
   const tasks: TaskRow[] = clients.flatMap((c) =>
@@ -29,7 +29,7 @@ async function Board() {
       clients={clients.map((c) => ({ id: c.account.id, name: c.account.name })).sort((a, b) => a.name.localeCompare(b.name))}
       team={teamDirectory()}
       nowIso={now.toISOString()}
-      me="Afza"
+      me={session.user.name}
       actions={{ toggle: toggleTaskAction, add: addTaskAction }}
     />
   );

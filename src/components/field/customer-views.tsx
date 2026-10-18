@@ -27,7 +27,6 @@ export function CustomerShell({ business, children }: { business: string; childr
         <span className="text-xs text-rail-fg-2">Powered by Lotus</span>
       </header>
       <main className="mx-auto w-full max-w-[760px] flex-1 px-5 py-8 md:py-10">{children}</main>
-      <p className="px-5 py-4 text-center text-xs text-fg-3 md:px-8">Demo data. Names, prices and payments are synthetic.</p>
     </div>
   );
 }

@@ -1,10 +1,12 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, currentSession, withWorkspace } from "@/lib/server/workspace";
+import { canManageTeam } from "@/lib/server/auth";
+import { issueInvite } from "@/lib/server/invites";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { addNote, addTask, createClient, inviteMember, removeMember, setTaskStatus, updateClient } from "@/lib/data/store";
+import { addNote, addTask, createClient, findClient, inviteMember, removeMember, setTaskStatus, updateClient } from "@/lib/data/store";
 
 /*
  * Server actions for the client (sub-account) pages. Inputs are validated
@@ -12,7 +14,7 @@ import { addNote, addTask, createClient, inviteMember, removeMember, setTaskStat
  * with useActionState. There is no auth yet: the demo store is open.
  */
 
-export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
+export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string; link?: string } | null;
 
 const money = z
   .string()
@@ -82,8 +84,13 @@ export async function createClientAction(_prev: ActionState, formData: FormData)
       assignees: d.assignees,
       clientContact: d.contactName && d.contactEmail ? { name: d.contactName, email: d.contactEmail } : undefined,
     });
+    const session = currentSession();
+    if (d.contactName && d.contactEmail && session?.agency) {
+      await issueInvite({ user: session.user, agency: session.agency }, { email: d.contactEmail, name: d.contactName, role: "client", accountIds: [record.account.id], clientName: record.account.name });
+    }
     revalidatePath("/agency");
     revalidatePath("/agency/clients");
+    revalidatePath("/agency/settings");
     redirect(`/agency/clients/${record.account.slug}`);
   });
 }
@@ -138,10 +145,16 @@ export async function inviteMemberAction(id: string, _prev: ActionState, formDat
   return withWorkspace(async () => {
     const parsed = inviteSchema.safeParse({ name: formData.get("name"), email: formData.get("email") });
     if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const client = findClient(new Date(), id);
+    const session = currentSession();
+    if (!client || !session?.agency) return { ok: false, message: "Client not found" };
+    if (!canManageTeam(session.role)) return { ok: false, message: "Only the owner or an admin can give clients a login." };
     const m = inviteMember(new Date(), id, parsed.data.name, parsed.data.email);
     if (!m) return { ok: false, message: "Client not found" };
+    const sent = await issueInvite({ user: session.user, agency: session.agency }, { email: m.email, name: m.name, role: "client", accountIds: [client.account.id], clientName: client.account.name });
     revalidatePath(`/agency/clients/${id}`);
-    return { ok: true, message: `Invite ready for ${m.email}` };
+    revalidatePath("/agency/settings");
+    return { ok: true, message: sent.message, link: sent.link };
   });
 }
 
@@ -156,7 +169,7 @@ export async function addNoteAction(id: string, _prev: ActionState, formData: Fo
   return withWorkspace(async () => {
     const body = String(formData.get("body") ?? "").trim();
     if (body.length < 2) return { ok: false, errors: { body: "Write the note first" } };
-    addNote(new Date(), id, "Afza", body);
+    addNote(new Date(), id, actorName(), body);
     revalidatePath("/agency");
     revalidatePath(`/agency/clients/${id}`);
     return { ok: true };

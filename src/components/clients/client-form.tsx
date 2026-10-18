@@ -114,7 +114,7 @@ export function ClientForm({
       <FormSection title="Team" description="Who at Lotus works this account. They appear on the board and get the daily flags.">
         <div className="flex flex-wrap gap-2 sm:col-span-2">
           {team.map((a) => (
-            <CheckboxChip key={a.name} name="assignees" value={a.name} label={a.name} defaultChecked={client ? client.assignees.some((x) => x.name === a.name) : a.name === "Afza"} />
+            <CheckboxChip key={a.name} name="assignees" value={a.name} label={a.name} defaultChecked={client ? client.assignees.some((x) => x.name === a.name) : team.length === 1} />
           ))}
         </div>
         {e.assignees && (

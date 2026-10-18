@@ -110,10 +110,16 @@ export function canManageTeam(role: Role | null) {
   return role === "owner" || role === "admin";
 }
 
-export async function startSession(userId: string, agencyId: string | null) {
+/**
+ * Sign someone in. With no agency given, they land in the first agency
+ * they belong to (staff seats before client logins), or none yet.
+ * Returns where they should go next.
+ */
+export async function startSession(userId: string, agencyId?: string | null): Promise<string> {
   const token = newToken();
+  const hash = sha256(token);
   const expires = new Date(Date.now() + SESSION_DAYS * 86400000);
-  await db("session.create", { token_hash: sha256(token), user_id: userId, agency_id: agencyId ?? "", expires_at: expires.toISOString() });
+  await db("session.create", { token_hash: hash, user_id: userId, agency_id: agencyId ?? "", expires_at: expires.toISOString() });
   await db("user.update", { id: userId, login: true });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
@@ -122,6 +128,18 @@ export async function startSession(userId: string, agencyId: string | null) {
     path: "/",
     expires,
   });
+  let raw = await db<RawSession | null>("session.get", { token_hash: hash });
+  if (raw && !raw.agency && raw.agencies.length) {
+    const pick = raw.agencies.find((x) => x.role !== "client") ?? raw.agencies[0]!;
+    await db("session.switch", { token_hash: hash, agency_id: pick.id });
+    raw = await db<RawSession | null>("session.get", { token_hash: hash });
+  }
+  return homeFor(raw?.membership?.role ?? null);
+}
+
+/** Where a role starts: staff on the Daily Diagnostic, client logins in their portal, people with no agency yet on the welcome page. */
+export function homeFor(role: Role | null) {
+  return !role ? "/welcome" : role === "client" ? "/portal" : "/agency";
 }
 
 export async function endSession() {

@@ -146,6 +146,12 @@ begin
     from lotus.docs where agency_id = (a->>'agency')::uuid;
     return v_out;
 
+  when 'ws.agencies' then
+    -- Agencies that keep a given module, for scheduled jobs that visit each one.
+    select coalesce(jsonb_agg(agency_id), '[]'::jsonb) into v_out
+    from lotus.docs where module in (select jsonb_array_elements_text(a->'modules'));
+    return v_out;
+
   when 'ws.load' then
     select coalesce(jsonb_agg(jsonb_build_object('module', module, 'version', version, 'data', data)), '[]'::jsonb) into v_out
     from lotus.docs

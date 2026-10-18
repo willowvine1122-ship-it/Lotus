@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { connection } from "next/server";
+import { openWorkspace } from "@/lib/server/workspace";
 import { ArrowLeft } from "lucide-react";
 import { ClientForm } from "@/components/clients/client-form";
 import { PageHeader } from "@/components/page-header";
@@ -7,6 +10,12 @@ import { teamDirectory } from "@/lib/data/store";
 import { createClientAction } from "../actions";
 
 export const metadata = { title: "Add client" };
+
+async function Form() {
+  await connection();
+  await openWorkspace();
+  return <ClientForm action={createClientAction} team={teamDirectory()} />;
+}
 
 export default function NewClientPage() {
   return (
@@ -22,7 +31,9 @@ export default function NewClientPage() {
       />
       <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 bg-surface">
-          <ClientForm action={createClientAction} team={teamDirectory()} />
+          <Suspense fallback={<div className="h-96" />}>
+            <Form />
+          </Suspense>
         </div>
         <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
           <h2 className="text-sm font-semibold text-fg">What happens next</h2>
@@ -30,7 +41,7 @@ export default function NewClientPage() {
             <li>The client gets a sub-account with its own contacts, inbox, calendar and funnels.</li>
             <li>It shows on the Daily Diagnostic as onboarding until the first full day of numbers lands.</li>
             <li>Two onboarding tasks are created for the assigned team.</li>
-            <li>If you add a contact, an invite to the client view is prepared; it sends once email is connected.</li>
+            <li>If you add their main contact, they get an invite to their own dashboard. Without email connected, the link is on the client&apos;s Team tab and in Settings.</li>
           </ol>
         </aside>
       </div>

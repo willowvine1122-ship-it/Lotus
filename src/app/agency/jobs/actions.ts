@@ -1,13 +1,13 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/app/agency/contacts/actions";
 import { addTechnician, createJob, findJob, invoiceFromJob, recordPayment, scheduleJob, setJobStatus, updateJobDetails } from "@/lib/data/field-store";
 import { creditDeposit } from "@/lib/data/estimate-kit";
-import { actor, flatten, parseLines, stamp } from "@/lib/field-forms";
+import { flatten, parseLines, stamp } from "@/lib/field-forms";
 import type { JobStatus } from "@/lib/types";
 import { jobCompleted } from "@/lib/data/automation-events";
 
@@ -64,7 +64,7 @@ export async function createJobAction(_prev: ActionState, fd: FormData): Promise
         lineItems: lines.items,
         notes: d.notes,
       },
-      actor,
+      actorName(),
     );
     if (!job) return { ok: false, message: "That customer does not belong to this client." };
     refresh();
@@ -81,7 +81,7 @@ export async function scheduleJobAction(id: string, _prev: ActionState, fd: Form
     const errors = parsed.success ? {} : flatten(parsed.error);
     if (technicianIds.length === 0) errors.technicianIds = "Pick at least one technician";
     if (!parsed.success || Object.keys(errors).length) return { ok: false, errors };
-    const job = scheduleJob(new Date(), id, { start: `${parsed.data.date}T${parsed.data.time}`, durationMin: parsed.data.durationMin, technicianIds }, actor);
+    const job = scheduleJob(new Date(), id, { start: `${parsed.data.date}T${parsed.data.time}`, durationMin: parsed.data.durationMin, technicianIds }, actorName());
     if (!job) return { ok: false, message: "Job not found." };
     refresh(id);
     return { ok: true, message: "Scheduled" };
@@ -96,14 +96,14 @@ export async function moveJobAction(id: string, start: string, technicianId: str
     if (!job) return;
     // Dropping on a lane makes that technician the lead, replacing the old lead; crew mates stay on.
     const kept = job.technicianIds.includes(technicianId) ? job.technicianIds : job.technicianIds.slice(1);
-    scheduleJob(new Date(), id, { start, technicianIds: [technicianId, ...kept.filter((t) => t !== technicianId)] }, actor);
+    scheduleJob(new Date(), id, { start, technicianIds: [technicianId, ...kept.filter((t) => t !== technicianId)] }, actorName());
     refresh(id);
   });
 }
 
 export async function unscheduleJobAction(id: string): Promise<void> {
   return withWorkspace(async () => {
-    scheduleJob(new Date(), id, { start: "", technicianIds: [] }, actor);
+    scheduleJob(new Date(), id, { start: "", technicianIds: [] }, actorName());
     refresh(id);
   });
 }
@@ -115,7 +115,7 @@ export async function setJobStatusAction(id: string, status: JobStatus): Promise
     if (!statuses.includes(status)) return;
     const now = new Date();
     const was = findJob(now, id)?.status;
-    const job = setJobStatus(now, id, status, actor);
+    const job = setJobStatus(now, id, status, actorName());
     if (job && was !== "completed" && job.status === "completed") {
       jobCompleted(now, job.accountId, job.contactId, job.number);
       revalidatePath("/agency/automations");
@@ -137,7 +137,7 @@ export async function saveJobNotesAction(id: string, _prev: ActionState, fd: For
 export async function invoiceJobAction(id: string): Promise<void> {
   return withWorkspace(async () => {
     const now = new Date();
-    const inv = invoiceFromJob(now, id, actor);
+    const inv = invoiceFromJob(now, id, actorName());
     if (!inv) return;
     creditDeposit(now, inv.estimateId, inv.id, recordPayment, (ref) => inv.payments.some((p) => p.reference === ref));
     refresh(id);

@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { replyToReview, updateReputationSettings } from "@/lib/data/store";
@@ -12,7 +12,7 @@ export async function replyToReviewAction(reviewId: string, _prev: ActionState, 
   return withWorkspace(async () => {
     const body = String(formData.get("body") ?? "").trim();
     if (body.length < 2) return { ok: false, errors: { body: "Write a reply first." } };
-    const r = replyToReview(new Date(), reviewId, body, "Afza");
+    const r = replyToReview(new Date(), reviewId, body, actorName());
     if (!r) return { ok: false, message: "Review not found." };
     revalidatePath("/agency/reputation");
     return { ok: true, message: "Reply posted" };
@@ -33,7 +33,7 @@ export async function sendRequestAction(_prev: ActionState, formData: FormData):
       for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
       return { ok: false, errors };
     }
-    const res = deliverReviewRequest(new Date(), { accountId: parsed.data.accountId, contactId: parsed.data.contactId, channel: parsed.data.channel, trigger: "manual", by: "Afza" });
+    const res = deliverReviewRequest(new Date(), { accountId: parsed.data.accountId, contactId: parsed.data.contactId, channel: parsed.data.channel, trigger: "manual", by: actorName() });
     if (!res.ok) return { ok: false, message: res.reason === "unreachable" ? "That contact cannot be reached on that channel." : "That contact is not on this client." };
     revalidatePath("/agency/reputation");
     revalidatePath("/agency/contacts");

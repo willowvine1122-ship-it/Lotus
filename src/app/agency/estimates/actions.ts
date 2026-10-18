@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { approveEstimate, convertEstimate, createEstimate, declineEstimate, find
 import { carryAddOns, creditDeposit, findTemplate, setEstimateExtras } from "@/lib/data/estimate-kit";
 import { parseOptionalLines } from "@/lib/estimate-forms";
 import { findContact } from "@/lib/data/store";
-import { actor, flatten, parseLines } from "@/lib/field-forms";
+import { flatten, parseLines } from "@/lib/field-forms";
 import type { EstimateOption } from "@/lib/types";
 
 /* Estimates: draft, send, approve or decline, then convert to a job or invoice. */
@@ -67,7 +67,7 @@ export async function createEstimateAction(_prev: ActionState, fd: FormData): Pr
     if (!parsed.success || Object.keys(errors).length || !addOns.ok) return { ok: false, errors };
     const d = parsed.data;
     const now = new Date();
-    const e = createEstimate(now, { accountId: d.accountId, contactId: d.contactId, title: d.title, address: d.address, message: d.message, options, validDays: d.validDays }, actor);
+    const e = createEstimate(now, { accountId: d.accountId, contactId: d.contactId, title: d.title, address: d.address, message: d.message, options, validDays: d.validDays }, actorName());
     if (!e) return { ok: false, message: "That customer does not belong to this client." };
     const template = d.templateId ? findTemplate(now, d.templateId) : undefined;
     setEstimateExtras(now, {
@@ -78,7 +78,7 @@ export async function createEstimateAction(_prev: ActionState, fd: FormData): Pr
       terms: d.terms || undefined,
       depositPct: d.depositPct,
     });
-    if (d.intent === "send") sendEstimate(now, e.id, actor);
+    if (d.intent === "send") sendEstimate(now, e.id, actorName());
     refresh(e.id);
     redirect(`/agency/estimates/${e.id}`);
   });
@@ -86,21 +86,21 @@ export async function createEstimateAction(_prev: ActionState, fd: FormData): Pr
 
 export async function sendEstimateAction(id: string): Promise<void> {
   return withWorkspace(async () => {
-    sendEstimate(new Date(), id, actor);
+    sendEstimate(new Date(), id, actorName());
     refresh(id);
   });
 }
 
 export async function approveEstimateAction(id: string, optionId: string): Promise<void> {
   return withWorkspace(async () => {
-    approveEstimate(new Date(), id, optionId, actor);
+    approveEstimate(new Date(), id, optionId, actorName());
     refresh(id);
   });
 }
 
 export async function declineEstimateAction(id: string): Promise<void> {
   return withWorkspace(async () => {
-    declineEstimate(new Date(), id, actor);
+    declineEstimate(new Date(), id, actorName());
     refresh(id);
   });
 }
@@ -108,7 +108,7 @@ export async function declineEstimateAction(id: string): Promise<void> {
 export async function convertEstimateAction(id: string): Promise<void> {
   return withWorkspace(async () => {
     const now = new Date();
-    const job = convertEstimate(now, id, actor);
+    const job = convertEstimate(now, id, actorName());
     if (!job) return;
     carryAddOns(now, id, job);
     refresh(id);
@@ -120,7 +120,7 @@ export async function invoiceEstimateAction(id: string): Promise<void> {
   return withWorkspace(async () => {
     const now = new Date();
     const viaJob = !!findEstimate(now, id)?.jobId;
-    const inv = invoiceFromEstimate(now, id, actor);
+    const inv = invoiceFromEstimate(now, id, actorName());
     if (!inv) return;
     // Straight from the estimate, the invoice starts from the option alone: add the ticked add-ons (idempotent).
     if (!viaJob && inv.status === "draft") carryAddOns(now, id, inv);

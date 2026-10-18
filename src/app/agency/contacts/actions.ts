@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -12,7 +12,6 @@ import { contactCreated, stageChanged, tagsChanged } from "@/lib/data/automation
 
 export type ActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 const money = z
   .string()
@@ -112,7 +111,7 @@ export async function updateContactAction(id: string, _prev: ActionState, formDa
       valueCents: Math.round(d.value * 100),
     });
     if (!c) return { ok: false, message: "Contact not found." };
-    if (d.stageId) moveContactStage(now, id, d.stageId, actor);
+    if (d.stageId) moveContactStage(now, id, d.stageId, actorName());
     if (prev) {
       tagsChanged(now, id, prev.tags, c.tags);
       stageChanged(now, c, prev.stageId);
@@ -127,7 +126,7 @@ export async function moveStageAction(id: string, stageId: string): Promise<void
   return withWorkspace(async () => {
     const now = new Date();
     const from = findContact(now, id)?.stageId;
-    const c = moveContactStage(now, id, stageId, actor);
+    const c = moveContactStage(now, id, stageId, actorName());
     if (c && from) stageChanged(now, c, from);
     revalidatePath("/agency/contacts");
     revalidatePath(`/agency/contacts/${id}`);
@@ -142,7 +141,7 @@ export async function logActivityAction(id: string, _prev: ActionState, formData
     const body = String(formData.get("body") ?? "").trim();
     if (!(kind in kindTitle)) return { ok: false, errors: { kind: "Pick a type" } };
     if (body.length < 2) return { ok: false, errors: { body: "Write what happened" } };
-    const a = addActivity(new Date(), id, { kind: kind as ActivityKind, title: kindTitle[kind]!, body, by: actor });
+    const a = addActivity(new Date(), id, { kind: kind as ActivityKind, title: kindTitle[kind]!, body, by: actorName() });
     if (!a) return { ok: false, message: "Contact not found." };
     revalidatePath("/agency/contacts");
     revalidatePath(`/agency/contacts/${id}`);

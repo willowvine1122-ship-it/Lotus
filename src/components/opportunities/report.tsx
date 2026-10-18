@@ -460,7 +460,7 @@ export function PipelineReport({
         </Section>
       </div>
       <p className="text-xs text-fg-3">
-        Demo data. Days are counted from stage moves; closed deals stop the
+        Days are counted from stage moves; closed deals stop the
         clock on their close date.
       </p>
     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOutAction } from "@/app/account/actions";
 import type { ClientRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,7 @@ const tabs: { key: PortalTab; label: string }[] = [
   { key: "reports", label: "Reports" },
 ];
 
-export function ClientShell({ client, tab = "results", children }: { client: ClientRecord; tab?: PortalTab; children: React.ReactNode }) {
+export function ClientShell({ client, tab = "results", viewer, children }: { client: ClientRecord; tab?: PortalTab; viewer: { name: string; staff: boolean }; children: React.ReactNode }) {
   const base = `/c/${client.account.slug}`;
   return (
     <div className="flex min-h-screen flex-col bg-surface">
@@ -29,9 +30,17 @@ export function ClientShell({ client, tab = "results", children }: { client: Cli
           </div>
           <div className="flex items-center gap-3 text-xs text-rail-fg-2">
             <span className="hidden sm:inline">Powered by Lotus</span>
-            <Link href="/login" className="rounded border border-rail-line bg-rail-2 px-2.5 py-1 text-rail-fg hover:bg-rail-line">
-              Sign in
-            </Link>
+            {viewer.staff ? (
+              <Link href={`/agency/clients/${client.account.slug}`} className="rounded border border-rail-line bg-rail-2 px-2.5 py-1 text-rail-fg hover:bg-rail-line">
+                Back to agency
+              </Link>
+            ) : (
+              <form action={signOutAction}>
+                <button type="submit" className="rounded border border-rail-line bg-rail-2 px-2.5 py-1 text-rail-fg hover:bg-rail-line">
+                  Sign out
+                </button>
+              </form>
+            )}
           </div>
         </div>
         <nav aria-label="Sections" className="mt-2 flex gap-1 overflow-x-auto px-5 md:px-8">
@@ -48,7 +57,7 @@ export function ClientShell({ client, tab = "results", children }: { client: Cli
         </nav>
       </header>
       <main className="flex-1">{children}</main>
-      <p className="px-5 py-4 text-xs text-fg-3 md:px-8">Demo data. Numbers are synthetic until live feeds are connected.</p>
+      <p className="px-5 py-4 text-xs text-fg-3 md:px-8">Numbers come from your ad accounts and CRM, updated daily by your account team.</p>
     </div>
   );
 }

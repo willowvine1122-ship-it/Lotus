@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -26,7 +26,6 @@ import type { OpportunityStatus } from "@/lib/types";
 
 export type OppActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 function flatten(e: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
@@ -88,7 +87,7 @@ export async function createOpportunityAction(_prev: OppActionState, fd: FormDat
     const p = findPipeline(now, d.pipelineId);
     if (!contact || !p) return { ok: false, message: "That contact or pipeline no longer exists." };
     if (contact.accountId !== p.accountId) return { ok: false, errors: { contactId: "This contact belongs to another client" } };
-    const o = createOpportunity(now, { contactId: d.contactId, pipelineId: d.pipelineId, stageId: d.stageId, name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, tags: tags(fd.get("tags")), closeOn: d.closeOn || undefined }, actor);
+    const o = createOpportunity(now, { contactId: d.contactId, pipelineId: d.pipelineId, stageId: d.stageId, name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, tags: tags(fd.get("tags")), closeOn: d.closeOn || undefined }, actorName());
     if (!o) return { ok: false, message: "Could not create it. Try again." };
     opportunityCreated(now, o);
     refresh();
@@ -116,7 +115,7 @@ export async function updateOpportunityAction(id: string, _prev: OppActionState,
     });
     if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
     const d = parsed.data;
-    const o = updateOpportunity(new Date(), id, { name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, closeOn: d.closeOn || undefined, tags: tags(fd.get("tags")) }, actor);
+    const o = updateOpportunity(new Date(), id, { name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, closeOn: d.closeOn || undefined, tags: tags(fd.get("tags")) }, actorName());
     if (!o) return { ok: false, message: "That opportunity no longer exists." };
     refresh();
     return { ok: true, message: "Saved" };
@@ -126,7 +125,7 @@ export async function updateOpportunityAction(id: string, _prev: OppActionState,
 export async function moveOpportunityAction(id: string, stageId: string): Promise<void> {
   return withWorkspace(async () => {
     const now = new Date();
-    opportunityChanged(now, moveOpportunity(now, id, stageId, actor));
+    opportunityChanged(now, moveOpportunity(now, id, stageId, actorName()));
     refresh();
   });
 }
@@ -135,7 +134,7 @@ export async function setOpportunityStatusAction(id: string, status: Opportunity
   return withWorkspace(async () => {
     if (status === "lost" && !lostReason?.trim()) return { ok: false, errors: { lostReason: "Pick a reason" } };
     const now = new Date();
-    const move = setOpportunityStatus(now, id, status, actor, lostReason?.trim().slice(0, 80));
+    const move = setOpportunityStatus(now, id, status, actorName(), lostReason?.trim().slice(0, 80));
     if (!move) return { ok: false, message: "That opportunity no longer exists." };
     opportunityChanged(now, move);
     refresh();
@@ -147,7 +146,7 @@ export async function addOpportunityNoteAction(id: string, _prev: OppActionState
   return withWorkspace(async () => {
     const body = String(fd.get("body") ?? "").trim();
     if (body.length < 2) return { ok: false, errors: { body: "Write the note" } };
-    if (!addOpportunityNote(new Date(), id, body.slice(0, 2000), actor)) return { ok: false, message: "That opportunity no longer exists." };
+    if (!addOpportunityNote(new Date(), id, body.slice(0, 2000), actorName())) return { ok: false, message: "That opportunity no longer exists." };
     refresh();
     return { ok: true };
   });
@@ -174,20 +173,20 @@ export async function bulkOpportunityAction(ids: string[], op: BulkOp): Promise<
       switch (op.type) {
         case "stage":
           if (o.stageId !== op.stageId && findPipeline(now, o.pipelineId)?.stages.some((s) => s.id === op.stageId)) {
-            opportunityChanged(now, moveOpportunity(now, id, op.stageId, actor));
+            opportunityChanged(now, moveOpportunity(now, id, op.stageId, actorName()));
             count++;
           }
           break;
         case "status":
           if (o.status !== op.status) {
-            opportunityChanged(now, setOpportunityStatus(now, id, op.status, actor, op.lostReason));
+            opportunityChanged(now, setOpportunityStatus(now, id, op.status, actorName(), op.lostReason));
             count++;
           }
           break;
         case "owner": {
           const owner = op.ownerName || undefined;
           if (o.ownerName !== owner) {
-            updateOpportunity(now, id, { ownerName: owner }, actor);
+            updateOpportunity(now, id, { ownerName: owner }, actorName());
             count++;
           }
           break;
@@ -231,7 +230,7 @@ export async function savePipelineAction(accountId: string, id: string | null, d
     const now = new Date();
     if (!findClient(now, accountId)) return { ok: false, message: "That client no longer exists." };
     if (id) {
-      const r = updatePipeline(now, id, parsed.data, actor);
+      const r = updatePipeline(now, id, parsed.data, actorName());
       if (!r.ok) return { ok: false, message: r.message };
       refresh();
       return { ok: true, message: "Saved", id };

@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { appEvent, findApp } from "@/components/integrations/catalog";
@@ -30,7 +30,6 @@ import { findClient, listContacts } from "@/lib/data/store";
 
 export type IntegrationResult = { ok: boolean; message?: string; errors?: Record<string, string>; id?: string; secret?: string };
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 function touch() {
   revalidatePath("/agency/integrations");
@@ -49,7 +48,7 @@ export async function connectAppAction(input: { accountId: string; appId: string
   return withWorkspace(async () => {
     const p = z.object({ accountId, appId: z.string().refine((v) => !!findApp(v), "Unknown app"), accountLabel: z.string().trim().max(120) }).safeParse(input);
     if (!p.success) return fail(p.error);
-    const c = connectApp(new Date(), p.data.accountId, p.data.appId, p.data.accountLabel, actor);
+    const c = connectApp(new Date(), p.data.accountId, p.data.appId, p.data.accountLabel, actorName());
     if (!c) return { ok: false, message: "That client does not exist." };
     touch();
     return { ok: true, message: `${findApp(c.appId)!.name} connected as ${c.accountLabel}.` };
@@ -60,7 +59,7 @@ export async function disconnectAppAction(input: { accountId: string; appId: str
   return withWorkspace(async () => {
     const p = z.object({ accountId, appId: z.string().max(40) }).safeParse(input);
     if (!p.success) return fail(p.error);
-    disconnectApp(new Date(), p.data.accountId, p.data.appId, actor);
+    disconnectApp(new Date(), p.data.accountId, p.data.appId, actorName());
     touch();
     return { ok: true };
   });
@@ -194,7 +193,7 @@ export async function createKeyAction(input: { accountId: string; label: string 
     const p = z.object({ accountId, label: z.string().trim().min(2, "Say what will use the key").max(60) }).safeParse(input);
     if (!p.success) return fail(p.error);
     if (!findClient(new Date(), p.data.accountId)) return { ok: false, message: "That client does not exist." };
-    const r = createKey(new Date(), p.data.accountId, p.data.label, actor);
+    const r = createKey(new Date(), p.data.accountId, p.data.label, actorName());
     if (!r) return { ok: false, message: "That client does not exist." };
     touch();
     return { ok: true, id: r.key.id, secret: r.raw };

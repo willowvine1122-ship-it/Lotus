@@ -187,7 +187,7 @@ async function openForRender(resolve: () => Promise<{ agencyId: string; session:
 }
 
 /** Staff pages: open the signed-in agency's workspace for this render. Sends anyone else to sign in or to their portal. */
-export async function openWorkspace(): Promise<Session> {
+export async function openWorkspace(): Promise<Awaited<ReturnType<typeof requireStaff>>> {
   const session = await requireStaff();
   await openForRender(async () => ({ agencyId: session.agency.id, session }));
   return session;
@@ -331,4 +331,9 @@ function mergeById(base: unknown[], mine: unknown[], theirs: unknown[]): unknown
   let i = 0;
   while (i < mineRecs.length && added(mineRecs[i]!)) i++;
   return [...mineRecs.slice(0, i), ...out, ...mineRecs.slice(i).filter(added)];
+}
+
+/** Who to credit for a change: the signed-in person, or "System" for public pages and background runs. */
+export function actorName() {
+  return currentSession()?.user.name ?? "System";
 }

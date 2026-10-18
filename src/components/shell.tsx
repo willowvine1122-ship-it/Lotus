@@ -22,7 +22,9 @@ import {
   Workflow,
   Wrench,
 } from "lucide-react";
+import { Suspense } from "react";
 import { cn } from "@/lib/utils";
+import { ShellAccount } from "./shell-account";
 
 const nav = [
   { href: "/agency", label: "Daily Diagnostic", icon: Activity },
@@ -107,9 +109,10 @@ export function Shell({
           })}
         </nav>
 
-        <div className="mt-auto hidden border-t border-rail-line px-5 py-4 text-xs text-rail-fg-2 md:block">
-          <div>Lotus agency</div>
-          <p className="mt-2 leading-relaxed text-rail-fg-2/70">Demo data. Client names, numbers and notes are synthetic until live feeds are connected.</p>
+        <div className="mt-auto hidden border-t border-rail-line md:block">
+          <Suspense fallback={<div className="h-[61px]" />}>
+            <ShellAccount />
+          </Suspense>
         </div>
       </aside>
 

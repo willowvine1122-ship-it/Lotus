@@ -3,7 +3,6 @@ import type { LineItem } from "@/lib/types";
 
 /* Parsing shared by the field service server actions. */
 
-export const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 const lineSchema = z.object({
   name: z.string().trim().min(1, "Every line needs a name"),

@@ -15,7 +15,6 @@ export function BookingShell({ clientName, children }: { clientName: string; chi
         <span className="shrink-0 text-xs text-rail-fg-2">Booking by Lotus</span>
       </header>
       <main className="flex flex-1 items-start justify-center px-0 py-0 sm:px-5 sm:py-8 md:px-8 md:py-10">{children}</main>
-      <p className="px-5 py-4 text-center text-xs text-fg-3">Demo booking page. Times and bookings are synthetic.</p>
     </div>
   );
 }

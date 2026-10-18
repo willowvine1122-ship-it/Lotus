@@ -1,13 +1,13 @@
 "use server";
 
 import { withPublicWorkspace } from "@/lib/server/workspace";
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/app/agency/contacts/actions";
 import { createInvoice, findInvoice, recordPayment, sendInvoice, voidInvoice } from "@/lib/data/field-store";
-import { actor, flatten, money, parseLines } from "@/lib/field-forms";
+import { flatten, money, parseLines } from "@/lib/field-forms";
 import { invoiceMoney } from "@/lib/field";
 import { chargeCard } from "@/lib/payments/stripe";
 
@@ -47,9 +47,9 @@ export async function createInvoiceAction(_prev: ActionState, fd: FormData): Pro
     if (!parsed.success || !lines.ok) return { ok: false, errors };
     const d = parsed.data;
     const now = new Date();
-    const inv = createInvoice(now, { accountId: d.accountId, contactId: d.contactId, title: d.title, lineItems: lines.items, dueDays: d.dueDays, memo: d.memo }, actor);
+    const inv = createInvoice(now, { accountId: d.accountId, contactId: d.contactId, title: d.title, lineItems: lines.items, dueDays: d.dueDays, memo: d.memo }, actorName());
     if (!inv) return { ok: false, message: "That customer does not belong to this client." };
-    if (d.intent === "send") sendInvoice(now, inv.id, actor);
+    if (d.intent === "send") sendInvoice(now, inv.id, actorName());
     refresh(inv.id);
     redirect(`/agency/invoices/${inv.id}`);
   });
@@ -57,14 +57,14 @@ export async function createInvoiceAction(_prev: ActionState, fd: FormData): Pro
 
 export async function sendInvoiceAction(id: string): Promise<void> {
   return withWorkspace(async () => {
-    sendInvoice(new Date(), id, actor);
+    sendInvoice(new Date(), id, actorName());
     refresh(id);
   });
 }
 
 export async function voidInvoiceAction(id: string): Promise<void> {
   return withWorkspace(async () => {
-    voidInvoice(new Date(), id, actor);
+    voidInvoice(new Date(), id, actorName());
     refresh(id);
   });
 }
@@ -91,7 +91,7 @@ export async function recordPaymentAction(id: string, _prev: ActionState, fd: Fo
       if (!charge.ok) return { ok: false, message: charge.error };
       reference = charge.reference;
     }
-    recordPayment(now, id, cents, parsed.data.method, reference, actor);
+    recordPayment(now, id, cents, parsed.data.method, reference, actorName());
     refresh(id);
     return { ok: true, message: cents === balance ? "Paid in full" : "Payment recorded" };
   });

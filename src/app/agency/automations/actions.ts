@@ -1,6 +1,6 @@
 "use server";
 
-import { withWorkspace } from "@/lib/server/workspace";
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -13,7 +13,6 @@ import { workflowIssues } from "@/components/automations/model";
 
 export type AutomationActionState = { ok: boolean; errors?: Record<string, string>; message?: string; id?: string } | null;
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 function flatten(err: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
@@ -194,7 +193,7 @@ export async function testRunAction(wfId: string, draft: WorkflowDraft, contactI
 
 export async function stopRunAction(runId: string): Promise<AutomationActionState> {
   return withWorkspace(async () => {
-    const run = stopRun(new Date(), runId, actor);
+    const run = stopRun(new Date(), runId, actorName());
     if (!run) return { ok: false, message: "That run no longer exists." };
     touch(run.workflowId);
     return { ok: true, message: "Stopped" };

@@ -66,9 +66,25 @@ function KpiStrip({ rows, mode }: { rows: Row[]; mode: AccountMode }) {
   );
 }
 
-export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIso: string }) {
+function EmptyBoard() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center md:px-6">
+      <h2 className="text-base font-semibold">No clients yet</h2>
+      <p className="mt-1 max-w-[46ch] text-sm text-fg-3">
+        Add a client and their row appears here each morning: spend, leads, cost per lead and pacing for marketing clients, or gifts, donors and goal pacing for fundraising clients.
+      </p>
+      <ButtonLink href="/agency/clients/new" className="mt-5">
+        <Plus className="size-4" strokeWidth={2} />
+        Add your first client
+      </ButtonLink>
+    </div>
+  );
+}
+
+export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[]; nowIso: string; banner?: React.ReactNode }) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
-  const [mode, setMode] = useState<AccountMode>("marketing");
+  // Open on the mode the agency actually runs; marketing when it has both or none.
+  const [mode, setMode] = useState<AccountMode>(() => (!clients.some((c) => c.mode === "marketing") && clients.some((c) => c.mode === "fundraising") ? "fundraising" : "marketing"));
   const [range, setRange] = useState<RangeDays>(30);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "health", dir: "asc" });
@@ -168,21 +184,34 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
           </div>
         </header>
 
-        <KpiStrip rows={rows} mode={mode} />
+        {banner}
 
-        <div className="border-y border-line">
-          <DiagnosticTable
-            rows={rows}
-            mode={mode}
-            sort={sort}
-            onSort={setSort}
-            selectedId={selected?.client.account.id ?? null}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setPanelOpen(true);
-            }}
-          />
-        </div>
+        {clients.length === 0 ? (
+          <EmptyBoard />
+        ) : (
+          <>
+            <KpiStrip rows={rows} mode={mode} />
+
+            <div className="border-y border-line">
+              <DiagnosticTable
+                rows={rows}
+                mode={mode}
+                sort={sort}
+                onSort={setSort}
+                selectedId={selected?.client.account.id ?? null}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  setPanelOpen(true);
+                }}
+              />
+              {rows.length === 0 && (
+                <p className="px-5 py-10 text-center text-sm text-fg-3 md:px-6">
+                  {query ? "No clients match that search." : `No ${mode === "marketing" ? "marketing" : "fundraising"} clients yet.`}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {selected && (

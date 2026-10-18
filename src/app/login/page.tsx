@@ -1,39 +1,39 @@
 import Link from "next/link";
-import { LoginForm } from "@/components/login-form";
-import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { connection } from "next/server";
+import { signInAction } from "@/app/account/actions";
+import { AuthFrame } from "@/components/account/auth-frame";
+import { SignInForm } from "@/components/account/auth-forms";
+import { getSession, homeFor } from "@/lib/server/auth";
+import { isDatabaseConfigured } from "@/lib/server/db";
 
-export default function LoginPage() {
-  const configured = isSupabaseConfigured();
+export const metadata = { title: "Sign in" };
+
+async function Form({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  await connection();
+  const [{ next }, session] = await Promise.all([searchParams, isDatabaseConfigured() ? getSession() : null]);
+  if (session) redirect(homeFor(session.role));
+  return <SignInForm action={signInAction} next={next?.startsWith("/") && !next.startsWith("//") ? next : undefined} />;
+}
+
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   return (
-    <div className="grid min-h-screen bg-rail text-rail-fg md:grid-cols-[1fr_minmax(0,480px)]">
-      <div className="hidden flex-col justify-between p-10 md:flex">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span aria-hidden className="grid size-7 place-items-center rounded-[5px] bg-brand text-[13px] font-semibold text-white">
-            L
-          </span>
-          <span className="text-base font-semibold tracking-tight">Lotus</span>
-        </Link>
-        <div className="max-w-[420px]">
-          <p className="text-2xl font-semibold leading-snug tracking-tight">One screen each morning that tells you exactly where every client stands.</p>
-          <p className="mt-3 text-sm text-rail-fg-2">Daily Diagnostic, CRM, inbox, funnels, automations, fundraising and payments in one place.</p>
-        </div>
-        <p className="text-xs text-rail-fg-2">Lotus · built for agencies</p>
-      </div>
-      <div className="flex items-center bg-surface px-6 py-12 text-fg md:px-12">
-        <div className="mx-auto w-full max-w-[360px]">
-          <Link href="/" className="mb-8 flex items-center gap-2.5 md:hidden">
-            <span aria-hidden className="grid size-7 place-items-center rounded-[5px] bg-brand text-[13px] font-semibold text-white">
-              L
-            </span>
-            <span className="text-base font-semibold tracking-tight">Lotus</span>
+    <AuthFrame
+      title="Sign in"
+      sub="Agency team and client logins use the same door."
+      footer={
+        <>
+          New to Lotus?{" "}
+          <Link href="/signup" className="font-medium text-brand hover:underline">
+            Create an agency account
           </Link>
-          <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
-          <p className="mt-1 text-sm text-fg-3">Agency team and client logins use the same door.</p>
-          <div className="mt-6">
-            <LoginForm configured={configured} />
-          </div>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <Suspense fallback={<div className="h-[212px]" />}>
+        <Form searchParams={searchParams} />
+      </Suspense>
+    </AuthFrame>
   );
 }

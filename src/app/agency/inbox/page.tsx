@@ -10,7 +10,7 @@ export const metadata = { title: "Inbox" };
 
 async function InboxLoader({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
-  await openWorkspace();
+  const session = await openWorkspace();
   const params = await searchParams;
   const now = new Date();
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -35,7 +35,7 @@ async function InboxLoader({ searchParams }: { searchParams: Promise<Record<stri
       contacts={listInboxContacts(now)}
       clients={clients}
       team={teamDirectory()}
-      me="Afza"
+      me={session.user.name}
       nowIso={now.toISOString()}
       initialClientId={clients.find((c) => c.slug === clientSlug)?.id ?? null}
       initialConversationId={conversationId ?? null}
