@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/page-header";
 import { ChangeArrow, Tag } from "@/components/diagnostic/primitives";
 import type { Funnel, FunnelSubmission } from "@/lib/types";
 import { cn, formatCount, formatRate, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { FunnelPanel, type FunnelActions } from "./funnel-panel";
 import { publicPath, windowStats, type ClientRef } from "./model";
 
@@ -63,7 +64,7 @@ export function FunnelsBoard({
   const [scope, setScope] = useState<"all" | "live" | "draft">("all");
   const [sort, setSort] = useState<Sort>({ key: "leads", dir: "desc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   const inClient = useMemo(() => funnels.filter((f) => clientId === "all" || f.accountId === clientId), [funnels, clientId]);
@@ -210,7 +211,7 @@ export function FunnelsBoard({
                     aria-selected={isSelected}
                     onClick={() => {
                       setSelectedId(f.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}
                   >
@@ -246,14 +247,16 @@ export function FunnelsBoard({
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <FunnelPanel funnel={selected} client={clientById.get(selected.accountId)!} submissions={selectedSubs} now={now} origin={origin} actions={actions} />
+            <FunnelPanel funnel={selected} client={clientById.get(selected.accountId)!} submissions={selectedSubs} now={now} origin={origin} actions={actions} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <FunnelPanel funnel={selected} client={clientById.get(selected.accountId)!} submissions={selectedSubs} now={now} origin={origin} actions={actions} onClose={() => setPanelOpen(false)} />
+                <FunnelPanel funnel={selected} client={clientById.get(selected.accountId)!} submissions={selectedSubs} now={now} origin={origin} actions={actions} onClose={panel.close} />
               </aside>
             </div>
           )}

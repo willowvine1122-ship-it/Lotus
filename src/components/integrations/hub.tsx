@@ -22,6 +22,7 @@ import type {
 } from "@/lib/types";
 import { Kpi, KpiStrip } from "@/components/field/ui";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { apps, findApp, logKindLabel } from "./catalog";
 import {
   AppPanel,
@@ -142,7 +143,7 @@ export function IntegrationsHub({
     "all",
   );
   const [selection, setSelection] = useState<Selection>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const detail = useDetailPanel();
   const { client, connections, hooksIn, hooksOut, keys, logs } = data;
   const q = query.trim().toLowerCase();
 
@@ -261,7 +262,7 @@ export function IntegrationsHub({
   const current = belongs(selection) ? selection : fallback;
   const select = (s: Selection) => {
     setSelection(s);
-    setPanelOpen(true);
+    detail.show();
   };
   const isSel = (k: string, id: string) =>
     !!current && "id" in current && current.kind === k && current.id === id;
@@ -937,13 +938,15 @@ export function IntegrationsHub({
 
       {current && (
         <>
+          {detail.docked && (
           <aside
             key={panelKey}
             className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]"
           >
-            {panel()}
+            {panel(detail.close)}
           </aside>
-          {panelOpen && (
+          )}
+          {detail.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -953,11 +956,11 @@ export function IntegrationsHub({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={detail.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                {panel(() => setPanelOpen(false))}
+                {panel(detail.close)}
               </aside>
             </div>
           )}

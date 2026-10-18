@@ -19,6 +19,7 @@ import { Change, SectionTitle } from "@/components/diagnostic/primitives";
 import { BarList, LineChart } from "@/components/charts";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
 import type { CampaignStatus } from "@/lib/types";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { CampaignRow, EmailClientRef } from "./data";
 import { prettyUrl, sumStats } from "./model";
 import {
@@ -122,7 +123,7 @@ export function CampaignsBoard({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "when", dir: "desc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const clientById = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
     [clients],
@@ -406,7 +407,7 @@ export function CampaignsBoard({
                     aria-selected={isSelected}
                     onClick={() => {
                       setSelectedId(r.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     className={cn(
                       "h-[52px] cursor-pointer border-b border-line transition-colors duration-100",
@@ -510,15 +511,18 @@ export function CampaignsBoard({
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <CampaignPanel
               row={selected}
               client={clientById.get(selected.accountId)!}
               now={now}
               duplicate={actions.duplicate}
+              onClose={panel.close}
             />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -528,7 +532,7 @@ export function CampaignsBoard({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={panel.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
@@ -537,7 +541,7 @@ export function CampaignsBoard({
                   client={clientById.get(selected.accountId)!}
                   now={now}
                   duplicate={actions.duplicate}
-                  onClose={() => setPanelOpen(false)}
+                  onClose={panel.close}
                 />
               </aside>
             </div>
@@ -631,7 +635,8 @@ export function CampaignPanel({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label="Close panel"
+              title="Close (Esc)"
               className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg"
             >
               <X className="size-4" strokeWidth={2} />

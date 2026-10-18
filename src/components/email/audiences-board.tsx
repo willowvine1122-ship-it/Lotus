@@ -10,6 +10,7 @@ import { sourceLabel } from "@/components/crm/model";
 import type { AudienceInput, EmailActionState } from "@/app/agency/email/actions";
 import type { AudienceFilter, ContactSource, EmailAudience, Pipeline } from "@/lib/types";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { AudienceRow, ContactLite, EmailClientRef } from "./data";
 import { matchesFilter } from "./model";
 import { Kpi } from "./ui";
@@ -63,7 +64,7 @@ export function AudiencesBoard({
   const [sort, setSort] = useState<Sort>({ key: "client", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const detail = useDetailPanel();
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   const inClient = useMemo(() => rows.filter((r) => clientId === "all" || r.accountId === clientId), [rows, clientId]);
@@ -102,7 +103,7 @@ export function AudiencesBoard({
   const builderClient = creating ? clientById.get(clientId === "all" ? clients[0]!.id : clientId)! : selected ? clientById.get(selected.accountId)! : null;
   const startNew = () => {
     setCreating(true);
-    setPanelOpen(true);
+    detail.show();
   };
 
   const panel = (onClose?: () => void) =>
@@ -219,7 +220,7 @@ export function AudiencesBoard({
                     onClick={() => {
                       setCreating(false);
                       setSelectedId(r.id);
-                      setPanelOpen(true);
+                      detail.show();
                     }}
                     className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40 shadow-[inset_2px_0_0_var(--brand)]" : "hover:bg-surface-2/60")}
                   >
@@ -256,11 +257,13 @@ export function AudiencesBoard({
 
       {builderClient && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">{panel()}</aside>
-          {panelOpen && (
+          {detail.docked && (
+          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">{panel(detail.close)}</aside>
+          )}
+          {detail.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected?.name ?? "New audience"}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
-              <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">{panel(() => setPanelOpen(false))}</aside>
+              <button type="button" aria-label="Close panel" onClick={detail.close} className="flex-1 bg-rail/40" />
+              <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">{panel(detail.close)}</aside>
             </div>
           )}
         </>
@@ -364,7 +367,7 @@ function AudienceBuilder({
         <div className="flex items-start gap-2">
           <h2 className="min-w-0 flex-1 truncate text-lg font-semibold leading-6 tracking-tight">{audience ? audience.name : "New audience"}</h2>
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={onClose} aria-label="Close panel" title="Close (Esc)" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
             </button>
           )}

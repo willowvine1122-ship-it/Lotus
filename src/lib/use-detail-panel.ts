@@ -12,9 +12,9 @@ function typing(target: EventTarget | null) {
  * the table and shown by default; on phones it is a sheet that opens on row
  * click. X or Esc closes both, and choosing a row brings it back.
  */
-export function useDetailPanel(initiallyDocked = true) {
-  const [open, setOpen] = useState(false);
-  const [docked, setDocked] = useState(initiallyDocked);
+export function useDetailPanel(initiallyOpen = false) {
+  const [open, setOpen] = useState(initiallyOpen);
+  const [docked, setDocked] = useState(true);
 
   const show = useCallback(() => {
     setOpen(true);

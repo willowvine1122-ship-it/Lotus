@@ -27,6 +27,7 @@ import {
   formatRate,
   timeAgo,
 } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { ElementLive, ElementStats } from "./data";
 import { ElementPreview } from "./preview";
 import { ElementMark, ElementStatusTag } from "./ui";
@@ -89,7 +90,7 @@ export function ElementsBoard({
   const [group, setGroup] = useState<"all" | ElementGroup>("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
 
   const inClient = items.filter(
     (i) => clientId === "all" || i.element.accountId === clientId,
@@ -136,7 +137,7 @@ export function ElementsBoard({
 
   const select = (id: string) => {
     setSelectedId(id);
-    setPanelOpen(true);
+    panel.show();
   };
 
   return (
@@ -419,6 +420,7 @@ export function ElementsBoard({
 
       {selected && lives[selected.element.campaignId] && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <ElementPanel
               item={selected}
@@ -426,9 +428,11 @@ export function ElementsBoard({
               origin={origin}
               now={now}
               nowIso={nowIso}
+              onClose={panel.close}
             />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -438,7 +442,7 @@ export function ElementsBoard({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={panel.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
@@ -448,7 +452,7 @@ export function ElementsBoard({
                   origin={origin}
                   now={now}
                   nowIso={nowIso}
-                  onClose={() => setPanelOpen(false)}
+                  onClose={panel.close}
                 />
               </aside>
             </div>
@@ -504,7 +508,8 @@ function ElementPanel({
           {onClose && (
             <button
               type="button"
-              aria-label="Close"
+              aria-label="Close panel"
+              title="Close (Esc)"
               onClick={onClose}
               className="grid size-8 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg"
             >

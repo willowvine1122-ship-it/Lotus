@@ -10,6 +10,7 @@ import { Kpi, Tile } from "@/components/email/ui";
 import type { ClientRef } from "@/components/crm/model";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
 import type { Pipeline, WorkflowStatus } from "@/lib/types";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { WorkflowRow } from "./data";
 import { triggerLabel } from "./model";
 import { FlowOutline, RunStatusTag, StepGlyph, WorkflowStatusTag } from "./ui";
@@ -51,7 +52,7 @@ export function WorkflowsBoard({ rows, clients, pipelines, nowIso, initialClient
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "status", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   const inClient = useMemo(() => rows.filter((r) => clientId === "all" || r.accountId === clientId), [rows, clientId]);
@@ -200,7 +201,7 @@ export function WorkflowsBoard({ rows, clients, pipelines, nowIso, initialClient
                     aria-selected={isSelected}
                     onClick={() => {
                       setSelectedId(r.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40 shadow-[inset_2px_0_0_var(--brand)]" : "hover:bg-surface-2/60")}
                   >
@@ -271,14 +272,16 @@ export function WorkflowsBoard({ rows, clients, pipelines, nowIso, initialClient
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <WorkflowPanel row={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]} now={now} actions={actions} />
+            <WorkflowPanel row={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]} now={now} actions={actions} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <WorkflowPanel row={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]} now={now} actions={actions} onClose={() => setPanelOpen(false)} />
+                <WorkflowPanel row={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]} now={now} actions={actions} onClose={panel.close} />
               </aside>
             </div>
           )}
@@ -320,7 +323,7 @@ function WorkflowPanel({ row, client, pipeline, now, actions, onClose }: { row: 
             </p>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={onClose} aria-label="Close panel" title="Close (Esc)" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
             </button>
           )}

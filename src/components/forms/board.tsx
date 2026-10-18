@@ -17,6 +17,7 @@ import { CopyField } from "@/components/integrations/ui";
 import type { FormDefinition } from "@/lib/types";
 import { Kpi, KpiStrip } from "@/components/field/ui";
 import { cn, formatCount, formatRate, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { FormStats } from "./data";
 import type { ClientRef } from "./model";
 import { FormStatusTag, formatDuration, inkButton, smallButton } from "./ui";
@@ -61,7 +62,7 @@ export function FormsBoard({
     "all",
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const clientById = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
     [clients],
@@ -106,7 +107,7 @@ export function FormsBoard({
 
   const select = (id: string) => {
     setSelectedId(id);
-    setPanelOpen(true);
+    panel.show();
   };
 
   return (
@@ -364,15 +365,18 @@ export function FormsBoard({
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <FormPanel
               item={selected}
               client={clientById.get(selected.form.accountId)}
               origin={origin}
               now={now}
+              onClose={panel.close}
             />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -382,7 +386,7 @@ export function FormsBoard({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={panel.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
@@ -391,7 +395,7 @@ export function FormsBoard({
                   client={clientById.get(selected.form.accountId)}
                   origin={origin}
                   now={now}
-                  onClose={() => setPanelOpen(false)}
+                  onClose={panel.close}
                 />
               </aside>
             </div>
@@ -434,7 +438,8 @@ function FormPanel({
           {onClose && (
             <button
               type="button"
-              aria-label="Close"
+              aria-label="Close panel"
+              title="Close (Esc)"
               onClick={onClose}
               className="grid size-8 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg"
             >

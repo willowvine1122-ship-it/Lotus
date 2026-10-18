@@ -37,6 +37,7 @@ import {
   formatDollarsCompact,
   formatRate,
 } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import {
   csvEscape,
   daysIn,
@@ -162,7 +163,7 @@ export function OpportunitiesWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelected ?? null,
   );
-  const [panelOpen, setPanelOpen] = useState(!!initialSelected);
+  const panel = useDetailPanel(!!initialSelected);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
@@ -268,7 +269,7 @@ export function OpportunitiesWorkspace({
     null;
   const select = (o: Opportunity) => {
     setSelectedId(o.id);
-    setPanelOpen(true);
+    panel.show();
   };
 
   // The four numbers follow the pipeline, not the filters.
@@ -1122,10 +1123,12 @@ export function OpportunitiesWorkspace({
 
       {panelProps && view !== "report" && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <OpportunityPanel key={panelProps.o.id} {...panelProps} />
+            <OpportunityPanel key={panelProps.o.id} {...panelProps} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -1135,14 +1138,14 @@ export function OpportunitiesWorkspace({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={panel.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
                 <OpportunityPanel
                   key={panelProps.o.id}
                   {...panelProps}
-                  onClose={() => setPanelOpen(false)}
+                  onClose={panel.close}
                 />
               </aside>
             </div>

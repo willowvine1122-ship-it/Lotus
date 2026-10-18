@@ -55,7 +55,7 @@ export function DonorPanel({
             <h2 className="truncate text-lg font-semibold tracking-tight">{row.name}</h2>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} className="-mr-1.5 grid size-8 shrink-0 place-items-center rounded text-fg-2 hover:bg-surface-2 hover:text-fg">
+            <button type="button" aria-label="Close panel" title="Close (Esc)" onClick={onClose} className="-mr-1.5 grid size-8 shrink-0 place-items-center rounded text-fg-2 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
               <span className="sr-only">Close</span>
             </button>

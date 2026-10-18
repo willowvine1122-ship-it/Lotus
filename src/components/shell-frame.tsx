@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Activity,
   Blocks,
@@ -69,7 +68,7 @@ function Mark() {
   );
 }
 
-function NavLinks({ current, rail }: { current: NavHref; rail: boolean }) {
+function NavLinks({ current, rail, onNavigate }: { current: NavHref; rail: boolean; onNavigate?: () => void }) {
   return (
     <>
       {nav.map(({ href, label, icon: Icon }) => {
@@ -78,6 +77,7 @@ function NavLinks({ current, rail }: { current: NavHref; rail: boolean }) {
           <Link
             key={href}
             href={href}
+            onClick={onNavigate}
             title={rail ? label : undefined}
             aria-current={active ? "page" : undefined}
             className={cn(
@@ -112,13 +112,7 @@ function toggleRail() {
  */
 export function ShellFrame({ current, account, children }: { current: NavHref; account: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [lastPath, setLastPath] = useState(pathname);
-  if (pathname !== lastPath) {
-    setLastPath(pathname);
-    setOpen(false);
-  }
 
   useEffect(() => {
     if (!open) return;
@@ -170,7 +164,7 @@ export function ShellFrame({ current, account, children }: { current: NavHref; a
               </button>
             </div>
             <nav aria-label="Primary" className="flex flex-1 flex-col overflow-y-auto px-3 py-3">
-              <NavLinks current={current} rail={false} />
+              <NavLinks current={current} rail={false} onNavigate={() => setOpen(false)} />
             </nav>
             <div className="border-t border-rail-line">{account}</div>
           </div>

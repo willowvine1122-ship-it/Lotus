@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/page-header";
 import { dayIn, formatDay, formatDuration, formatTime, hoursSummary, needsOutcome, tzAbbr } from "@/lib/calendars";
 import type { AccountMode, Appointment, Calendar, Health } from "@/lib/types";
 import { cn, formatRate, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { BookingPanel } from "./panel";
 import { BookingStatus } from "./status";
 
@@ -48,7 +49,7 @@ export function CalendarsWorkspace({
   const [clientId, setClientId] = useState("all");
   const [filter, setFilter] = useState<Filter>("upcoming");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
 
   const calById = useMemo(() => new Map(calendars.map((c) => [c.id, c])), [calendars]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
@@ -194,7 +195,7 @@ export function CalendarsWorkspace({
               empty={filter === "outcome" ? "Every past booking has an outcome. Nothing to mark." : query ? "No bookings match the search." : "No bookings here yet."}
               onSelect={(id) => {
                 setSelectedId(id);
-                setPanelOpen(true);
+                panel.show();
               }}
             />
           </>
@@ -205,14 +206,16 @@ export function CalendarsWorkspace({
 
       {view === "bookings" && selected && selectedCal && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <BookingPanel appointment={selected} calendar={selectedCal} client={clientById.get(selected.accountId)} history={appointments} now={now} />
+            <BookingPanel appointment={selected} calendar={selectedCal} client={clientById.get(selected.accountId)} history={appointments} now={now} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.contact.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <BookingPanel appointment={selected} calendar={selectedCal} client={clientById.get(selected.accountId)} history={appointments} now={now} onClose={() => setPanelOpen(false)} />
+                <BookingPanel appointment={selected} calendar={selectedCal} client={clientById.get(selected.accountId)} history={appointments} now={now} onClose={panel.close} />
               </aside>
             </div>
           )}
