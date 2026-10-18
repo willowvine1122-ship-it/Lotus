@@ -219,9 +219,8 @@ export function PanelHeader({ client, now, onClose }: { client: ClientRecord; no
           <span className="sr-only">Open client</span>
         </Link>
         {onClose && (
-          <button type="button" onClick={onClose} className="grid size-7 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg lg:hidden">
+          <button type="button" onClick={onClose} className="grid size-7 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg" aria-label="Close panel" title="Close (Esc)">
             <X className="size-4" strokeWidth={2} />
-            <span className="sr-only">Close</span>
           </button>
         )}
       </div>

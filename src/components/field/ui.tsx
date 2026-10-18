@@ -7,6 +7,7 @@ import type { EstimateDisplay, InvoiceDisplay } from "@/lib/field";
 import { estimateLabel, invoiceLabel, jobStatusLabel } from "@/lib/field";
 import type { JobStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 
 /*
  * Board grammar shared by Jobs, Estimates and Invoices: the ink top bar, the
@@ -361,21 +362,24 @@ export function TwoLine({
 export function PanelFrame({
   label,
   open,
+  docked = true,
   onClose,
   sheet,
   children,
 }: {
   label: string;
   open: boolean;
+  /** Desktop column visible; false once closed with X or Esc. */
+  docked?: boolean;
   onClose: () => void;
   sheet?: boolean;
   children: (close?: () => void) => React.ReactNode;
 }) {
   return (
     <>
-      {!sheet && (
-        <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-          {children()}
+      {!sheet && docked && (
+        <aside aria-label={label} className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
+          {children(onClose)}
         </aside>
       )}
       {open && (
@@ -384,7 +388,6 @@ export function PanelFrame({
           role="dialog"
           aria-modal="true"
           aria-label={label}
-          onKeyDown={(e) => e.key === "Escape" && onClose()}
         >
           <button
             type="button"
@@ -566,18 +569,19 @@ export function useBoardState<T extends { id: string }>(
 ) {
   const [sort, setSort] = useState<SortState>(initialSort);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const select = (row: T) => {
     setSelectedId(row.id);
-    setPanelOpen(true);
+    panel.show();
   };
   return {
     sort,
     setSort,
     selectedId,
     setSelectedId,
-    panelOpen,
-    setPanelOpen,
+    panelOpen: panel.open,
+    docked: panel.docked,
+    setPanelOpen: (v: boolean) => (v ? panel.show() : panel.close()),
     select,
   };
 }

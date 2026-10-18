@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { Plus, Search } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import type { RangeDays } from "@/lib/diagnostic";
@@ -89,7 +90,7 @@ export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "health", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -201,7 +202,7 @@ export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[
                 selectedId={selected?.client.account.id ?? null}
                 onSelect={(id) => {
                   setSelectedId(id);
-                  setPanelOpen(true);
+                  panel.show();
                 }}
               />
               {rows.length === 0 && (
@@ -216,14 +217,16 @@ export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <ClientPanel row={selected} now={now} />
+          {panel.docked && (
+          <aside aria-label={`${selected.client.account.name} details`} className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
+            <ClientPanel row={selected} now={now} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.client.account.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <ClientPanel row={selected} now={now} onClose={() => setPanelOpen(false)} />
+                <ClientPanel row={selected} now={now} onClose={panel.close} />
               </aside>
             </div>
           )}

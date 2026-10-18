@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Rail folded to icons; set on <html> before paint from localStorage. */
+@custom-variant navc (&:where([data-nav="collapsed"] *));
+
 /* ------------------------------------------------------------------ */
 /* Primitive tokens                                                    */
 /* ------------------------------------------------------------------ */
@@ -234,4 +237,9 @@ th > button {
   border-radius: 999px;
   background: #fff;
   border: 2px solid var(--el-accent);
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
