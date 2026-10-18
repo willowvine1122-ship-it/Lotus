@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { crmClients, teamDirectory } from "@/components/crm/data";
@@ -23,6 +24,7 @@ type Params = { client?: string; pipeline?: string; view?: string; opp?: string 
 async function Workspace({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = crmClients(now);
   const client = clients.find((c) => c.slug === sp.client || c.id === sp.client) ?? clients[0];
@@ -43,7 +45,7 @@ async function Workspace({ searchParams }: { searchParams: Promise<Params> }) {
       opportunities={structuredClone(all.filter((o) => o.pipelineId === pipeline.id))}
       allForClient={structuredClone(all)}
       contacts={contacts}
-      team={teamDirectory}
+      team={teamDirectory()}
       reasons={lostReasonsFor(now, client.id)}
       nowIso={now.toISOString()}
       initialView={view}

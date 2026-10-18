@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -14,6 +15,8 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  await connection();
+  if (!(await openPublicWorkspace(`form:${slug}`))) return { title: "Form not found" };
   const form = findFormBySlug(new Date(), slug);
   if (!form) return { title: "Form not found" };
   const client = findClient(new Date(), form.accountId);
@@ -24,11 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const actions = { start: startFormAction, track: trackFormAction, submit: submitFormAction };
 
 async function Page({ params, searchParams }: Props) {
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
   await connection();
+  if (!(await openPublicWorkspace(`form:${slug}`))) notFound();
   const now = new Date();
   const form = findFormBySlug(now, slug);
   if (!form) notFound();
@@ -53,7 +56,7 @@ async function Page({ params, searchParams }: Props) {
         brand={embed ? undefined : brand}
         mode="live"
         hidden={hidden}
-        actions={actions}
+        actions={{ start: startFormAction, track: trackFormAction.bind(null, slug), submit: submitFormAction }}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -14,6 +15,7 @@ import { deleteContactAction, updateContactAction } from "../../actions";
 async function Edit({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const contact = findContact(now, id);
   if (!contact) notFound();
@@ -31,7 +33,7 @@ async function Edit({ params }: { params: Promise<{ id: string }> }) {
       />
       <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 bg-surface">
-          <ContactForm action={updateContactAction.bind(null, id)} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} contact={contact} onDelete={deleteContactAction.bind(null, id)} />
+          <ContactForm action={updateContactAction.bind(null, id)} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory()} contact={contact} onDelete={deleteContactAction.bind(null, id)} />
         </div>
         <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
           <h2 className="text-sm font-semibold text-fg">Good to know</h2>

@@ -1,6 +1,7 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { after, connection } from "next/server";
+import { connection } from "next/server";
 import { CustomerShell } from "@/components/field/customer-views";
 import { EstimateSignOff } from "@/components/estimates/sign-off";
 import { estimateExtras, patchEstimateExtras } from "@/lib/data/estimate-kit";
@@ -14,6 +15,7 @@ export const metadata = { title: "Your estimate", robots: { index: false } };
 async function View({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  if (!(await openPublicWorkspace(`estimate:${id}`))) notFound();
   const now = new Date();
   const e = findEstimate(now, id);
   const client = e ? findClient(now, e.accountId) : undefined;
@@ -24,12 +26,9 @@ async function View({ params }: { params: Promise<{ id: string }> }) {
   const open = d === "sent";
   // The first time the customer opens a sent estimate, note it on their timeline.
   if (open && !extras.viewedAt) {
-    after(() => {
-      const at = new Date();
-      if (estimateExtras(at, e.id).viewedAt) return;
-      patchEstimateExtras(at, e.id, { viewedAt: at.toISOString() });
-      addActivity(at, e.contactId, { kind: "estimate", title: `Estimate ${e.number} opened`, body: "The customer opened their link.", by: "System" });
-    });
+    // Saved with the rest of this render's changes once the page is sent.
+    patchEstimateExtras(now, e.id, { viewedAt: now.toISOString() });
+    addActivity(now, e.contactId, { kind: "estimate", title: `Estimate ${e.number} opened`, body: "The customer opened their link.", by: "System" });
   }
   return (
     <CustomerShell business={client.account.name}>

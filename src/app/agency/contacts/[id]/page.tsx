@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -18,6 +19,7 @@ import { logActivityAction, moveStageAction, toggleDndAction } from "../actions"
 async function ContactView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const contact = findContact(now, id);
   if (!contact) notFound();
@@ -25,7 +27,7 @@ async function ContactView({ params }: { params: Promise<{ id: string }> }) {
   const pipeline = getPipeline(now, contact.accountId);
   if (!client || !pipeline) notFound();
   const activities = listActivities(now, id);
-  const owner = personFor(teamDirectory, contact.ownerName);
+  const owner = personFor(teamDirectory(), contact.ownerName);
   const actions = { moveStage: moveStageAction, logActivity: logActivityAction, toggleDnd: toggleDndAction };
   return (
     <>
@@ -68,7 +70,7 @@ async function ContactView({ params }: { params: Promise<{ id: string }> }) {
           <ActivityTimeline activities={activities} now={now} />
         </section>
         <aside className="flex flex-col gap-6">
-          <ContactDetails contact={contact} client={client} team={teamDirectory} actions={actions} />
+          <ContactDetails contact={contact} client={client} team={teamDirectory()} actions={actions} />
           <ContactOpportunities contactId={contact.id} clientSlug={client.slug} opportunities={listOpportunities(now, { contactId: contact.id })} pipelines={listPipelines(now, contact.accountId)} />
           {contact.tags.length > 0 && (
             <section className="flex flex-col gap-2">

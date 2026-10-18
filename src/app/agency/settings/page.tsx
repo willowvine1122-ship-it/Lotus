@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { SettingsBoard, type Integration } from "@/components/settings/settings-board";
@@ -12,6 +13,7 @@ export const metadata = { title: "Settings" };
 
 async function Board() {
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = listClients(now);
   const clientsPerMember: Record<string, number> = {};
@@ -23,7 +25,7 @@ async function Board() {
     { name: "Meta", purpose: "Ad spend and lead metrics on the Daily Diagnostic, Messenger replies", envVar: "META_ACCESS_TOKEN", live: Boolean(process.env.META_ACCESS_TOKEN), demo: "Metrics come from the seeded demo data." },
     { name: "Supabase", purpose: "Sign-in, team roles and the production database", envVar: "NEXT_PUBLIC_SUPABASE_URL", live: isSupabaseConfigured(), demo: "Data lives in memory and reseeds each day." },
   ];
-  return <SettingsBoard team={teamDirectory} clientsPerMember={clientsPerMember} integrations={integrations} inboundUrl="/api/inbound" />;
+  return <SettingsBoard team={teamDirectory()} clientsPerMember={clientsPerMember} integrations={integrations} inboundUrl="/api/inbound" />;
 }
 
 export default function SettingsPage() {

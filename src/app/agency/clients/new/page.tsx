@@ -22,7 +22,7 @@ export default function NewClientPage() {
       />
       <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 bg-surface">
-          <ClientForm action={createClientAction} team={teamDirectory} />
+          <ClientForm action={createClientAction} team={teamDirectory()} />
         </div>
         <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
           <h2 className="text-sm font-semibold text-fg">What happens next</h2>

@@ -1,5 +1,6 @@
 "use server";
 
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -65,93 +66,105 @@ function readContact(formData: FormData) {
 }
 
 export async function createContactAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const parsed = readContact(formData);
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  const d = parsed.data;
-  const c = createContact(new Date(), {
-    accountId: d.accountId,
-    firstName: d.firstName,
-    lastName: d.lastName,
-    email: d.email || undefined,
-    phone: d.phone || undefined,
-    company: d.company || undefined,
-    city: d.city || undefined,
-    tags: list(formData.get("tags")),
-    source: d.source,
-    stageId: d.stageId || undefined,
-    ownerName: d.ownerName || undefined,
-    valueCents: Math.round(d.value * 100),
+  return withWorkspace(async () => {
+    const parsed = readContact(formData);
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const d = parsed.data;
+    const c = createContact(new Date(), {
+      accountId: d.accountId,
+      firstName: d.firstName,
+      lastName: d.lastName,
+      email: d.email || undefined,
+      phone: d.phone || undefined,
+      company: d.company || undefined,
+      city: d.city || undefined,
+      tags: list(formData.get("tags")),
+      source: d.source,
+      stageId: d.stageId || undefined,
+      ownerName: d.ownerName || undefined,
+      valueCents: Math.round(d.value * 100),
+    });
+    if (!c) return { ok: false, message: "That client does not exist." };
+    contactCreated(new Date(), c);
+    revalidatePath("/agency/contacts");
+    redirect(`/agency/contacts/${c.id}`);
   });
-  if (!c) return { ok: false, message: "That client does not exist." };
-  contactCreated(new Date(), c);
-  revalidatePath("/agency/contacts");
-  redirect(`/agency/contacts/${c.id}`);
 }
 
 export async function updateContactAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  const parsed = readContact(formData);
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  const d = parsed.data;
-  const now = new Date();
-  const before = findContact(now, id);
-  const prev = before ? { tags: [...before.tags], stageId: before.stageId } : undefined;
-  const c = updateContact(now, id, {
-    firstName: d.firstName,
-    lastName: d.lastName,
-    email: d.email || undefined,
-    phone: d.phone || undefined,
-    company: d.company || undefined,
-    city: d.city || undefined,
-    tags: list(formData.get("tags")),
-    source: d.source,
-    ownerName: d.ownerName || undefined,
-    valueCents: Math.round(d.value * 100),
+  return withWorkspace(async () => {
+    const parsed = readContact(formData);
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const d = parsed.data;
+    const now = new Date();
+    const before = findContact(now, id);
+    const prev = before ? { tags: [...before.tags], stageId: before.stageId } : undefined;
+    const c = updateContact(now, id, {
+      firstName: d.firstName,
+      lastName: d.lastName,
+      email: d.email || undefined,
+      phone: d.phone || undefined,
+      company: d.company || undefined,
+      city: d.city || undefined,
+      tags: list(formData.get("tags")),
+      source: d.source,
+      ownerName: d.ownerName || undefined,
+      valueCents: Math.round(d.value * 100),
+    });
+    if (!c) return { ok: false, message: "Contact not found." };
+    if (d.stageId) moveContactStage(now, id, d.stageId, actor);
+    if (prev) {
+      tagsChanged(now, id, prev.tags, c.tags);
+      stageChanged(now, c, prev.stageId);
+    }
+    revalidatePath("/agency/contacts");
+    revalidatePath(`/agency/contacts/${id}`);
+    return { ok: true, message: "Saved" };
   });
-  if (!c) return { ok: false, message: "Contact not found." };
-  if (d.stageId) moveContactStage(now, id, d.stageId, actor);
-  if (prev) {
-    tagsChanged(now, id, prev.tags, c.tags);
-    stageChanged(now, c, prev.stageId);
-  }
-  revalidatePath("/agency/contacts");
-  revalidatePath(`/agency/contacts/${id}`);
-  return { ok: true, message: "Saved" };
 }
 
 export async function moveStageAction(id: string, stageId: string): Promise<void> {
-  const now = new Date();
-  const from = findContact(now, id)?.stageId;
-  const c = moveContactStage(now, id, stageId, actor);
-  if (c && from) stageChanged(now, c, from);
-  revalidatePath("/agency/contacts");
-  revalidatePath(`/agency/contacts/${id}`);
+  return withWorkspace(async () => {
+    const now = new Date();
+    const from = findContact(now, id)?.stageId;
+    const c = moveContactStage(now, id, stageId, actor);
+    if (c && from) stageChanged(now, c, from);
+    revalidatePath("/agency/contacts");
+    revalidatePath(`/agency/contacts/${id}`);
+  });
 }
 
 const kindTitle: Record<string, string> = { note: "Note", call: "Call logged", sms: "Text sent", email: "Email sent" };
 
 export async function logActivityAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  const kind = String(formData.get("kind") ?? "note");
-  const body = String(formData.get("body") ?? "").trim();
-  if (!(kind in kindTitle)) return { ok: false, errors: { kind: "Pick a type" } };
-  if (body.length < 2) return { ok: false, errors: { body: "Write what happened" } };
-  const a = addActivity(new Date(), id, { kind: kind as ActivityKind, title: kindTitle[kind]!, body, by: actor });
-  if (!a) return { ok: false, message: "Contact not found." };
-  revalidatePath("/agency/contacts");
-  revalidatePath(`/agency/contacts/${id}`);
-  return { ok: true };
+  return withWorkspace(async (): Promise<ActionState> => {
+    const kind = String(formData.get("kind") ?? "note");
+    const body = String(formData.get("body") ?? "").trim();
+    if (!(kind in kindTitle)) return { ok: false, errors: { kind: "Pick a type" } };
+    if (body.length < 2) return { ok: false, errors: { body: "Write what happened" } };
+    const a = addActivity(new Date(), id, { kind: kind as ActivityKind, title: kindTitle[kind]!, body, by: actor });
+    if (!a) return { ok: false, message: "Contact not found." };
+    revalidatePath("/agency/contacts");
+    revalidatePath(`/agency/contacts/${id}`);
+    return { ok: true };
+  });
 }
 
 export async function toggleDndAction(id: string, channel: "email" | "sms" | "call"): Promise<void> {
-  const now = new Date();
-  const c = findContact(now, id);
-  if (!c) return;
-  updateContact(now, id, { doNotContact: { ...c.doNotContact, [channel]: !c.doNotContact[channel] } });
-  revalidatePath("/agency/contacts");
-  revalidatePath(`/agency/contacts/${id}`);
+  return withWorkspace(async () => {
+    const now = new Date();
+    const c = findContact(now, id);
+    if (!c) return;
+    updateContact(now, id, { doNotContact: { ...c.doNotContact, [channel]: !c.doNotContact[channel] } });
+    revalidatePath("/agency/contacts");
+    revalidatePath(`/agency/contacts/${id}`);
+  });
 }
 
 export async function deleteContactAction(id: string): Promise<void> {
-  deleteContact(new Date(), id);
-  revalidatePath("/agency/contacts");
-  redirect("/agency/contacts");
+  return withWorkspace(async () => {
+    deleteContact(new Date(), id);
+    revalidatePath("/agency/contacts");
+    redirect("/agency/contacts");
+  });
 }

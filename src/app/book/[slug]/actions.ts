@@ -1,5 +1,6 @@
 "use server";
 
+import { withPublicWorkspace } from "@/lib/server/workspace";
 import { appointmentBooked } from "@/lib/data/automation-events";
 
 import { revalidatePath } from "next/cache";
@@ -29,23 +30,26 @@ const schema = z.object({
 });
 
 export async function bookAction(slug: string, _prev: BookingState, formData: FormData): Promise<BookingState> {
-  const parsed = schema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    const errors: Record<string, string> = {};
-    for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
-    return { ok: false, errors };
-  }
-  const res = bookAppointment(new Date(), { calendarSlug: slug, ...parsed.data });
-  if (!res.ok) {
-    revalidatePath(`/book/${slug}`);
-    return {
-      ok: false,
-      message: res.reason === "slot_taken" ? "Someone just took that time. Pick another one; the list is up to date." : "This booking page is not taking bookings right now.",
-    };
-  }
-  const typeName = findCalendar(new Date(), slug)?.types.find((t) => t.id === res.appointment.typeId)?.name ?? "an appointment";
-  appointmentBooked(new Date(), res.appointment.contact.id, typeName);
-  revalidatePath("/agency/calendars");
-  revalidatePath("/agency/automations");
-  redirect(`/book/${slug}/confirmed/${res.appointment.id}`);
+  const res = await withPublicWorkspace(`calendar:${slug}`, async () => {
+    const parsed = schema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
+      return { ok: false, errors };
+    }
+    const res = bookAppointment(new Date(), { calendarSlug: slug, ...parsed.data });
+    if (!res.ok) {
+      revalidatePath(`/book/${slug}`);
+      return {
+        ok: false,
+        message: res.reason === "slot_taken" ? "Someone just took that time. Pick another one; the list is up to date." : "This booking page is not taking bookings right now.",
+      };
+    }
+    const typeName = findCalendar(new Date(), slug)?.types.find((t) => t.id === res.appointment.typeId)?.name ?? "an appointment";
+    appointmentBooked(new Date(), res.appointment.contact.id, typeName);
+    revalidatePath("/agency/calendars");
+    revalidatePath("/agency/automations");
+    redirect(`/book/${slug}/confirmed/${res.appointment.id}`);
+  });
+  return res ?? { ok: false, message: "This booking page is not taking bookings right now." };
 }

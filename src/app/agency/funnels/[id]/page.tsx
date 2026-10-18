@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { Suspense } from "react";
@@ -25,6 +26,7 @@ export const metadata = { title: "Funnel" };
 async function Overview({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const funnel = findFunnel(now, id);
   if (!funnel) notFound();

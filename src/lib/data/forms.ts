@@ -1,16 +1,18 @@
+import { stamp } from "@/lib/ids";
 import { randomBytes } from "node:crypto";
 import type { FormAnswer, FormDefinition, FormFile, FormQuestion, FormResponse, FormVisit } from "@/lib/types";
 import { answerError, answerText, contactFields, formTemplates, isEmpty, path, pickEnding, scoreOf, slugify } from "@/components/forms/model";
 import { formSubmitted } from "./automation-events";
 import { upsertContact } from "./integrations";
-import { addActivity, findContact, listClients, listContacts } from "./store";
+import { defineModule } from "@/lib/server/workspace";
+import { putFile, removeFile } from "@/lib/server/files";
+import { addActivity, findContact, listClients,} from "./store";
 
 /*
  * Forms: Typeform-style forms per client, their responses, the visits that
- * show where people drop off, and uploaded files. Demo store on globalThis,
- * seeded once per day like the other modules; anything made by hand ("new-"
- * ids) survives the reseed. Seeded forms keep fixed ids and slugs so links
- * stay valid from one day to the next.
+ * show where people drop off, and uploaded files. Saved per agency in the
+ * "forms" module; a form's slug is its public address (/form/<slug>), and
+ * uploaded file bytes live in the files table, not in the module.
  *
  * A submission creates or fills in the contact (by email, then phone), adds
  * the form's tags, logs it on the contact's timeline and fires "Form
@@ -19,57 +21,29 @@ import { addActivity, findContact, listClients, listContacts } from "./store";
 
 interface StoredFile extends FormFile {
   formId: string;
-  bytes?: Buffer;
   at: string;
 }
 
 interface FormStore {
-  seededFor: string;
   forms: FormDefinition[];
   responses: FormResponse[];
   visits: FormVisit[];
   files: StoredFile[];
 }
 
-const g = globalThis as unknown as { __lotusForms?: FormStore };
-const DAY = 86400000;
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_STORED_BYTES = 200 * 1024 * 1024;
+const formsModule = defineModule<FormStore>({
+  key: "forms",
+  init: () => ({ forms: [], responses: [], visits: [], files: [] }),
+  publicKeys: (s) => s.forms.map((f) => `form:${f.slug}`),
+});
+// Vercel caps a request body at 4.5 MB, so uploads stop just under it.
+export const MAX_FILE_BYTES = 4 * 1024 * 1024;
 export const ACCEPTED_FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/heic", "application/pdf", "text/plain", "text/csv", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 
-const uid = (p: string) => `new-${p}-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`;
+const uid = (p: string) => `new-${p}-${stamp()}-${randomBytes(3).toString("hex")}`;
 
-function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a += 0x6d2b79f5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function store(now: Date): FormStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusForms || g.__lotusForms.seededFor !== key) {
-    const prev = g.__lotusForms;
-    const mine = <T extends { id: string }>(xs: T[] | undefined) => xs?.filter((x) => x.id.startsWith("new-")) ?? [];
-    const s: FormStore = { seededFor: key, forms: [], responses: [], visits: [], files: [] };
-    seed(now, s);
-    // Edits to seeded forms survive too: keep the edited copy over the fresh seed.
-    for (const f of prev?.forms ?? []) {
-      if (f.id.startsWith("new-")) continue;
-      const i = s.forms.findIndex((x) => x.id === f.id);
-      if (i !== -1 && f.updatedAt > s.forms[i]!.updatedAt) s.forms[i] = f;
-    }
-    s.forms.push(...mine(prev?.forms));
-    s.responses.push(...mine(prev?.responses));
-    s.visits.push(...mine(prev?.visits));
-    s.files.push(...mine(prev?.files));
-    g.__lotusForms = s;
-  }
-  return g.__lotusForms;
+function store(_now: Date): FormStore {
+  return formsModule.get();
 }
 
 /* -------------------------------- forms ------------------------------- */
@@ -148,6 +122,7 @@ export function deleteForm(now: Date, id: string) {
   s.forms = s.forms.filter((f) => f.id !== id);
   s.responses = s.responses.filter((r) => r.formId !== id);
   s.visits = s.visits.filter((v) => v.formId !== id);
+  for (const f of s.files) if (f.formId === id) void removeFile(f.id);
   s.files = s.files.filter((f) => f.formId !== id);
 }
 
@@ -169,6 +144,7 @@ export function deleteResponse(now: Date, id: string) {
   s.responses = s.responses.filter((x) => x.id !== id);
   const fileIds = new Set(r.files.map((f) => f.id));
   s.files = s.files.filter((f) => !fileIds.has(f.id));
+  for (const id of fileIds) void removeFile(id);
 }
 
 /** A visitor opened the form. The id comes back with each step so drop-off can be counted. */
@@ -189,27 +165,16 @@ export function trackVisit(now: Date, visitId: string, questionId: string) {
 
 /* -------------------------------- files ------------------------------- */
 
-export function storeFile(now: Date, formId: string, questionId: string, file: { name: string; type: string; bytes: Buffer }): FormFile | { error: string } {
+export async function storeFile(now: Date, formId: string, questionId: string, file: { name: string; type: string; bytes: Buffer }): Promise<FormFile | { error: string }> {
   const form = findForm(now, formId);
   const q = form?.questions.find((x) => x.id === questionId);
   if (!form || form.status !== "live" || q?.type !== "file_upload") return { error: "This form isn't taking files." };
   if (file.bytes.length === 0) return { error: "That file is empty." };
-  if (file.bytes.length > MAX_FILE_BYTES) return { error: "Files can be up to 10 MB." };
+  if (file.bytes.length > MAX_FILE_BYTES) return { error: "Files can be up to 4 MB." };
   if (!ACCEPTED_FILE_TYPES.includes(file.type)) return { error: "Images, PDFs, Word, Excel or text files only." };
-  const s = store(now);
-  // Keep the demo store bounded: drop the oldest unclaimed uploads first, then the oldest files.
-  let total = s.files.reduce((a, f) => a + (f.bytes?.length ?? 0), 0) + file.bytes.length;
-  const claimed = new Set(s.responses.flatMap((r) => r.files.map((f) => f.id)));
-  for (const pass of [false, true]) {
-    for (const f of [...s.files]) {
-      if (total <= MAX_STORED_BYTES) break;
-      if (!pass && claimed.has(f.id)) continue;
-      total -= f.bytes?.length ?? 0;
-      f.bytes = undefined;
-    }
-  }
-  const stored: StoredFile = { id: uid("file"), formId, questionId, name: file.name.replace(/[^\w.\- ()]/g, "_").slice(0, 120) || "file", type: file.type, size: file.bytes.length, bytes: file.bytes, at: now.toISOString() };
-  s.files.push(stored);
+  const stored: StoredFile = { id: uid("file"), formId, questionId, name: file.name.replace(/[^\w.\- ()]/g, "_").slice(0, 120) || "file", type: file.type, size: file.bytes.length, at: now.toISOString() };
+  await putFile(stored.id, stored.name, stored.type, file.bytes);
+  store(now).files.push(stored);
   return { id: stored.id, questionId, name: stored.name, type: stored.type, size: stored.size };
 }
 
@@ -295,131 +260,6 @@ function summary(questions: FormQuestion[], answers: Record<string, FormAnswer>,
 }
 
 /* --------------------------------- seed -------------------------------- */
-
-const notes = [
-  "The back unit is making a rattling noise when it starts.",
-  "Looking to get this done before the holidays if possible.",
-  "We had someone out last year, but the problem came back.",
-  "Please call after 5pm on weekdays.",
-  "Two of us work from home so mornings are easiest.",
-  "Saw your ad on Instagram. Do you offer financing?",
-  "Not urgent, just comparing a few quotes.",
-  "",
-];
-const praise = ["Quick, friendly and on time.", "The reminder texts were really helpful.", "Great communication from start to finish.", "", "Clear pricing, no surprises."];
-const gripes = ["Had to wait longer than I was told.", "Nobody called me back the first time.", "The price went up from the quote."];
-const sources = ["facebook", "google", "instagram", "newsletter", "direct"];
-const campaigns = ["spring-promo", "retargeting", "brand", "lookalike-1"];
-
-function seed(now: Date, s: FormStore) {
-  const today = new Date(now.toISOString().slice(0, 10) + "T00:00:00.000Z");
-  for (const [ci, client] of listClients(now).entries()) {
-    const keys = client.mode === "fundraising" ? ["donor", "quiz"] : ci % 3 === 0 ? ["lead", "quote", "feedback"] : ci % 3 === 1 ? ["quote", "feedback"] : ["lead", "quiz"];
-    const contacts = listContacts(now, client.account.id);
-    for (const [ki, key] of keys.entries()) {
-      const t = formTemplates.find((x) => x.key === key)!;
-      const rand = rng((ci + 1) * 7919 + ki * 104729);
-      const built = t.build(client.account.name);
-      // Fixed question, choice and ending ids so a form edited yesterday still matches today's responses.
-      let n = 0;
-      const fid = `form-${client.account.id}-${key}`;
-      for (const q of built.questions) {
-        const old = q.id;
-        q.id = `${fid}-q${++n}`;
-        for (const other of built.questions) for (const r of other.logic ?? []) if (r.goTo === old) r.goTo = q.id;
-        for (const [k, c] of (q.choices ?? []).entries()) {
-          const oldC = c.id;
-          c.id = `${q.id}-c${k + 1}`;
-          for (const r of q.logic ?? []) if (r.value === oldC) r.value = c.id;
-        }
-        for (const [k, r] of (q.logic ?? []).entries()) r.id = `${q.id}-r${k + 1}`;
-      }
-      for (const [k, e] of built.endings.entries()) e.id = `${fid}-e${k + 1}`;
-      const status = key === "feedback" && ci % 2 === 0 ? "draft" : key === "quiz" && client.mode === "fundraising" ? "draft" : "live";
-      const created = new Date(today.getTime() - (40 + ki * 9) * DAY).toISOString();
-      const form: FormDefinition = { id: fid, accountId: client.account.id, name: t.name === "Scored quiz" ? "Readiness quiz" : t.name, slug: `${client.account.slug}-${key}`, status, ...built, template: key, createdAt: created, updatedAt: created };
-      if (key === "quiz") form.endings[0]!.buttonUrl = `/book/${client.account.slug}`;
-      s.forms.push(form);
-      if (status !== "live" || contacts.length === 0) continue;
-
-      const perDay = key === "feedback" ? 0.8 : key === "quiz" ? 1.6 : 2.4;
-      for (let d = 29; d >= 0; d--) {
-        const count = Math.floor(perDay * (0.5 + rand()) + (rand() < 0.3 ? 1 : 0));
-        for (let i = 0; i < count; i++) {
-          const startedAt = new Date(today.getTime() - d * DAY + (8 + rand() * 13) * 3600000);
-          if (startedAt > now) continue;
-          const contact = contacts[Math.floor(rand() * contacts.length)]!;
-          const answers: Record<string, FormAnswer> = {};
-          for (const q of form.questions) answers[q.id] = fake(q, contact, rand);
-          const seen = path(form, answers);
-          const keep: Record<string, FormAnswer> = {};
-          for (const q of seen) if (!isEmpty(answers[q.id])) keep[q.id] = answers[q.id]!;
-          const score = scoreOf(form, keep);
-          const submittedAt = new Date(startedAt.getTime() + (40 + rand() * 220) * 1000);
-          const files: FormFile[] = seen.filter((q) => q.type === "file_upload" && !isEmpty(keep[q.id])).map((q) => ({ id: `demo-file-${fid}-${d}-${i}`, questionId: q.id, name: `IMG_${4000 + Math.floor(rand() * 5000)}.jpg`, type: "image/jpeg", size: Math.floor(800000 + rand() * 2400000) }));
-          for (const f of files) keep[f.questionId] = [f.id];
-          const hidden: Record<string, string> = {};
-          if (form.hiddenFields.includes("utm_source")) hidden.utm_source = sources[Math.floor(rand() * sources.length)]!;
-          if (form.hiddenFields.includes("utm_campaign") && hidden.utm_source !== "direct") hidden.utm_campaign = campaigns[Math.floor(rand() * campaigns.length)]!;
-          s.responses.push({ id: `resp-${fid}-${d}-${i}`, formId: fid, accountId: form.accountId, contactId: contact.id, answers: keep, hidden, files, score, endingId: pickEnding(form, score)?.id, startedAt: startedAt.toISOString(), submittedAt: submittedAt.toISOString() });
-          s.visits.push({ id: `visit-${fid}-${d}-${i}`, formId: fid, at: startedAt.toISOString(), completed: true, lastQuestionId: seen.at(-1)?.id });
-        }
-        // People who opened the form and left, weighted toward the first questions.
-        const left = Math.floor(count * (0.5 + rand() * 0.9));
-        for (let i = 0; i < left; i++) {
-          const at = new Date(today.getTime() - d * DAY + (8 + rand() * 13) * 3600000);
-          if (at > now) continue;
-          const stop = Math.min(form.questions.length - 1, Math.floor(Math.pow(rand(), 2) * form.questions.length));
-          s.visits.push({ id: `visit-${fid}-${d}-x${i}`, formId: fid, at: at.toISOString(), completed: false, lastQuestionId: rand() < 0.25 ? undefined : form.questions[stop]!.id });
-        }
-      }
-    }
-  }
-}
-
-function fake(q: FormQuestion, c: { firstName: string; lastName: string; email?: string; phone?: string; city?: string }, rand: () => number): FormAnswer {
-  const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)]!;
-  if (!q.required && rand() < 0.35) return "";
-  switch (q.mapTo) {
-    case "name":
-      return `${c.firstName} ${c.lastName}`.trim();
-    case "firstName":
-      return c.firstName;
-    case "lastName":
-      return c.lastName;
-    case "email":
-      return c.email ?? `${c.firstName.toLowerCase()}@example.com`;
-    case "phone":
-      return c.phone ?? "";
-    case "city":
-      return c.city ?? "";
-  }
-  switch (q.type) {
-    case "multiple_choice":
-    case "dropdown":
-      return pick(q.choices ?? []).id;
-    case "checkboxes":
-      return (q.choices ?? []).filter(() => rand() < 0.45).map((x) => x.id);
-    case "yes_no":
-      return rand() < 0.4 ? "yes" : "no";
-    case "rating":
-      return String(Math.max(1, Math.round((q.steps ?? 5) * (0.55 + rand() * 0.45))));
-    case "opinion_scale":
-      return String(Math.min(q.steps ?? 10, Math.max(0, Math.round((q.steps ?? 10) * Math.pow(rand(), 0.45)))));
-    case "long_text":
-      return /wrong/i.test(q.title) ? pick(gripes) : /well/i.test(q.title) ? pick(praise) : pick(notes);
-    case "file_upload":
-      return rand() < 0.4 ? ["pending"] : "";
-    case "number":
-      return String(1 + Math.floor(rand() * 6));
-    case "date":
-      return new Date(Date.now() + Math.floor(rand() * 20) * DAY).toISOString().slice(0, 10);
-    case "statement":
-      return "";
-    default:
-      return "";
-  }
-}
 
 /** For a contact's timeline and the client page: this client's forms with a contact's responses. */
 export function responsesForContact(now: Date, contactId: string) {

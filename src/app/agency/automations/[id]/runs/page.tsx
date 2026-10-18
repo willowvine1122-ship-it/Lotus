@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -16,6 +17,7 @@ async function Runs({ params, searchParams }: { params: Promise<{ id: string }>;
   const { id } = await params;
   const { run } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const workflow = findWorkflow(now, id);
   if (!workflow) notFound();

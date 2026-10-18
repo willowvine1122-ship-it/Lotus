@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -25,6 +26,7 @@ type Params = { client?: string; pipeline?: string };
 async function Settings({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = crmClients(now);
   const client =

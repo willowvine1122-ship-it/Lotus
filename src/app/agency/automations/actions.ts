@@ -1,5 +1,6 @@
 "use server";
 
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -38,12 +39,14 @@ const newSchema = z.object({
 });
 
 export async function createWorkflowAction(_prev: AutomationActionState, formData: FormData): Promise<AutomationActionState> {
-  const parsed = newSchema.safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), templateId: formData.get("templateId") || undefined });
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  const wf = createWorkflow(new Date(), { ...parsed.data, templateId: parsed.data.templateId === "blank" ? undefined : parsed.data.templateId });
-  if (!wf) return { ok: false, message: "That client does not exist." };
-  touch();
-  redirect(`/agency/automations/${wf.id}`);
+  return withWorkspace(async () => {
+    const parsed = newSchema.safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), templateId: formData.get("templateId") || undefined });
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const wf = createWorkflow(new Date(), { ...parsed.data, templateId: parsed.data.templateId === "blank" ? undefined : parsed.data.templateId });
+    if (!wf) return { ok: false, message: "That client does not exist." };
+    touch();
+    redirect(`/agency/automations/${wf.id}`);
+  });
 }
 
 const id = z.string().min(1).max(120);
@@ -120,67 +123,81 @@ function save(wfId: string, draft: WorkflowDraft): AutomationActionState {
 }
 
 export async function saveWorkflowAction(wfId: string, draft: WorkflowDraft): Promise<AutomationActionState> {
-  const r = save(wfId, draft);
-  touch(wfId);
-  return r ?? { ok: true, message: "Saved" };
+  return withWorkspace(async () => {
+    const r = save(wfId, draft);
+    touch(wfId);
+    return r ?? { ok: true, message: "Saved" };
+  });
 }
 
 export async function setWorkflowStatusAction(wfId: string, draft: WorkflowDraft, status: "active" | "paused"): Promise<AutomationActionState> {
-  const r = save(wfId, draft);
-  if (r) {
+  return withWorkspace(async () => {
+    const r = save(wfId, draft);
+    if (r) {
+      touch(wfId);
+      return r;
+    }
+    if (status === "active") {
+      const wf = findWorkflow(new Date(), wfId)!;
+      const issues = workflowIssues(wf.trigger, wf.steps);
+      if (Object.keys(issues).length) return { ok: false, errors: issues, message: "Finish the highlighted steps before turning it on." };
+    }
+    setWorkflowStatus(new Date(), wfId, status);
     touch(wfId);
-    return r;
-  }
-  if (status === "active") {
-    const wf = findWorkflow(new Date(), wfId)!;
-    const issues = workflowIssues(wf.trigger, wf.steps);
-    if (Object.keys(issues).length) return { ok: false, errors: issues, message: "Finish the highlighted steps before turning it on." };
-  }
-  setWorkflowStatus(new Date(), wfId, status);
-  touch(wfId);
-  return { ok: true, message: status === "active" ? "On. New contacts start from now." : "Paused. Contacts on a wait stay where they are." };
+    return { ok: true, message: status === "active" ? "On. New contacts start from now." : "Paused. Contacts on a wait stay where they are." };
+  });
 }
 
 export async function quickStatusAction(wfId: string, status: "active" | "paused"): Promise<AutomationActionState> {
-  const wf = findWorkflow(new Date(), wfId);
-  if (!wf) return { ok: false, message: "This workflow no longer exists." };
-  if (status === "active" && Object.keys(workflowIssues(wf.trigger, wf.steps)).length) return { ok: false, message: "Open the builder and finish its steps first." };
-  setWorkflowStatus(new Date(), wfId, status);
-  touch(wfId);
-  return { ok: true };
+  return withWorkspace(async () => {
+    const wf = findWorkflow(new Date(), wfId);
+    if (!wf) return { ok: false, message: "This workflow no longer exists." };
+    if (status === "active" && Object.keys(workflowIssues(wf.trigger, wf.steps)).length) return { ok: false, message: "Open the builder and finish its steps first." };
+    setWorkflowStatus(new Date(), wfId, status);
+    touch(wfId);
+    return { ok: true };
+  });
 }
 
 export async function duplicateWorkflowAction(wfId: string): Promise<void> {
-  const copy = duplicateWorkflow(new Date(), wfId);
-  touch();
-  if (copy) redirect(`/agency/automations/${copy.id}`);
+  return withWorkspace(async () => {
+    const copy = duplicateWorkflow(new Date(), wfId);
+    touch();
+    if (copy) redirect(`/agency/automations/${copy.id}`);
+  });
 }
 
 export async function deleteWorkflowAction(wfId: string): Promise<void> {
-  deleteWorkflow(new Date(), wfId);
-  touch();
-  redirect("/agency/automations");
+  return withWorkspace(async () => {
+    deleteWorkflow(new Date(), wfId);
+    touch();
+    redirect("/agency/automations");
+  });
 }
 
 export async function testRunAction(wfId: string, draft: WorkflowDraft, contactId: string, skipWaits: boolean): Promise<AutomationActionState> {
-  const r = save(wfId, draft);
-  if (r && !r.ok && r.errors && !r.message?.startsWith("Saved")) return r;
-  const wf = findWorkflow(new Date(), wfId);
-  if (!wf) return { ok: false, message: "This workflow no longer exists." };
-  const issues = workflowIssues(wf.trigger, wf.steps);
-  if (Object.keys(issues).length) return { ok: false, errors: issues, message: "Finish the highlighted steps before testing." };
-  const run = testRun(new Date(), wfId, contactId, { skipWaits });
-  if (!run) return { ok: false, errors: { contactId: "Pick a contact from this client" } };
-  touch(wfId);
-  revalidatePath("/agency/contacts");
-  revalidatePath("/agency/inbox");
-  return { ok: true, id: run.id, message: "Test run finished" };
+  return withWorkspace(async () => {
+    const r = save(wfId, draft);
+    if (r && !r.ok && r.errors && !r.message?.startsWith("Saved")) return r;
+    const wf = findWorkflow(new Date(), wfId);
+    if (!wf) return { ok: false, message: "This workflow no longer exists." };
+    const issues = workflowIssues(wf.trigger, wf.steps);
+    if (Object.keys(issues).length) return { ok: false, errors: issues, message: "Finish the highlighted steps before testing." };
+    const run = testRun(new Date(), wfId, contactId, { skipWaits });
+    if (!run) return { ok: false, errors: { contactId: "Pick a contact from this client" } };
+    touch(wfId);
+    revalidatePath("/agency/contacts");
+    revalidatePath("/agency/inbox");
+    return { ok: true, id: run.id, message: "Test run finished" };
+  });
 }
 
 export async function stopRunAction(runId: string): Promise<AutomationActionState> {
-  const run = stopRun(new Date(), runId, actor);
-  if (!run) return { ok: false, message: "That run no longer exists." };
-  touch(run.workflowId);
-  return { ok: true, message: "Stopped" };
+  return withWorkspace(async () => {
+    const run = stopRun(new Date(), runId, actor);
+    if (!run) return { ok: false, message: "That run no longer exists." };
+    touch(run.workflowId);
+    return { ok: true, message: "Stopped" };
+  });
 }
 

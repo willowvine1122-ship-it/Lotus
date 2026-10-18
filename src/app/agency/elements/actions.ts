@@ -1,5 +1,6 @@
 "use server";
 
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -77,55 +78,65 @@ const patch = z.object({
 
 /** Create from the type picker, then open the builder. */
 export async function createElementAction(_prev: ElementResult | null, formData: FormData): Promise<ElementResult> {
-  const p = z
-    .object({
-      accountId: id,
-      campaignId: id,
-      name: z.string().trim().min(1, "Give the element a name").max(80),
-      type: z.string().refine((t) => elementKinds.some((k) => k.type === t), "Pick a type"),
-    })
-    .safeParse({ accountId: formData.get("accountId"), campaignId: formData.get("campaignId"), name: formData.get("name"), type: formData.get("type") });
-  if (!p.success) return fail(p.error);
-  const now = new Date();
-  const kind = elementKinds.find((k) => k.type === p.data.type)!;
-  const e = createElement(now, { accountId: p.data.accountId, campaignId: p.data.campaignId, type: kind.type, name: p.data.name });
-  if (!e) return { ok: false, errors: { campaignId: "Pick a campaign" }, message: "That client has no campaign yet." };
-  touch();
-  redirect(`/agency/elements/${e.id}`);
+  return withWorkspace(async () => {
+    const p = z
+      .object({
+        accountId: id,
+        campaignId: id,
+        name: z.string().trim().min(1, "Give the element a name").max(80),
+        type: z.string().refine((t) => elementKinds.some((k) => k.type === t), "Pick a type"),
+      })
+      .safeParse({ accountId: formData.get("accountId"), campaignId: formData.get("campaignId"), name: formData.get("name"), type: formData.get("type") });
+    if (!p.success) return fail(p.error);
+    const now = new Date();
+    const kind = elementKinds.find((k) => k.type === p.data.type)!;
+    const e = createElement(now, { accountId: p.data.accountId, campaignId: p.data.campaignId, type: kind.type, name: p.data.name });
+    if (!e) return { ok: false, errors: { campaignId: "Pick a campaign" }, message: "That client has no campaign yet." };
+    touch();
+    redirect(`/agency/elements/${e.id}`);
+  });
 }
 
 export async function saveElementAction(elementId: string, input: unknown): Promise<ElementResult> {
-  const p = patch.safeParse(input);
-  if (!p.success) return fail(p.error);
-  const now = new Date();
-  const e = findElement(now, elementId);
-  if (!e) return { ok: false, message: "This element was deleted." };
-  if (!campaignFor(now, { accountId: e.accountId, campaignId: p.data.campaignId })) return { ok: false, errors: { campaignId: "Pick a campaign" }, message: "Pick a campaign" };
-  const c = p.data.config;
-  if (c.startsOn && c.endsOn && c.endsOn < c.startsOn) return { ok: false, errors: { endsOn: "The end date is before the start" }, message: "The end date is before the start" };
-  if (["button_group", "donation_levels", "impact_slider"].includes(e.type) && c.levels.length < 2) return { ok: false, errors: { levels: "Add at least two amounts" }, message: "Add at least two amounts" };
-  saveElement(now, elementId, p.data);
-  touch(elementId);
-  return { ok: true, message: "Saved. Every placement shows the change within a minute." };
+  return withWorkspace(async () => {
+    const p = patch.safeParse(input);
+    if (!p.success) return fail(p.error);
+    const now = new Date();
+    const e = findElement(now, elementId);
+    if (!e) return { ok: false, message: "This element was deleted." };
+    if (!campaignFor(now, { accountId: e.accountId, campaignId: p.data.campaignId })) return { ok: false, errors: { campaignId: "Pick a campaign" }, message: "Pick a campaign" };
+    const c = p.data.config;
+    if (c.startsOn && c.endsOn && c.endsOn < c.startsOn) return { ok: false, errors: { endsOn: "The end date is before the start" }, message: "The end date is before the start" };
+    if (["button_group", "donation_levels", "impact_slider"].includes(e.type) && c.levels.length < 2) return { ok: false, errors: { levels: "Add at least two amounts" }, message: "Add at least two amounts" };
+    saveElement(now, elementId, p.data);
+    touch(elementId);
+    return { ok: true, message: "Saved. Every placement shows the change within a minute." };
+  });
 }
 
 export async function setElementStatusAction(elementId: string, status: "live" | "paused"): Promise<ElementResult> {
-  const p = z.enum(["live", "paused"]).safeParse(status);
-  if (!p.success) return { ok: false, message: "Unknown status" };
-  const e = setElementStatus(new Date(), elementId, p.data);
-  if (!e) return { ok: false, message: "This element was deleted." };
-  touch(elementId);
-  return { ok: true, message: p.data === "live" ? "Live on every site it is placed on." : "Paused. It no longer shows anywhere." };
+  return withWorkspace(async () => {
+    const p = z.enum(["live", "paused"]).safeParse(status);
+    if (!p.success) return { ok: false, message: "Unknown status" };
+    const e = setElementStatus(new Date(), elementId, p.data);
+    if (!e) return { ok: false, message: "This element was deleted." };
+    touch(elementId);
+    return { ok: true, message: p.data === "live" ? "Live on every site it is placed on." : "Paused. It no longer shows anywhere." };
+  });
 }
 
 export async function duplicateElementAction(elementId: string) {
-  const copy = duplicateElement(new Date(), elementId);
-  touch();
-  if (copy) redirect(`/agency/elements/${copy.id}`);
+  return withWorkspace(async () => {
+    const copy = duplicateElement(new Date(), elementId);
+    touch();
+    if (copy) redirect(`/agency/elements/${copy.id}`);
+  });
 }
 
 export async function deleteElementAction(elementId: string) {
-  deleteElement(new Date(), elementId);
-  touch();
-  redirect("/agency/elements");
+  return withWorkspace(async () => {
+    deleteElement(new Date(), elementId);
+    touch();
+    redirect("/agency/elements");
+  });
 }

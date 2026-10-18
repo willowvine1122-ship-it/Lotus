@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -16,6 +17,7 @@ const recipes: RecipeLite[] = workflowTemplates.map((t) => ({ id: t.id, name: t.
 async function Form({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
   await connection();
+  await openWorkspace();
   const clients = automationClients(new Date());
   return (
     <div className="bg-surface">

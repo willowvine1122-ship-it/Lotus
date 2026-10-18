@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { Diagnostic } from "@/components/diagnostic/diagnostic";
@@ -8,6 +9,7 @@ export const metadata = { title: "Daily Diagnostic" };
 
 async function Board() {
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = await getClientRecords(now);
   return <Diagnostic clients={clients} nowIso={now.toISOString()} />;

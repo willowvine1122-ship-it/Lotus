@@ -11,7 +11,7 @@ import { Segmented, Tag } from "@/components/diagnostic/primitives";
 import type { ActionState } from "@/app/agency/funnels/actions";
 import type { Funnel, FunnelBlock, FunnelBlockType, FunnelStep } from "@/lib/types";
 import { cn, timeAgo } from "@/lib/utils";
-import { newBlock } from "@/lib/data/demo-funnels";
+import { newBlock } from "@/lib/data/funnel-blocks";
 import { blockLabel, blockSummary, publicPath, templateLabel, type ClientRef } from "./model";
 import { FunnelPage } from "./renderer";
 import { StatusButton } from "./funnel-panel";

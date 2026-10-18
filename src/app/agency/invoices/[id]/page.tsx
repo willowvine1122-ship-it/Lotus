@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { dueLine } from "@/components/field/status-lines";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,6 +21,7 @@ import { recordPaymentAction, sendInvoiceAction, voidInvoiceAction } from "../ac
 async function InvoiceView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const inv = findInvoice(now, id);
   if (!inv) notFound();

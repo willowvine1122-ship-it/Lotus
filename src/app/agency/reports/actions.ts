@@ -1,5 +1,6 @@
 "use server";
 
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { updateReportConfig } from "@/lib/data/store";
@@ -19,28 +20,32 @@ const schema = z.object({
 });
 
 export async function saveReportConfigAction(accountId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  const parsed = schema.safeParse({ range: formData.get("range"), weekday: formData.get("weekday"), hour: formData.get("hour"), recipients: formData.get("recipients") ?? "", note: formData.get("note") ?? "" });
-  if (!parsed.success) {
-    const errors: Record<string, string> = {};
-    for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
-    return { ok: false, errors };
-  }
-  const bad = parsed.data.recipients.find((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
-  if (bad) return { ok: false, errors: { recipients: `“${bad}” is not an email address` } };
-  const enabled = formData.get("enabled") === "on";
-  if (enabled && parsed.data.recipients.length === 0) return { ok: false, errors: { recipients: "Add at least one recipient, or turn the schedule off" } };
-  const sections = formData.getAll("sections").map(String).filter((s): s is ReportSectionId => (sectionIds as readonly string[]).includes(s));
-  const ordered = sectionIds.filter((s) => sections.includes(s));
-  const cfg = updateReportConfig(new Date(), accountId, { enabled, range: parsed.data.range, weekday: parsed.data.weekday, hour: parsed.data.hour, recipients: parsed.data.recipients, sections: ordered, note: parsed.data.note || undefined });
-  if (!cfg) return { ok: false, message: "Client not found." };
-  revalidatePath("/agency/reports");
-  revalidatePath("/c");
-  return { ok: true, message: "Saved" };
+  return withWorkspace(async () => {
+    const parsed = schema.safeParse({ range: formData.get("range"), weekday: formData.get("weekday"), hour: formData.get("hour"), recipients: formData.get("recipients") ?? "", note: formData.get("note") ?? "" });
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      for (const i of parsed.error.issues) errors[String(i.path[0])] ??= i.message;
+      return { ok: false, errors };
+    }
+    const bad = parsed.data.recipients.find((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    if (bad) return { ok: false, errors: { recipients: `“${bad}” is not an email address` } };
+    const enabled = formData.get("enabled") === "on";
+    if (enabled && parsed.data.recipients.length === 0) return { ok: false, errors: { recipients: "Add at least one recipient, or turn the schedule off" } };
+    const sections = formData.getAll("sections").map(String).filter((s): s is ReportSectionId => (sectionIds as readonly string[]).includes(s));
+    const ordered = sectionIds.filter((s) => sections.includes(s));
+    const cfg = updateReportConfig(new Date(), accountId, { enabled, range: parsed.data.range, weekday: parsed.data.weekday, hour: parsed.data.hour, recipients: parsed.data.recipients, sections: ordered, note: parsed.data.note || undefined });
+    if (!cfg) return { ok: false, message: "Client not found." };
+    revalidatePath("/agency/reports");
+    revalidatePath("/c");
+    return { ok: true, message: "Saved" };
+  });
 }
 
 export async function sendReportNowAction(accountId: string): Promise<ActionState> {
-  const res = sendReport(new Date(), accountId);
-  if (!res) return { ok: false, message: "Client not found." };
-  revalidatePath("/agency/reports");
-  return { ok: true, message: res.delivered ? `Sent to ${res.delivered} ${res.delivered === 1 ? "person" : "people"}` : "Recorded, no recipients yet" };
+  return withWorkspace(async () => {
+    const res = sendReport(new Date(), accountId);
+    if (!res) return { ok: false, message: "Client not found." };
+    revalidatePath("/agency/reports");
+    return { ok: true, message: res.delivered ? `Sent to ${res.delivered} ${res.delivered === 1 ? "person" : "people"}` : "Recorded, no recipients yet" };
+  });
 }

@@ -1,5 +1,6 @@
 import { answerText } from "@/components/forms/model";
 import { contactName, findForm, listResponses } from "@/lib/data/forms";
+import { withWorkspace } from "@/lib/server/workspace";
 
 /* Every response as CSV: one column per question, then hidden fields, score and contact. */
 
@@ -12,6 +13,10 @@ const cell = (v: string | number | undefined) => {
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  return withWorkspace(() => exportCsv(id));
+}
+
+function exportCsv(id: string) {
   const now = new Date();
   const form = findForm(now, id);
   if (!form) return new Response("Form not found.", { status: 404 });

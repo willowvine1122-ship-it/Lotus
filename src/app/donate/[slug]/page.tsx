@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -11,6 +12,7 @@ export const metadata = { title: "Donate" };
 async function CampaignPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await connection();
+  if (!(await openPublicWorkspace(`campaign:${slug}`))) notFound();
   const now = new Date();
   const found = findCampaign(now, slug);
   if (!found) notFound();

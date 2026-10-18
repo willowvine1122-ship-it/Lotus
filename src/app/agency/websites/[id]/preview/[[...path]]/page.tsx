@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -12,6 +13,7 @@ export const metadata = { title: "Preview", robots: { index: false } };
 async function Preview({ params }: { params: Promise<{ id: string; path?: string[] }> }) {
   const { id, path } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const site = findWebsite(now, id);
   const page = site && findPage(site, path);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { after, connection } from "next/server";
+import { connection } from "next/server";
 import Script from "next/script";
 import type { Website } from "@/lib/types";
 import { submitSiteFormAction } from "@/app/agency/websites/actions";
@@ -15,6 +15,7 @@ import {
 import { pageHref, siteUrl } from "./model";
 import { builderRefs } from "@/components/builder/refs";
 import { SitePage } from "./site";
+import { openPublicWorkspace, withPublicWorkspace } from "@/lib/server/workspace";
 
 /*
  * The public side of a website, shared by the Lotus address (/s/<slug>/…)
@@ -25,6 +26,9 @@ import { SitePage } from "./site";
 export type SiteRef =
   | { kind: "slug"; slug: string }
   | { kind: "host"; host: string };
+
+/** The public address a site answers on, which finds the agency that owns it. */
+const addressOf = (ref: SiteRef) => (ref.kind === "slug" ? `site:${ref.slug}` : `host:${decodeURIComponent(ref.host)}`);
 
 function load(now: Date, ref: SiteRef) {
   return ref.kind === "slug"
@@ -45,6 +49,7 @@ export async function siteMetadata(
   segments: string[] | undefined,
 ): Promise<Metadata> {
   await connection();
+  if (!(await openPublicWorkspace(addressOf(ref)))) return { title: "Page not found", robots: { index: false } };
   const now = new Date();
   const site = load(now, ref);
   const page = site && findPage(site, segments);
@@ -89,6 +94,7 @@ export async function SiteRoute({
   sent: boolean;
 }) {
   await connection();
+  if (!(await openPublicWorkspace(addressOf(refP)))) notFound();
   const now = new Date();
   const site = load(now, refP);
   if (!site || site.status !== "live") notFound();
@@ -102,7 +108,7 @@ export async function SiteRoute({
     live: f.status === "live",
   }));
   const back = pageHref(site, page, { base });
-  after(() => recordView(new Date(), site.id, page.id));
+  recordView(now, site.id, page.id);
   const { gaId, metaPixelId } = site.analytics;
   return (
     <div className="min-h-dvh">
@@ -157,8 +163,7 @@ async function root(ref: SiteRef, site: Website) {
 }
 
 export async function sitemapResponse(ref: SiteRef) {
-  await connection();
-  const site = load(new Date(), ref);
+  const site = await withPublicWorkspace(addressOf(ref), () => load(new Date(), ref));
   if (!site || site.status !== "live")
     return new Response("Not found", { status: 404 });
   const r = await root(ref, site);
@@ -182,8 +187,7 @@ export async function sitemapResponse(ref: SiteRef) {
 }
 
 export async function robotsResponse(ref: SiteRef) {
-  await connection();
-  const site = load(new Date(), ref);
+  const site = await withPublicWorkspace(addressOf(ref), () => load(new Date(), ref));
   if (!site || site.status !== "live")
     return new Response("User-agent: *\nDisallow: /\n", {
       headers: { "content-type": "text/plain; charset=utf-8" },

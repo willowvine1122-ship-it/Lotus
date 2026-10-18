@@ -1,5 +1,6 @@
 "use server";
 
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -47,12 +48,14 @@ const newCampaignSchema = z.object({
 });
 
 export async function createCampaignAction(_prev: EmailActionState, formData: FormData): Promise<EmailActionState> {
-  const parsed = newCampaignSchema.safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), templateId: formData.get("templateId") });
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  const c = createCampaign(new Date(), parsed.data);
-  if (!c) return { ok: false, message: "That client does not exist." };
-  touch();
-  redirect(`/agency/email/${c.id}`);
+  return withWorkspace(async () => {
+    const parsed = newCampaignSchema.safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), templateId: formData.get("templateId") });
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const c = createCampaign(new Date(), parsed.data);
+    if (!c) return { ok: false, message: "That client does not exist." };
+    touch();
+    redirect(`/agency/email/${c.id}`);
+  });
 }
 
 const block = z.discriminatedUnion("type", [
@@ -86,10 +89,12 @@ function save(id: string, draft: CampaignDraft): NonNullable<EmailActionState> |
 const isState = (v: unknown): v is NonNullable<EmailActionState> => typeof v === "object" && v !== null && "ok" in v;
 
 export async function saveCampaignAction(id: string, draft: CampaignDraft): Promise<EmailActionState> {
-  const r = save(id, draft);
-  if (isState(r)) return r;
-  touch(id);
-  return { ok: true, message: "Draft saved" };
+  return withWorkspace(async () => {
+    const r = save(id, draft);
+    if (isState(r)) return r;
+    touch(id);
+    return { ok: true, message: "Draft saved" };
+  });
 }
 
 /** Everything a send needs that a draft doesn't. */
@@ -106,43 +111,51 @@ function readyToSend(id: string, d: z.output<typeof draftSchema>): EmailActionSt
 }
 
 export async function scheduleCampaignAction(id: string, draft: CampaignDraft, whenIso: string | null): Promise<EmailActionState> {
-  const r = save(id, draft);
-  if (isState(r)) return r;
-  if (whenIso) {
-    const blocked = readyToSend(id, r);
-    if (blocked) return blocked;
-    const when = new Date(whenIso);
-    if (Number.isNaN(when.getTime()) || when.getTime() < Date.now() + 60000) return { ok: false, errors: { scheduledFor: "Pick a time in the future" }, message: "Pick a time in the future." };
-    scheduleCampaign(new Date(), id, when);
-  } else {
-    scheduleCampaign(new Date(), id, null);
-  }
-  touch(id);
-  return { ok: true, message: whenIso ? "Scheduled" : "Moved back to draft" };
+  return withWorkspace(async () => {
+    const r = save(id, draft);
+    if (isState(r)) return r;
+    if (whenIso) {
+      const blocked = readyToSend(id, r);
+      if (blocked) return blocked;
+      const when = new Date(whenIso);
+      if (Number.isNaN(when.getTime()) || when.getTime() < Date.now() + 60000) return { ok: false, errors: { scheduledFor: "Pick a time in the future" }, message: "Pick a time in the future." };
+      scheduleCampaign(new Date(), id, when);
+    } else {
+      scheduleCampaign(new Date(), id, null);
+    }
+    touch(id);
+    return { ok: true, message: whenIso ? "Scheduled" : "Moved back to draft" };
+  });
 }
 
 export async function sendCampaignAction(id: string, draft: CampaignDraft): Promise<EmailActionState> {
-  const r = save(id, draft);
-  if (isState(r)) return r;
-  const blocked = readyToSend(id, r);
-  if (blocked) return blocked;
-  const result = sendCampaign(new Date(), id, actor);
-  if (!result) return { ok: false, message: "This campaign could not be sent." };
-  touch(id);
-  revalidatePath("/agency/contacts");
-  redirect(`/agency/email/${id}?sent=${result.sent}`);
+  return withWorkspace(async () => {
+    const r = save(id, draft);
+    if (isState(r)) return r;
+    const blocked = readyToSend(id, r);
+    if (blocked) return blocked;
+    const result = sendCampaign(new Date(), id, actor);
+    if (!result) return { ok: false, message: "This campaign could not be sent." };
+    touch(id);
+    revalidatePath("/agency/contacts");
+    redirect(`/agency/email/${id}?sent=${result.sent}`);
+  });
 }
 
 export async function duplicateCampaignAction(id: string): Promise<void> {
-  const c = duplicateCampaign(new Date(), id);
-  touch();
-  if (c) redirect(`/agency/email/${c.id}`);
+  return withWorkspace(async () => {
+    const c = duplicateCampaign(new Date(), id);
+    touch();
+    if (c) redirect(`/agency/email/${c.id}`);
+  });
 }
 
 export async function deleteCampaignAction(id: string): Promise<void> {
-  deleteCampaign(new Date(), id);
-  touch();
-  redirect("/agency/email");
+  return withWorkspace(async () => {
+    deleteCampaign(new Date(), id);
+    touch();
+    redirect("/agency/email");
+  });
 }
 
 /* ----------------------------- audiences ---------------------------- */
@@ -164,17 +177,21 @@ const audienceSchema = z.object({
 export type AudienceInput = z.input<typeof audienceSchema>;
 
 export async function saveAudienceAction(input: AudienceInput): Promise<EmailActionState> {
-  const parsed = audienceSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  if (parsed.data.kind === "list" && parsed.data.contactIds.length === 0) return { ok: false, errors: { contactIds: "Add at least one contact" } };
-  const a = saveAudience(new Date(), parsed.data);
-  revalidatePath("/agency/email/audiences");
-  touch();
-  return { ok: true, id: a.id, message: input.id ? "Saved" : "Audience created" };
+  return withWorkspace(async () => {
+    const parsed = audienceSchema.safeParse(input);
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    if (parsed.data.kind === "list" && parsed.data.contactIds.length === 0) return { ok: false, errors: { contactIds: "Add at least one contact" } };
+    const a = saveAudience(new Date(), parsed.data);
+    revalidatePath("/agency/email/audiences");
+    touch();
+    return { ok: true, id: a.id, message: input.id ? "Saved" : "Audience created" };
+  });
 }
 
 export async function deleteAudienceAction(id: string): Promise<EmailActionState> {
-  if (!deleteAudience(new Date(), id)) return { ok: false, message: "A draft or scheduled campaign still uses this audience." };
-  revalidatePath("/agency/email/audiences");
-  return { ok: true, message: "Deleted" };
+  return withWorkspace(async () => {
+    if (!deleteAudience(new Date(), id)) return { ok: false, message: "A draft or scheduled campaign still uses this audience." };
+    revalidatePath("/agency/email/audiences");
+    return { ok: true, message: "Deleted" };
+  });
 }

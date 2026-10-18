@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -16,6 +17,7 @@ export const metadata = { title: "Page builder" };
 async function Builder({ params }: { params: Promise<{ id: string; pageId: string }> }) {
   const { id, pageId } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const site = findWebsite(now, id);
   const page = site?.pages.find((p) => p.id === pageId);

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { InvoicesBoard } from "@/components/field/invoices-board";
@@ -14,6 +15,7 @@ const scopes: Scope[] = ["unpaid", "overdue", "draft", "paid", "all"];
 async function Board({ searchParams }: { searchParams: Promise<{ client?: string; show?: string }> }) {
   const { client, show } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fieldClientRefs(now);
   return (

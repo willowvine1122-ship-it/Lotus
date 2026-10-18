@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CalendarsWorkspace, type ClientLite, type View } from "@/components/calendars/workspace";
@@ -10,6 +11,7 @@ export const metadata = { title: "Calendars" };
 async function Workspace({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view: raw } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients: ClientLite[] = (await getClientRecords(now)).map((c) => ({
     id: c.account.id,

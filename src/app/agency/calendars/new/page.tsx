@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -13,6 +14,7 @@ export const metadata = { title: "New calendar" };
 async function Form({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
   await connection();
+  await openWorkspace();
   const clients = (await getClientRecords(new Date()))
     .map((c) => ({ id: c.account.id, name: c.account.name, slug: c.account.slug, mode: c.mode, timeZone: c.timeZone, health: c.health }))
     .sort((a, b) => a.name.localeCompare(b.name));

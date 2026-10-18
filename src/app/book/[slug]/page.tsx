@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -15,6 +16,7 @@ async function Booking({ params, searchParams }: { params: Promise<{ slug: strin
   const { slug } = await params;
   const { type } = await searchParams;
   await connection();
+  if (!(await openPublicWorkspace(`calendar:${slug}`))) notFound();
   const now = new Date();
   const cal = findCalendar(now, slug);
   if (!cal) notFound();

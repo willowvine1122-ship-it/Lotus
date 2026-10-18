@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -18,6 +19,7 @@ type Params = { client?: string; pipeline?: string; contact?: string };
 async function Form({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = crmClients(now);
   const contactParam = sp.contact ? listContacts(now).find((c) => c.id === sp.contact) : undefined;
@@ -37,7 +39,7 @@ async function Form({ searchParams }: { searchParams: Promise<Params> }) {
           clients={clients}
           pipelines={structuredClone(pipelines)}
           contacts={contacts}
-          team={teamDirectory}
+          team={teamDirectory()}
           initialPipelineId={pipelines.some((p) => p.id === sp.pipeline) ? sp.pipeline : undefined}
           initialContactId={contactParam?.accountId === client.id ? contactParam.id : undefined}
         />

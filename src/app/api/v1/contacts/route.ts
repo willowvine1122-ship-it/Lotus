@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { apiUpsertContact, authenticate, contactPayload, logApiCall } from "@/lib/data/integrations";
+import { apiKeyAddress, apiUpsertContact, authenticate, contactPayload, logApiCall } from "@/lib/data/integrations";
+import { withPublicWorkspace } from "@/lib/server/workspace";
 import { listContacts } from "@/lib/data/store";
 
 /*
@@ -13,7 +14,18 @@ import { listContacts } from "@/lib/data/store";
 
 const unauthorized = () => NextResponse.json({ ok: false, error: "Send a valid API key as “Authorization: Bearer lts_…”. Create one in Lotus › Integrations › API keys." }, { status: 401 });
 
+/** Open the workspace of the agency that issued the request's API key. */
+async function withKey(req: Request, fn: () => Response | Promise<Response>) {
+  const address = apiKeyAddress(req.headers.get("authorization"));
+  if (!address) return unauthorized();
+  return (await withPublicWorkspace(address, fn)) ?? unauthorized();
+}
+
 export async function GET(req: Request) {
+  return withKey(req, () => list(req));
+}
+
+function list(req: Request) {
   const now = new Date();
   const key = authenticate(now, req.headers.get("authorization"));
   if (!key) return unauthorized();
@@ -39,10 +51,15 @@ const body = z.object({
 });
 
 export async function POST(req: Request) {
+  const json = await req.json().catch(() => null);
+  return withKey(req, () => create(req, json));
+}
+
+function create(req: Request, json: unknown) {
   const now = new Date();
   const key = authenticate(now, req.headers.get("authorization"));
   if (!key) return unauthorized();
-  const parsed = body.safeParse(await req.json().catch(() => null));
+  const parsed = body.safeParse(json);
   if (!parsed.success || !(parsed.data.email || parsed.data.phone)) {
     const error = parsed.success ? "Send an email or a phone number" : parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     logApiCall(now, key, "POST /api/v1/contacts", 422, error);

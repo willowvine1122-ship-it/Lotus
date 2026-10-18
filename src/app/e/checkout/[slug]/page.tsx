@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -21,9 +22,10 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 async function Page({ params, searchParams }: Props) {
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
   await connection();
-  const now = new Date();
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const elementId = one("element");
+  if (!(await openPublicWorkspace(slug === "el" ? `element:${elementId}` : `campaign:${slug}`))) notFound();
+  const now = new Date();
   const element = elementId ? findElement(now, elementId) : undefined;
   // Donate links only know the element; "el" means "the element's campaign".
   const found = slug === "el" ? (element ? campaignFor(now, element) : null) : findCampaign(now, slug);

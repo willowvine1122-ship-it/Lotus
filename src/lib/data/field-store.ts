@@ -1,17 +1,18 @@
+import { stamp } from "@/lib/ids";
 import type { Estimate, EstimateOption, Invoice, Job, JobStatus, LineItem, MarketingClient, Payment, PaymentMethod, Technician } from "@/lib/types";
 import { addDays, jobStatusLabel, localDate, totals } from "@/lib/field";
-import { demoFieldFor, taxRateFor, trades, type Counters } from "./demo-field";
-import { addActivity, findClient, findContact, listClients, listContacts } from "./store";
+import { taxRateFor, trades, type Counters } from "./trades";
+import { defineModule } from "@/lib/server/workspace";
+import { addActivity, findClient, findContact, listClients,} from "./store";
 
 /*
- * Field service demo store: technicians, jobs, estimates, invoices and
- * payments, in process memory beside the CRM store and reseeded with it each
- * day. Every customer-facing event is also written to the contact's
- * timeline through addActivity, so the CRM shows the whole history.
+ * Field service: technicians, jobs, estimates, invoices and payments, saved
+ * per agency in the "field" module. Every customer-facing event is also
+ * written to the contact's timeline through addActivity, so the CRM shows
+ * the whole history. Estimates and invoices have public customer pages.
  */
 
 interface FieldStore {
-  seededFor: string;
   technicians: Technician[];
   jobs: Job[];
   estimates: Estimate[];
@@ -19,37 +20,17 @@ interface FieldStore {
   counters: Counters;
 }
 
-const g = globalThis as unknown as { __lotusField?: FieldStore };
+const fieldModule = defineModule<FieldStore>({
+  key: "field",
+  init: () => ({ technicians: [], jobs: [], estimates: [], invoices: [], counters: { job: 1001, estimate: 2001, invoice: 3001 } }),
+  publicKeys: (s) => [...s.estimates.map((e) => `estimate:${e.id}`), ...s.invoices.map((i) => `invoice:${i.id}`)],
+});
 
-const isNew = (x: { id: string }) => x.id.startsWith("new-");
-
-function field(now: Date): FieldStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusField || g.__lotusField.seededFor !== key) {
-    const prev = g.__lotusField;
-    const s: FieldStore = { seededFor: key, technicians: [], jobs: [], estimates: [], invoices: [], counters: { job: 1001, estimate: 2001, invoice: 3001 } };
-    for (const c of listClients(now)) {
-      if (c.mode !== "marketing" || !trades[c.industry]) continue;
-      const seed = demoFieldFor(c, listContacts(now, c.account.id), now, s.counters);
-      s.technicians.push(...seed.technicians);
-      s.jobs.push(...seed.jobs);
-      s.estimates.push(...seed.estimates);
-      s.invoices.push(...seed.invoices);
-      for (const a of seed.activities) addActivity(now, a.contactId, a);
-    }
-    if (prev) {
-      s.technicians.push(...prev.technicians.filter(isNew));
-      s.jobs.push(...prev.jobs.filter(isNew));
-      s.estimates.push(...prev.estimates.filter(isNew));
-      s.invoices.push(...prev.invoices.filter(isNew));
-      s.counters = { job: Math.max(s.counters.job, prev.counters.job), estimate: Math.max(s.counters.estimate, prev.counters.estimate), invoice: Math.max(s.counters.invoice, prev.counters.invoice) };
-    }
-    g.__lotusField = s;
-  }
-  return g.__lotusField;
+function field(_now: Date): FieldStore {
+  return fieldModule.get();
 }
 
-const newId = () => `new-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+const newId = () => `new-${stamp()}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
 /* ------------------------------ Reads ------------------------------- */
 
@@ -332,7 +313,7 @@ export function sendInvoice(now: Date, id: string, by: string) {
 export function recordPayment(now: Date, id: string, amountCents: number, method: PaymentMethod, reference: string | undefined, by: string): Payment | undefined {
   const inv = findInvoice(now, id);
   if (!inv || inv.status === "void" || amountCents <= 0) return undefined;
-  const p: Payment = { id: `${inv.id}-p${inv.payments.length + 1}-${Date.now().toString(36)}`, invoiceId: inv.id, amountCents, method, at: now.toISOString(), reference };
+  const p: Payment = { id: `${inv.id}-p${inv.payments.length + 1}-${stamp()}`, invoiceId: inv.id, amountCents, method, at: now.toISOString(), reference };
   inv.payments.push(p);
   if (inv.status === "draft") {
     inv.status = "sent";

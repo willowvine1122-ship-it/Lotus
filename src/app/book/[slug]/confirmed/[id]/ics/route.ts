@@ -1,4 +1,5 @@
 import { findAppointment, findCalendar } from "@/lib/data/calendars";
+import { withPublicWorkspace } from "@/lib/server/workspace";
 
 /* An .ics file for the lead's own calendar app. */
 
@@ -7,6 +8,10 @@ const escape = (s: string) => s.replace(/[\;,]/g, (m) => `\\${m}`).replace(/\n/g
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
+  return (await withPublicWorkspace(`calendar:${slug}`, () => ics(slug, id))) ?? new Response("Not found", { status: 404 });
+}
+
+function ics(slug: string, id: string) {
   const now = new Date();
   const cal = findCalendar(now, slug);
   const appt = findAppointment(now, id);

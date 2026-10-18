@@ -1,38 +1,23 @@
+import { stamp } from "@/lib/ids";
 import { messageReceived } from "./automation-events";
 import type { Channel, Contact, Conversation, InboxMessage, InboxThread } from "@/lib/types";
-import { demoInbox } from "./inbox-demo";
+import { defineModule } from "@/lib/server/workspace";
 import { addActivity, findClient, findContact, getPipeline, listContacts } from "./store";
 
 /*
- * Demo inbox store. Conversations live in process memory on globalThis,
- * seeded per day like the client store, and are mutated by the inbox server
- * actions. Sending records the message and marks it delivered; nothing
- * leaves the app until Twilio, Resend and Meta are connected.
+ * Inbox conversations, saved per agency in the "inbox" module. Every
+ * conversation belongs to one CRM contact. Whether a message actually
+ * leaves (Twilio, Resend, Meta) is decided by the sending layer.
  */
 
 interface InboxStore {
-  seededFor: string;
   conversations: Conversation[];
 }
 
-const g = globalThis as unknown as { __lotusInbox?: InboxStore };
+const inboxModule = defineModule<InboxStore>({ key: "inbox", init: () => ({ conversations: [] }) });
 
-function store(now: Date): InboxStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusInbox || g.__lotusInbox.seededFor !== key) {
-    const seed = demoInbox(now);
-    // The people writing in are CRM contacts too: add them to the CRM store,
-    // on the stage their client's pipeline would put them.
-    const crm = listContacts(now);
-    for (const c of seed.contacts) {
-      if (crm.some((x) => x.id === c.id)) continue;
-      const stages = getPipeline(now, c.accountId)?.stages ?? [];
-      const stageId = c.recurring && stages.some((s) => s.id === "monthly") ? "monthly" : (stages[1]?.id ?? c.stageId);
-      crm.push({ ...c, stageId });
-    }
-    g.__lotusInbox = { seededFor: key, conversations: seed.conversations };
-  }
-  return g.__lotusInbox;
+function store(_now: Date): InboxStore {
+  return inboxModule.get();
 }
 
 function contactFor(now: Date, id: string): Contact | undefined {
@@ -84,7 +69,7 @@ export function sendMessage(
   const conv = findConversation(now, conversationId);
   if (!conv) return undefined;
   const m: InboxMessage = {
-    id: `${conv.id}-m-${Date.now().toString(36)}`,
+    id: `${conv.id}-m-${stamp()}`,
     conversationId: conv.id,
     channel: input.channel,
     direction: "outbound",
@@ -119,7 +104,7 @@ export function startConversation(
   const s = store(now);
   let conv = s.conversations.find((c) => c.contactId === contact.id && c.accountId === contact.accountId);
   if (!conv) {
-    conv = { id: `cv-${Date.now().toString(36)}`, accountId: contact.accountId, contactId: contact.id, assigneeName: input.authorName, status: "open", unread: 0, messages: [] };
+    conv = { id: `cv-${stamp()}`, accountId: contact.accountId, contactId: contact.id, assigneeName: input.authorName, status: "open", unread: 0, messages: [] };
     s.conversations.push(conv);
   }
   conv.status = "open";
@@ -155,11 +140,11 @@ export function receiveMessage(now: Date, input: { contactId: string; channel: C
   const s = store(now);
   let conv = s.conversations.find((c) => c.contactId === contact.id && c.accountId === contact.accountId);
   if (!conv) {
-    conv = { id: `cv-${Date.now().toString(36)}`, accountId: contact.accountId, contactId: contact.id, status: "open", unread: 0, messages: [] };
+    conv = { id: `cv-${stamp()}`, accountId: contact.accountId, contactId: contact.id, status: "open", unread: 0, messages: [] };
     s.conversations.push(conv);
   }
   const m: InboxMessage = {
-    id: `${conv.id}-m-${Date.now().toString(36)}`,
+    id: `${conv.id}-m-${stamp()}`,
     conversationId: conv.id,
     channel: input.channel,
     direction: "inbound",

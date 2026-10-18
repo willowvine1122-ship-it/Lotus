@@ -1,5 +1,7 @@
 "use server";
 
+import { withPublicWorkspace } from "@/lib/server/workspace";
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -77,117 +79,135 @@ const patch = z.object({
 });
 
 export async function createWebsiteAction(_prev: SiteResult | null, formData: FormData): Promise<SiteResult> {
-  const p = z
-    .object({ accountId: id, name: z.string().trim().min(1, "Give the site a name").max(80), template: z.string().refine((k) => siteTemplates.some((x) => x.key === k), "Pick a template") })
-    .safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), template: formData.get("template") });
-  if (!p.success) return fail(p.error);
-  const now = new Date();
-  if (!findClient(now, p.data.accountId)) return { ok: false, errors: { accountId: "Pick a client" }, message: "Pick a client" };
-  const site = createWebsite(now, p.data.accountId, p.data.name, p.data.template);
-  if (!site) return { ok: false, message: "That client does not exist." };
-  touch();
-  redirect(`/agency/websites/${site.id}`);
+  return withWorkspace(async () => {
+    const p = z
+      .object({ accountId: id, name: z.string().trim().min(1, "Give the site a name").max(80), template: z.string().refine((k) => siteTemplates.some((x) => x.key === k), "Pick a template") })
+      .safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), template: formData.get("template") });
+    if (!p.success) return fail(p.error);
+    const now = new Date();
+    if (!findClient(now, p.data.accountId)) return { ok: false, errors: { accountId: "Pick a client" }, message: "Pick a client" };
+    const site = createWebsite(now, p.data.accountId, p.data.name, p.data.template);
+    if (!site) return { ok: false, message: "That client does not exist." };
+    touch();
+    redirect(`/agency/websites/${site.id}`);
+  });
 }
 
 export async function saveWebsiteAction(siteId: string, input: unknown): Promise<SiteResult> {
-  const p = patch.safeParse(input);
-  if (!p.success) return fail(p.error);
-  const issues = pathIssues(p.data.pages);
-  const firstBad = Object.entries(issues)[0];
-  if (firstBad) {
-    const i = p.data.pages.findIndex((x) => x.id === firstBad[0]);
-    return { ok: false, errors: { [`pages.${i}.path`]: firstBad[1] }, message: `${p.data.pages[i]!.title}: ${firstBad[1].toLowerCase()}` };
-  }
-  const { site, slugTaken } = saveWebsite(new Date(), siteId, p.data);
-  if (slugTaken) return { ok: false, errors: { slug: "Another site already uses this address" }, message: "Another site already uses this address" };
-  if (!site) return { ok: false, message: "That site was deleted." };
-  touch(site.id);
-  revalidatePath(`/s/${site.slug}`, "layout");
-  return { ok: true, message: "Saved" };
+  return withWorkspace(async () => {
+    const p = patch.safeParse(input);
+    if (!p.success) return fail(p.error);
+    const issues = pathIssues(p.data.pages);
+    const firstBad = Object.entries(issues)[0];
+    if (firstBad) {
+      const i = p.data.pages.findIndex((x) => x.id === firstBad[0]);
+      return { ok: false, errors: { [`pages.${i}.path`]: firstBad[1] }, message: `${p.data.pages[i]!.title}: ${firstBad[1].toLowerCase()}` };
+    }
+    const { site, slugTaken } = saveWebsite(new Date(), siteId, p.data);
+    if (slugTaken) return { ok: false, errors: { slug: "Another site already uses this address" }, message: "Another site already uses this address" };
+    if (!site) return { ok: false, message: "That site was deleted." };
+    touch(site.id);
+    revalidatePath(`/s/${site.slug}`, "layout");
+    return { ok: true, message: "Saved" };
+  });
 }
 
 export async function savePageDocAction(siteId: string, pageId: string, docJson: string, themeJson: string): Promise<SiteResult> {
-  const doc = parseDoc(docJson);
-  if (!doc) return { ok: false, message: "Could not read the page. Nothing was saved." };
-  const now = new Date();
-  let theme;
-  try {
-    theme = themeOf(JSON.parse(themeJson), findWebsite(now, siteId)?.brandColor ?? "#0f1221");
-  } catch {
-    return { ok: false, message: "Could not read the theme." };
-  }
-  const site = savePageDoc(now, siteId, pageId, doc, theme);
-  if (!site) return { ok: false, message: "That page no longer exists." };
-  touch(site.id);
-  revalidatePath(`/s/${site.slug}`, "layout");
-  return { ok: true, message: "Saved" };
+  return withWorkspace(async () => {
+    const doc = parseDoc(docJson);
+    if (!doc) return { ok: false, message: "Could not read the page. Nothing was saved." };
+    const now = new Date();
+    let theme;
+    try {
+      theme = themeOf(JSON.parse(themeJson), findWebsite(now, siteId)?.brandColor ?? "#0f1221");
+    } catch {
+      return { ok: false, message: "Could not read the theme." };
+    }
+    const site = savePageDoc(now, siteId, pageId, doc, theme);
+    if (!site) return { ok: false, message: "That page no longer exists." };
+    touch(site.id);
+    revalidatePath(`/s/${site.slug}`, "layout");
+    return { ok: true, message: "Saved" };
+  });
 }
 
 export async function setWebsiteStatusAction(siteId: string, status: "draft" | "live"): Promise<SiteResult> {
-  const site = setWebsiteStatus(new Date(), z.string().max(80).parse(siteId), status);
-  if (!site) return { ok: false, message: "That site was deleted." };
-  touch(site.id);
-  return { ok: true, message: status === "live" ? "Published. The site is live." : "Unpublished. Visitors see a not-found page." };
+  return withWorkspace(async () => {
+    const site = setWebsiteStatus(new Date(), z.string().max(80).parse(siteId), status);
+    if (!site) return { ok: false, message: "That site was deleted." };
+    touch(site.id);
+    return { ok: true, message: status === "live" ? "Published. The site is live." : "Unpublished. Visitors see a not-found page." };
+  });
 }
 
 export async function deleteWebsiteAction(siteId: string): Promise<void> {
-  const now = new Date();
-  const site = findWebsite(now, siteId);
-  deleteWebsite(now, siteId);
-  touch();
-  redirect(`/agency/websites${site ? `?client=${site.accountId}` : ""}`);
+  return withWorkspace(async () => {
+    const now = new Date();
+    const site = findWebsite(now, siteId);
+    deleteWebsite(now, siteId);
+    touch();
+    redirect(`/agency/websites${site ? `?client=${site.accountId}` : ""}`);
+  });
 }
 
 export async function setDomainAction(siteId: string, raw: string): Promise<SiteResult> {
-  const host = normaliseHost(z.string().max(260).parse(raw));
-  const err = hostError(host);
-  if (err) return { ok: false, errors: { host: err }, message: err };
-  const now = new Date();
-  const r = setDomain(now, siteId, host);
-  if (!r) return { ok: false, message: "That site was deleted." };
-  if ("taken" in r) return { ok: false, errors: { host: "Another site already uses this domain" }, message: "Another site already uses this domain" };
-  const d = await checkDomain(now, siteId);
-  touch(siteId);
-  return { ok: true, message: d?.status === "connected" ? `${host} is connected.` : `${host} added. Add the DNS record below, then check again.` };
+  return withWorkspace(async () => {
+    const host = normaliseHost(z.string().max(260).parse(raw));
+    const err = hostError(host);
+    if (err) return { ok: false, errors: { host: err }, message: err };
+    const now = new Date();
+    const r = setDomain(now, siteId, host);
+    if (!r) return { ok: false, message: "That site was deleted." };
+    if ("taken" in r) return { ok: false, errors: { host: "Another site already uses this domain" }, message: "Another site already uses this domain" };
+    const d = await checkDomain(now, siteId);
+    touch(siteId);
+    return { ok: true, message: d?.status === "connected" ? `${host} is connected.` : `${host} added. Add the DNS record below, then check again.` };
+  });
 }
 
 export async function checkDomainAction(siteId: string): Promise<SiteResult> {
-  const d = await checkDomain(new Date(), z.string().max(80).parse(siteId));
-  touch(siteId);
-  if (!d) return { ok: false, message: "No domain to check." };
-  return { ok: d.status === "connected", message: d.status === "connected" ? `${d.host} is connected.` : d.found };
+  return withWorkspace(async () => {
+    const d = await checkDomain(new Date(), z.string().max(80).parse(siteId));
+    touch(siteId);
+    if (!d) return { ok: false, message: "No domain to check." };
+    return { ok: d.status === "connected", message: d.status === "connected" ? `${d.host} is connected.` : d.found };
+  });
 }
 
 export async function removeDomainAction(siteId: string): Promise<SiteResult> {
-  setDomain(new Date(), z.string().max(80).parse(siteId), null);
-  touch(siteId);
-  return { ok: true, message: "Domain removed. The site stays on its Lotus address." };
+  return withWorkspace(async () => {
+    setDomain(new Date(), z.string().max(80).parse(siteId), null);
+    touch(siteId);
+    return { ok: true, message: "Domain removed. The site stays on its Lotus address." };
+  });
 }
 
 /** Public: a visitor sent a contact form on a site page. */
 export async function submitSiteFormAction(siteId: string, pageId: string, back: string, formData: FormData): Promise<void> {
-  const now = new Date();
-  const site = findWebsite(now, siteId);
-  const pg = site?.pages.find((p) => p.id === pageId);
-  if (!site || site.status !== "live" || !pg) return;
-  const values: Record<string, string> = {};
-  for (const [k, v] of formData.entries()) if (typeof v === "string" && v.trim() && !k.startsWith("$")) values[k] = v.trim().slice(0, 1000);
-  // Builder forms send first_name and last_name; the older blocks send name.
-  const [firstName, ...rest] = (values.name ?? [values.first_name, values.last_name].filter(Boolean).join(" ")).split(/\s+/);
-  const email = values.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email) ? values.email.toLowerCase() : undefined;
-  const { contact, created } = upsertContact(now, site.accountId, { firstName: firstName || undefined, lastName: rest.join(" ") || undefined, email, phone: values.phone, city: values.address }, "website", ["Website lead"]);
-  if (contact) {
-    addActivity(now, contact.id, {
-      kind: values.amount ? "donation" : "form",
-      title: values.amount ? `Pledged $${values.amount} on the ${pg.title} page` : `Sent the ${pg.title} form on the website`,
-      body: values.message,
-      by: "System",
-    });
-    formSubmitted(now, contact, `${site.name}: ${pg.title}`, created);
-    recordLead(now, site.id);
-  }
-  revalidatePath("/agency/contacts");
-  revalidatePath("/agency/websites");
-  const safeBack = back.startsWith("/") && !back.startsWith("//") ? back : "/";
-  redirect(`${safeBack}${safeBack.includes("?") ? "&" : "?"}sent=1`);
+  await withPublicWorkspace(`site-id:${siteId}`, async () => {
+    const now = new Date();
+    const site = findWebsite(now, siteId);
+    const pg = site?.pages.find((p) => p.id === pageId);
+    if (!site || site.status !== "live" || !pg) return;
+    const values: Record<string, string> = {};
+    for (const [k, v] of formData.entries()) if (typeof v === "string" && v.trim() && !k.startsWith("$")) values[k] = v.trim().slice(0, 1000);
+    // Builder forms send first_name and last_name; the older blocks send name.
+    const [firstName, ...rest] = (values.name ?? [values.first_name, values.last_name].filter(Boolean).join(" ")).split(/\s+/);
+    const email = values.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email) ? values.email.toLowerCase() : undefined;
+    const { contact, created } = upsertContact(now, site.accountId, { firstName: firstName || undefined, lastName: rest.join(" ") || undefined, email, phone: values.phone, city: values.address }, "website", ["Website lead"]);
+    if (contact) {
+      addActivity(now, contact.id, {
+        kind: values.amount ? "donation" : "form",
+        title: values.amount ? `Pledged $${values.amount} on the ${pg.title} page` : `Sent the ${pg.title} form on the website`,
+        body: values.message,
+        by: "System",
+      });
+      formSubmitted(now, contact, `${site.name}: ${pg.title}`, created);
+      recordLead(now, site.id);
+    }
+    revalidatePath("/agency/contacts");
+    revalidatePath("/agency/websites");
+    const safeBack = back.startsWith("/") && !back.startsWith("//") ? back : "/";
+    redirect(`${safeBack}${safeBack.includes("?") ? "&" : "?"}sent=1`);
+  });
 }

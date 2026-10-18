@@ -171,6 +171,6 @@ export function tagOptions(now: Date, accountId: string, wf?: Workflow): string[
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
 }
 
-export const teamNames = () => teamDirectory.map((t) => t.name);
+export const teamNames = () => teamDirectory().map((t) => t.name);
 
 export type { TriggerType };
