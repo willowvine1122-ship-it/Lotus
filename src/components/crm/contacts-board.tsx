@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/page-header";
 import { Avatar, Tag } from "@/components/diagnostic/primitives";
 import type { Assignee, Contact, ContactActivity, Pipeline } from "@/lib/types";
 import { cn, formatCount, formatDollars, formatDollarsCompact, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { ContactPanel, type ContactActions } from "./contact-panel";
 import { daysBetween, fullName, isOpen, personFor, sourceLabel, stageIndex, stageOf, type ClientRef } from "./model";
 
@@ -65,7 +66,7 @@ export function ContactsBoard({
   const [scope, setScope] = useState<"open" | "all">("open");
   const [sort, setSort] = useState<Sort>({ key: "activity", dir: "desc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   const inClient = useMemo(() => contacts.filter((c) => clientId === "all" || c.accountId === clientId), [contacts, clientId]);
@@ -218,7 +219,7 @@ export function ContactsBoard({
                     aria-selected={isSelected}
                     onClick={() => {
                       setSelectedId(c.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}
                   >
@@ -251,14 +252,16 @@ export function ContactsBoard({
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <ContactPanel contact={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]!} activities={selectedActivities} team={team} now={now} actions={actions} />
+            <ContactPanel contact={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]!} activities={selectedActivities} team={team} now={now} actions={actions} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={fullName(selected)}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <ContactPanel contact={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]!} activities={selectedActivities} team={team} now={now} actions={actions} onClose={() => setPanelOpen(false)} />
+                <ContactPanel contact={selected} client={clientById.get(selected.accountId)!} pipeline={pipelines[selected.accountId]!} activities={selectedActivities} team={team} now={now} actions={actions} onClose={panel.close} />
               </aside>
             </div>
           )}

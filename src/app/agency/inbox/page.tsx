@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { Inbox } from "@/components/inbox/inbox";
@@ -9,6 +10,7 @@ export const metadata = { title: "Inbox" };
 
 async function InboxLoader({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
+  const session = await openWorkspace();
   const params = await searchParams;
   const now = new Date();
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -32,8 +34,8 @@ async function InboxLoader({ searchParams }: { searchParams: Promise<Record<stri
       threads={threads}
       contacts={listInboxContacts(now)}
       clients={clients}
-      team={teamDirectory}
-      me="Afza"
+      team={teamDirectory()}
+      me={session.user.name}
       nowIso={now.toISOString()}
       initialClientId={clients.find((c) => c.slug === clientSlug)?.id ?? null}
       initialConversationId={conversationId ?? null}

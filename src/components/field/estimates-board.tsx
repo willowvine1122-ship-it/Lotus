@@ -167,7 +167,7 @@ export function EstimatesBoard({
       </div>
 
       {selected && (
-        <PanelFrame label={selected.title} open={board.panelOpen} onClose={() => board.setPanelOpen(false)}>
+        <PanelFrame label={selected.title} open={board.panelOpen} docked={board.docked} onClose={() => board.setPanelOpen(false)}>
           {(close) => (
             <EstimatePanel
               key={selected.id}

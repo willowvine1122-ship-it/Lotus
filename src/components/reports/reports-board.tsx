@@ -8,6 +8,7 @@ import { SectionTitle, Tag } from "@/components/diagnostic/primitives";
 import type { ActionState } from "@/app/agency/reports/actions";
 import type { ReportSend } from "@/lib/types";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { ReportClient } from "./data";
 import { nextSend, rangeLabel, scheduleLabel, sectionLabel } from "./model";
 
@@ -64,7 +65,7 @@ function Panel({ client, sends, now, sendNow, onClose }: { client: ReportClient;
           </div>
         </div>
         {onClose && (
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
+          <button type="button" onClick={onClose} aria-label="Close panel" title="Close (Esc)" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
             <X className="size-4" strokeWidth={2} />
           </button>
         )}
@@ -132,7 +133,7 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "next", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(initialClientId ?? null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -210,7 +211,7 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
                 const isSelected = selected?.id === c.id;
                 const cfg = c.config;
                 return (
-                  <tr key={c.id} aria-selected={isSelected} tabIndex={0} onClick={() => { setSelectedId(c.id); setPanelOpen(true); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(c.id); setPanelOpen(true); } }} className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100 focus-visible:outline-none focus-visible:bg-surface-2", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}>
+                  <tr key={c.id} aria-selected={isSelected} tabIndex={0} onClick={() => { setSelectedId(c.id); panel.show(); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(c.id); panel.show(); } }} className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100 focus-visible:outline-none focus-visible:bg-surface-2", isSelected ? "bg-brand-soft/40" : "hover:bg-surface-2/60")}>
                     <td className="max-w-[220px] px-3 py-1.5 pl-5 md:pl-6">
                       <span className="block truncate font-medium">{c.name}</span>
                       <span className="block truncate text-xs text-fg-3">{rangeLabel(cfg.range)} · {formatCount(cfg.sections.length)} sections</span>
@@ -239,14 +240,16 @@ export function ReportsBoard({ clients, sends, nowIso, initialClientId, sendNow 
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <Panel client={selected} sends={sends.filter((s) => s.accountId === selected.id)} now={now} sendNow={sendNow} />
+            <Panel client={selected} sends={sends.filter((s) => s.accountId === selected.id)} now={now} sendNow={sendNow} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <Panel client={selected} sends={sends.filter((s) => s.accountId === selected.id)} now={now} sendNow={sendNow} onClose={() => setPanelOpen(false)} />
+                <Panel client={selected} sends={sends.filter((s) => s.accountId === selected.id)} now={now} sendNow={sendNow} onClose={panel.close} />
               </aside>
             </div>
           )}

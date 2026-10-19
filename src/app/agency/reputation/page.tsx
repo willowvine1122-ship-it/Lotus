@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { ReputationBoard } from "@/components/reputation/reputation-board";
@@ -12,6 +13,7 @@ type Params = Promise<{ client?: string; view?: string }>;
 async function Board({ searchParams }: { searchParams: Params }) {
   const { client, view } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = reputationClients(now);
   const initial = clients.find((c) => c.id === client || c.slug === client)?.id;

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -20,6 +21,7 @@ import { invoiceJobAction, saveJobNotesAction, scheduleJobAction, setJobStatusAc
 async function JobView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const job = findJob(now, id);
   if (!job) notFound();

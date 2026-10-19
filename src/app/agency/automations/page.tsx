@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { WorkflowsBoard } from "@/components/automations/workflows-board";
@@ -10,6 +11,7 @@ export const metadata = { title: "Automations" };
 async function Board({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = automationClients(now);
   const initial = clients.find((c) => c.id === client || c.slug === client)?.id;

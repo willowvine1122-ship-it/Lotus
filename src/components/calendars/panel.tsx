@@ -88,7 +88,7 @@ export function BookingPanel({
           <h2 className="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight">{a.contact.name}</h2>
           <BookingStatus appointment={a} now={now} />
           {onClose && (
-            <button type="button" onClick={onClose} className="grid size-7 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg lg:hidden">
+            <button type="button" aria-label="Close panel" title="Close (Esc)" onClick={onClose} className="grid size-7 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
               <span className="sr-only">Close</span>
             </button>

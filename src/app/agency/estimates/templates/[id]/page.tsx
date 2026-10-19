@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -17,6 +18,7 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ client?:
 async function Editor({ params, searchParams }: Props) {
   const [{ id }, { client }] = await Promise.all([params, searchParams]);
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fieldClientRefs(now);
   const template = id === "new" ? undefined : findTemplate(now, id);

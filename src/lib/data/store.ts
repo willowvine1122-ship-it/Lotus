@@ -1,30 +1,23 @@
+import { stamp } from "@/lib/ids";
+import { randomUUID } from "node:crypto";
 import type { AccountMode, Assignee, ClientRecord, ClientStatus, DiagnosticNote, Member, Task } from "@/lib/types";
-import { demoAgency } from "./demo";
-import { demoClients } from "./demo-clients";
+import { defineModule, workspaceMembers, currentWorkspace } from "@/lib/server/workspace";
 
 /*
- * Demo store. Until Supabase is configured, clients live in process memory,
- * seeded from the synthetic set and mutated by the server actions. It is
- * kept on globalThis so dev-server reloads do not wipe it. Everything here
- * is replaced by database queries once a project is connected.
+ * Client sub-accounts and everything the agency keeps per client (notes,
+ * tasks, client logins). Saved per agency in the "clients" module; see
+ * src/lib/server/workspace.ts for how modules load and save.
  */
 
-interface Store {
-  seededFor: string;
-  clients: ClientRecord[];
-}
+const clientsModule = defineModule<{ clients: ClientRecord[] }>({
+  key: "clients",
+  init: () => ({ clients: [] }),
+  // "account:<id>" lets the install script and the client view find the agency.
+  publicKeys: (s) => s.clients.flatMap((c) => [`account:${c.account.id}`, `client:${c.account.slug}`]),
+});
 
-const g = globalThis as unknown as { __lotusStore?: Store };
-
-function store(now: Date): Store {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusStore || g.__lotusStore.seededFor !== key) {
-    const seeded = demoClients(now).map((c) => structuredClone(c));
-    // Keep clients that were created in this process across the day boundary.
-    const created = g.__lotusStore?.clients.filter((c) => c.account.id.startsWith("new-")) ?? [];
-    g.__lotusStore = { seededFor: key, clients: [...seeded, ...created] };
-  }
-  return g.__lotusStore;
+function store(_now: Date) {
+  return clientsModule.get();
 }
 
 export function listClients(now: Date): ClientRecord[] {
@@ -35,11 +28,14 @@ export function findClient(now: Date, idOrSlug: string): ClientRecord | undefine
   return store(now).clients.find((c) => c.account.id === idOrSlug || c.account.slug === idOrSlug);
 }
 
-export const teamDirectory: Assignee[] = [
-  { name: "Afza", initials: "A", tone: "violet" },
-  { name: "Mahad", initials: "M", tone: "orange" },
-  { name: "Sara", initials: "S", tone: "teal" },
-];
+const tones: Assignee["tone"][] = ["violet", "orange", "teal", "ink"];
+
+/** The agency's staff (owners, admins, members) as people work can be assigned to. */
+export function teamDirectory(): Assignee[] {
+  return workspaceMembers()
+    .filter((m) => m.role !== "client")
+    .map((m, i) => ({ name: m.name, initials: initialsOf(m.name), tone: tones[i % tones.length]! }));
+}
 
 export interface NewClientInput {
   name: string;
@@ -51,7 +47,7 @@ export interface NewClientInput {
   monthlyAmountCents: number; // budget (marketing) or goal (fundraising)
   avgJobValueCents?: number;
   tags: string[];
-  assignees: string[]; // names from teamDirectory
+  assignees: string[]; // names from teamDirectory()
   clientContact?: { name: string; email: string };
 }
 
@@ -65,18 +61,22 @@ export function slugify(name: string) {
 
 export function createClient(now: Date, input: NewClientInput): ClientRecord {
   const s = store(now);
-  let slug = slugify(input.name) || "client";
-  if (s.clients.some((c) => c.account.slug === slug)) slug = `${slug}-${s.clients.length + 1}`;
-  const id = `new-${Date.now().toString(36)}`;
+  // Public pages (booking, forms, donation pages) start from the client's slug, and those addresses
+  // are shared by every agency on Lotus, so a short random tail keeps them from colliding.
+  const root = (slugify(input.name) || "client").slice(0, 40);
+  let slug = `${root}-${randomUUID().slice(0, 4)}`;
+  while (s.clients.some((c) => c.account.slug === slug)) slug = `${root}-${randomUUID().slice(0, 4)}`;
+  const id = randomUUID();
+  const agencyId = currentWorkspace()?.agencyId ?? "";
   const base = {
-    account: { id, agencyId: demoAgency.id, name: input.name.trim(), slug, mode: input.mode },
+    account: { id, agencyId, name: input.name.trim(), slug, mode: input.mode },
     status: "onboarding" as ClientStatus,
     industry: input.industry,
     website: input.website || undefined,
     location: input.location,
     timeZone: input.timeZone,
     tags: input.tags,
-    assignees: teamDirectory.filter((a) => input.assignees.includes(a.name)),
+    assignees: teamDirectory().filter((a) => input.assignees.includes(a.name)),
     startedOn: now.toISOString().slice(0, 10),
     health: "green" as const,
     alerts: [],
@@ -131,7 +131,7 @@ export function updateClient(now: Date, id: string, patch: ClientPatch): ClientR
   if (patch.timeZone !== undefined) c.timeZone = patch.timeZone;
   if (patch.tags !== undefined) c.tags = patch.tags;
   if (patch.status !== undefined) c.status = patch.status;
-  if (patch.assignees !== undefined) c.assignees = teamDirectory.filter((a) => patch.assignees!.includes(a.name));
+  if (patch.assignees !== undefined) c.assignees = teamDirectory().filter((a) => patch.assignees!.includes(a.name));
   if (patch.monthlyAmountCents !== undefined) {
     if (c.mode === "marketing") c.monthlyBudgetCents = patch.monthlyAmountCents;
     else c.monthlyGoalCents = patch.monthlyAmountCents;
@@ -146,7 +146,7 @@ export function inviteMember(now: Date, id: string, name: string, email: string)
   const existing = c.clientMembers.find((m) => m.email.toLowerCase() === email.toLowerCase());
   if (existing) return existing;
   const m: Member = {
-    id: `${id}-m${c.clientMembers.length + 1}-${Date.now().toString(36)}`,
+    id: `${id}-m${c.clientMembers.length + 1}-${stamp()}`,
     name: name.trim(),
     email: email.trim(),
     role: "client",
@@ -168,7 +168,7 @@ export function addNote(now: Date, id: string, authorName: string, body: string)
   const c = findClient(now, id);
   if (!c) return undefined;
   const n: DiagnosticNote = {
-    id: `${id}-n-${Date.now().toString(36)}`,
+    id: `${id}-n-${stamp()}`,
     accountId: c.account.id,
     authorName,
     body: body.trim(),
@@ -188,7 +188,7 @@ export function setTaskStatus(now: Date, id: string, taskId: string, status: Tas
 export function addTask(now: Date, id: string, title: string, assigneeName?: string, dueOn?: string): Task | undefined {
   const c = findClient(now, id);
   if (!c) return undefined;
-  const t: Task = { id: `${id}-t-${Date.now().toString(36)}`, accountId: c.account.id, title: title.trim(), status: "todo", assigneeName, dueOn };
+  const t: Task = { id: `${id}-t-${stamp()}`, accountId: c.account.id, title: title.trim(), status: "todo", assigneeName, dueOn };
   c.tasks.push(t);
   return t;
 }
@@ -205,34 +205,17 @@ export function initialsOf(name: string) {
 /* ------------------------------- CRM -------------------------------- */
 
 import type { ActivityKind, Contact, ContactActivity, ContactSource, Pipeline } from "@/lib/types";
-import { demoContactsFor } from "./demo-contacts";
 import { contactDeleted, contactStageMoved, primaryPipeline } from "./opportunities";
 
 interface CrmStore {
-  seededFor: string;
   contacts: Contact[];
   activities: ContactActivity[];
 }
 
-const gc = globalThis as unknown as { __lotusCrm?: CrmStore };
+const crmModule = defineModule<CrmStore>({ key: "crm", init: () => ({ contacts: [], activities: [] }) });
 
-function crm(now: Date): CrmStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!gc.__lotusCrm || gc.__lotusCrm.seededFor !== key) {
-    const contacts: Contact[] = [];
-    const activities: ContactActivity[] = [];
-    for (const c of listClients(now)) {
-      if (c.account.id.startsWith("new-")) continue;
-      const d = demoContactsFor(c, now);
-      contacts.push(...d.contacts);
-      activities.push(...d.activities);
-    }
-    const kept = gc.__lotusCrm?.contacts.filter((c) => c.id.startsWith("new-")) ?? [];
-    const keptIds = new Set(kept.map((c) => c.id));
-    const keptActs = gc.__lotusCrm?.activities.filter((a) => keptIds.has(a.contactId)) ?? [];
-    gc.__lotusCrm = { seededFor: key, contacts: [...contacts, ...kept], activities: [...activities, ...keptActs] };
-  }
-  return gc.__lotusCrm;
+function crm(_now: Date): CrmStore {
+  return crmModule.get();
 }
 
 /** The client's primary pipeline: the one a contact's stage lives in. */
@@ -273,7 +256,7 @@ export interface NewContactInput {
 export function createContact(now: Date, input: NewContactInput): Contact | undefined {
   const pipeline = getPipeline(now, input.accountId);
   if (!pipeline) return undefined;
-  const id = `new-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  const id = `new-${stamp()}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   const at = now.toISOString();
   const contact: Contact = {
     id,
@@ -329,7 +312,7 @@ export function addActivity(
   const c = findContact(now, contactId);
   if (!c) return undefined;
   const a: ContactActivity = {
-    id: `${contactId}-a-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`,
+    id: `${contactId}-a-${stamp()}-${Math.floor(Math.random() * 1e4).toString(36)}`,
     contactId,
     kind: input.kind,
     title: input.title.trim(),
@@ -354,32 +337,25 @@ export function deleteContact(now: Date, id: string) {
 /* ------------------------------ Funnels ------------------------------ */
 
 import type { BuilderDoc, BuilderTheme, Funnel, FunnelBlock, FunnelOrder, FunnelStep, FunnelStepKind, FunnelSubmission } from "@/lib/types";
-import { demoFunnelsFor, withDocs } from "./demo-funnels";
+import { withDocs } from "./funnel-blocks";
 import { funnelTemplate } from "@/components/builder/templates";
 import { reId, section, row, column, newElement, emptyDoc } from "@/components/builder/model";
 import { sectionTemplates } from "@/components/builder/templates";
 
 interface FunnelStore {
-  seededFor: string;
   funnels: Funnel[];
   submissions: FunnelSubmission[];
   orders?: FunnelOrder[];
 }
 
-const gf = globalThis as unknown as { __lotusFunnels?: FunnelStore };
+const funnelsModule = defineModule<FunnelStore>({
+  key: "funnels",
+  init: () => ({ funnels: [], submissions: [], orders: [] }),
+  publicKeys: (s) => s.funnels.flatMap((f) => [`funnel:${f.slug}`, `funnel-id:${f.id}`]),
+});
 
-function funnelStore(now: Date): FunnelStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!gf.__lotusFunnels || gf.__lotusFunnels.seededFor !== key) {
-    const seeded = listClients(now)
-      .filter((c) => !c.account.id.startsWith("new-"))
-      .flatMap((c) => demoFunnelsFor(c, now));
-    const kept = gf.__lotusFunnels?.funnels.filter((f) => f.id.startsWith("new-")) ?? [];
-    const all = [...seeded, ...kept];
-    for (const f of all) f.steps = withDocs(f.steps);
-    gf.__lotusFunnels = { seededFor: key, funnels: all, submissions: gf.__lotusFunnels?.submissions ?? [], orders: gf.__lotusFunnels?.orders ?? [] };
-  }
-  return gf.__lotusFunnels;
+function funnelStore(_now: Date): FunnelStore {
+  return funnelsModule.get();
 }
 
 export function listFunnels(now: Date, accountId?: string): Funnel[] {
@@ -395,7 +371,7 @@ export function createFunnel(now: Date, input: { accountId: string; name: string
   const c = findClient(now, input.accountId);
   if (!c) return undefined;
   const t = funnelTemplate(input.template);
-  const id = `new-${Date.now().toString(36)}`;
+  const id = `new-${stamp()}`;
   let slug = `${c.account.slug}-${slugify(input.name)}`;
   if (findFunnel(now, slug)) slug = `${slug}-${id.slice(-4)}`;
   const f: Funnel = {
@@ -468,7 +444,7 @@ export function addStep(now: Date, funnelId: string, name: string, kind: FunnelS
   const f = findFunnel(now, funnelId);
   if (!f) return undefined;
   const c = findClient(now, f.accountId);
-  const id = `s-${Date.now().toString(36)}`;
+  const id = `s-${stamp()}`;
   let path = slugify(name) || "step";
   while (f.steps.some((s) => s.path === path)) path = `${path}-2`;
   const ctx = { name: c?.account.name ?? f.name, industry: c?.industry ?? "", location: c?.location ?? "" };
@@ -514,7 +490,7 @@ export function duplicateStep(now: Date, funnelId: string, stepId: string): Funn
   const src = f.steps[i]!;
   let path = `${src.path || "page"}-copy`;
   while (f.steps.some((s) => s.path === path)) path = `${path}-2`;
-  const copy: FunnelStep = { ...structuredClone(src), id: `s-${Date.now().toString(36)}`, name: `${src.name} copy`, path, variant: undefined, doc: src.doc ? reId(src.doc) : undefined, stats: { a: { views: 0, conversions: 0, revenueCents: 0 } } };
+  const copy: FunnelStep = { ...structuredClone(src), id: `s-${stamp()}`, name: `${src.name} copy`, path, variant: undefined, doc: src.doc ? reId(src.doc) : undefined, stats: { a: { views: 0, conversions: 0, revenueCents: 0 } } };
   f.steps.splice(i + 1, 0, copy);
   f.updatedAt = now.toISOString();
   return copy;
@@ -573,7 +549,7 @@ export function recordStepConversion(now: Date, funnelId: string, stepId: string
 }
 
 export function recordOrder(now: Date, o: Omit<FunnelOrder, "id" | "at">): FunnelOrder {
-  const order: FunnelOrder = { ...o, id: `ord-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, at: now.toISOString() };
+  const order: FunnelOrder = { ...o, id: `ord-${stamp()}${Math.random().toString(36).slice(2, 5)}`, at: now.toISOString() };
   const st = funnelStore(now);
   (st.orders ??= []).push(order);
   return order;
@@ -613,7 +589,7 @@ export function deleteFunnel(now: Date, id: string) {
 }
 
 export function recordSubmission(now: Date, funnelId: string, stepId: string, values: Record<string, string>, contactId?: string): FunnelSubmission {
-  const sub: FunnelSubmission = { id: `sub-${Date.now().toString(36)}`, funnelId, stepId, values, contactId, at: now.toISOString() };
+  const sub: FunnelSubmission = { id: `sub-${stamp()}`, funnelId, stepId, values, contactId, at: now.toISOString() };
   const s = funnelStore(now);
   s.submissions.push(sub);
   const f = s.funnels.find((f) => f.id === funnelId);
@@ -633,10 +609,9 @@ export function listSubmissions(now: Date, funnelId: string): FunnelSubmission[]
 /* ------------------------ Reputation and reporting ------------------------ */
 
 import type { ReportConfig, ReportSend, ReputationSettings, Review, ReviewRequest, ReviewRequestChannel } from "@/lib/types";
-import { defaultReportConfig, defaultReputationSettings, demoReportSendsFor, demoRequestsFor, demoReviewsFor } from "./demo-reputation";
+import { defaultReportConfig, defaultReputationSettings } from "./reputation-defaults";
 
 interface ReputationStore {
-  seededFor: string;
   reviews: Review[];
   requests: ReviewRequest[];
   settings: Record<string, ReputationSettings>;
@@ -644,37 +619,10 @@ interface ReputationStore {
   sends: ReportSend[];
 }
 
-const gr = globalThis as unknown as { __lotusReputation?: ReputationStore };
+const reputationModule = defineModule<ReputationStore>({ key: "reputation", init: () => ({ reviews: [], requests: [], settings: {}, reports: {}, sends: [] }) });
 
-function reputationStore(now: Date): ReputationStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!gr.__lotusReputation || gr.__lotusReputation.seededFor !== key) {
-    const prev = gr.__lotusReputation;
-    const clients = listClients(now).filter((c) => !c.account.id.startsWith("new-"));
-    const reviews: Review[] = [];
-    const requests: ReviewRequest[] = [];
-    const settings: Record<string, ReputationSettings> = {};
-    const reports: Record<string, ReportConfig> = {};
-    const sends: ReportSend[] = [];
-    for (const c of clients) {
-      const rv = demoReviewsFor(c, now);
-      reviews.push(...rv);
-      requests.push(...demoRequestsFor(c, now, listContacts(now, c.account.id), rv));
-      settings[c.account.id] = prev?.settings[c.account.id] ?? defaultReputationSettings(c);
-      reports[c.account.id] = prev?.reports[c.account.id] ?? defaultReportConfig(c);
-      sends.push(...demoReportSendsFor(c, reports[c.account.id]!, now));
-    }
-    const keep = <T extends { id: string }>(xs: T[] | undefined) => xs?.filter((x) => x.id.startsWith("new-")) ?? [];
-    gr.__lotusReputation = {
-      seededFor: key,
-      reviews: [...reviews, ...keep(prev?.reviews)],
-      requests: [...keep(prev?.requests), ...requests],
-      settings: { ...settings, ...(prev?.settings ?? {}) },
-      reports: { ...reports, ...(prev?.reports ?? {}) },
-      sends: [...keep(prev?.sends), ...sends],
-    };
-  }
-  return gr.__lotusReputation;
+function reputationStore(_now: Date): ReputationStore {
+  return reputationModule.get();
 }
 
 export function listReviews(now: Date, accountId?: string): Review[] {
@@ -720,7 +668,7 @@ export function sendReviewRequest(now: Date, accountId: string, contactId: strin
   const contact = findContact(now, contactId);
   if (!contact || contact.accountId !== accountId) return undefined;
   const req: ReviewRequest = {
-    id: `new-rq-${Date.now().toString(36)}`,
+    id: `new-rq-${stamp()}`,
     accountId,
     contactId,
     contactName: `${contact.firstName} ${contact.lastName}`,
@@ -760,7 +708,7 @@ export function listReportSends(now: Date, accountId?: string): ReportSend[] {
 export function sendReportNow(now: Date, accountId: string): ReportSend | undefined {
   const cfg = getReportConfig(now, accountId);
   if (!cfg) return undefined;
-  const send: ReportSend = { id: `new-rs-${Date.now().toString(36)}`, accountId, at: now.toISOString(), recipients: cfg.recipients, range: cfg.range, kind: "manual" };
+  const send: ReportSend = { id: `new-rs-${stamp()}`, accountId, at: now.toISOString(), recipients: cfg.recipients, range: cfg.range, kind: "manual" };
   reputationStore(now).sends.unshift(send);
   return send;
 }

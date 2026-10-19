@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { estimateStatusLine } from "@/components/field/status-lines";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,6 +24,7 @@ import { approveEstimateAction, convertEstimateAction, declineEstimateAction, in
 async function EstimateView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const e = findEstimate(now, id);
   if (!e) notFound();

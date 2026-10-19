@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { elementLive, type ElementLive } from "@/components/elements/data";
@@ -13,6 +14,7 @@ export const metadata = { title: "New element" };
 async function Picker({ searchParams }: { searchParams: Promise<{ client?: string; type?: string }> }) {
   const { client, type } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const lives: Record<string, ElementLive> = {};
   const clients: PickerClient[] = fundraisingClients(now)

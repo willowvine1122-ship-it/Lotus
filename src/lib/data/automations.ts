@@ -1,36 +1,35 @@
+import { stamp } from "@/lib/ids";
 import type { ActivityKind, ClientRecord, Contact, RunStep, Workflow, WorkflowRun, WorkflowStatus, WorkflowStep, WorkflowTrigger } from "@/lib/types";
 import { conditionHolds, conditionSummary, findStep, triggerMatches, waitMs, waitText, type TriggerEvent } from "@/components/automations/model";
 import { renderMerge } from "@/components/email/model";
-import { formatDollars } from "@/lib/utils";
+
 import { cloneSteps, findWorkflowTemplate } from "./automation-templates";
-import { listSends } from "./email";
-import { listThreads, startConversation, findConversation, assignConversation } from "./inbox";
+
+import { startConversation, findConversation, assignConversation } from "./inbox";
 import { stepAppAction, stepSendWebhook } from "./integrations";
-import { addActivity, addTask, findClient, findContact, getPipeline, listActivities, listClients, listContacts, moveContactStage, updateContact } from "./store";
+import { defineModule } from "@/lib/server/workspace";
+import { addActivity, addTask, findClient, findContact, getPipeline, moveContactStage, updateContact } from "./store";
 
 /*
- * Demo automation engine. Workflows and their runs live in process memory on
- * globalThis, seeded once per day. Every run is one contact going through one
+ * Automation engine. Workflows and their runs are saved per agency in the
+ * "automations" module. Every run is one contact going through one
  * workflow, step by step; each step records what happened in plain words,
  * so the run history answers "why didn't it fire" without guesswork.
  *
- * Runs execute in-process: a trigger starts them, actions run immediately,
- * a wait parks the run until its time, and any read of the store resumes the
- * runs that are due. In production this becomes a durable job queue
- * (Inngest) with the same step semantics.
- *
- * The seeded history is a replay of the last 30 days of CRM, inbox and email
- * events through the seeded workflows. A replay only records runs and logs
- * activities; it never changes the seeded contacts.
+ * A trigger starts runs and actions run immediately. A wait parks the run
+ * until its time; due runs carry on the next time the workspace is opened
+ * and from the scheduled job at /api/cron/automations.
  */
 
 interface AutomationStore {
-  seededFor: string;
   workflows: Workflow[];
   runs: WorkflowRun[];
 }
 
-const g = globalThis as unknown as { __lotusAutomations?: AutomationStore; __lotusAutomationsBusy?: boolean };
+const MAX_RUNS = 3000;
+
+const automationsModule = defineModule<AutomationStore>({ key: "automations", init: () => ({ workflows: [], runs: [] }) });
+const g = globalThis as unknown as { __lotusAutomationsBusy?: boolean };
 
 const ACTOR = "Automation";
 
@@ -54,26 +53,11 @@ function setReplayTag(contactId: string, tag: string, on: boolean) {
 }
 const DAY = 86400000;
 
-function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a += 0x6d2b79f5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function store(now: Date): AutomationStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusAutomations || g.__lotusAutomations.seededFor !== key) {
-    const kept = g.__lotusAutomations?.workflows.filter((w) => w.id.startsWith("new-")) ?? [];
-    g.__lotusAutomations = { seededFor: key, workflows: [], runs: [] };
-    seed(now, g.__lotusAutomations);
-    g.__lotusAutomations.workflows.push(...kept);
-  }
-  return g.__lotusAutomations;
+function store(_now: Date): AutomationStore {
+  const s = automationsModule.get();
+  // Keep the newest runs; a finished run older than the cap only matters as history.
+  if (s.runs.length > MAX_RUNS) s.runs.splice(0, s.runs.length - MAX_RUNS);
+  return s;
 }
 
 /** The store, with every run whose wait has ended carried forward. */
@@ -191,6 +175,7 @@ function act(ctx: Ctx, wf: Workflow, step: Exclude<WorkflowStep, { type: "wait" 
       return { status: "done", detail: `Moved to ${stage.name}` };
     }
     case "assign_owner": {
+      if (!step.ownerName) return { status: "skipped", detail: "Skipped: no owner picked in this step" };
       if (contact.ownerName === step.ownerName) return { status: "skipped", detail: `Skipped: ${step.ownerName} already owns it` };
       if (!replay) updateContact(ctx.now, contact.id, { ownerName: step.ownerName });
       log(ctx, at, contact.id, { kind: "note", title: `Owner set to ${step.ownerName}` });
@@ -332,110 +317,6 @@ function fire(now: Date, e: TriggerEvent, depth = 0, fromWorkflowId?: string): W
   return out;
 }
 
-/* ------------------------------- seeding ----------------------------- */
-
-const plans: Record<ClientRecord["mode"], { id: string; status: WorkflowStatus; p: number }[]> = {
-  marketing: [
-    { id: "speed-to-lead", status: "active", p: 1 },
-    { id: "booking-confirmation", status: "active", p: 0.85 },
-    { id: "no-show-recovery", status: "active", p: 0.7 },
-    { id: "review-request", status: "paused", p: 0.5 },
-    { id: "email-clicked", status: "draft", p: 0.35 },
-  ],
-  fundraising: [
-    { id: "donation-thanks", status: "active", p: 1 },
-    { id: "lapsed-winback", status: "active", p: 0.75 },
-    { id: "monthly-upgrade", status: "active", p: 0.6 },
-    { id: "reply-handoff", status: "draft", p: 0.4 },
-  ],
-};
-
-function seed(now: Date, s: AutomationStore) {
-  listThreads(now); // the inbox adds its contacts to the CRM; make sure they exist first
-  const events: (TriggerEvent & { at: string })[] = [];
-  const since = new Date(now.getTime() - 30 * DAY).toISOString();
-  const nowIso = now.toISOString();
-
-  for (const c of listClients(now)) {
-    if (c.account.id.startsWith("new-")) continue;
-    const r = rng([...c.account.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 11));
-    for (const plan of plans[c.mode]) {
-      if (r() > plan.p) continue;
-      const t = findWorkflowTemplate(plan.id)!;
-      const id = `${c.account.id}-wf-${t.id}`;
-      const created = new Date(now.getTime() - (45 + Math.floor(r() * 60)) * DAY).toISOString();
-      s.workflows.push({
-        id,
-        accountId: c.account.id,
-        name: t.name,
-        status: plan.status,
-        trigger: { ...t.trigger },
-        steps: cloneSteps(t.steps, id),
-        allowReentry: t.trigger.type === "donation_received" || t.trigger.type === "message_received" || t.trigger.type === "appointment_booked",
-        templateId: t.id,
-        createdAt: created,
-        updatedAt: new Date(now.getTime() - Math.floor(r() * 20) * DAY).toISOString(),
-      });
-    }
-
-    // Events from the last 30 days of each contact's history.
-    for (const ct of listContacts(now, c.account.id)) {
-      for (const a of listActivities(now, ct.id)) {
-        if (a.at < since || a.at > nowIso || a.by === ACTOR) continue;
-        if (a.kind === "form") {
-          events.push({ type: "contact_created", contactId: ct.id, source: ct.source, label: a.title, at: a.at });
-          if (ct.source === "website" || ct.source === "meta" || ct.source === "donation-page") events.push({ type: "form_submitted", contactId: ct.id, label: a.title, at: a.at });
-        } else if (a.kind === "appointment") {
-          events.push({ type: "appointment_booked", contactId: ct.id, label: a.title, at: a.at });
-          // A booking that never became a visit is a no-show two days on.
-          const noShow = new Date(new Date(a.at).getTime() + 2 * DAY).toISOString();
-          if (ct.stageId === "booked" && noShow < nowIso && r() < 0.5) events.push({ type: "appointment_no_show", contactId: ct.id, label: "Missed the appointment", at: noShow });
-        } else if (a.kind === "donation" && a.amountCents) {
-          events.push({ type: "donation_received", contactId: ct.id, amountCents: a.amountCents, label: `Gift of ${formatDollars(a.amountCents)}`, at: a.at });
-        } else if (a.kind === "stage" && /won/i.test(a.title)) {
-          events.push({ type: "stage_changed", contactId: ct.id, stageId: "won", label: "Moved to Won", at: a.at });
-        } else if (a.kind === "stage" && /lost/i.test(a.title)) {
-          events.push({ type: "stage_changed", contactId: ct.id, stageId: "lost", label: "Moved to Lost", at: a.at });
-        }
-      }
-      // Lapsed donors lapse 60 days after their last gift; replay that moment when it fell in the window.
-      if (ct.stageId === "lapsed") {
-        const at = new Date(now.getTime() - (2 + Math.floor(r() * 26)) * DAY - Math.floor(r() * 8) * 3600000).toISOString();
-        events.push({ type: "stage_changed", contactId: ct.id, stageId: "lapsed", label: "Moved to Lapsed", at });
-      }
-    }
-  }
-
-  for (const t of listThreads(now)) {
-    for (const msg of t.messages) {
-      if (msg.direction !== "inbound" || msg.kind !== "message" || msg.sentAt < since) continue;
-      events.push({ type: "message_received", contactId: t.contactId, channel: msg.channel, label: `Wrote in by ${msg.channel === "sms" ? "SMS" : msg.channel === "email" ? "email" : msg.channel === "whatsapp" ? "WhatsApp" : "Facebook"}`, at: msg.sentAt });
-    }
-  }
-  for (const send of listSends(now)) {
-    if (send.clickedAt && send.clickedAt >= since) events.push({ type: "email_clicked", contactId: send.contactId, label: "Clicked a campaign link", at: send.clickedAt });
-  }
-
-  events.sort((a, b) => a.at.localeCompare(b.at));
-  const pausedAt = pausedSince(now);
-  for (const e of events) {
-    resumeDue(s, now, "replay", new Date(e.at));
-    const contact = findContact(now, e.contactId);
-    if (!contact) continue;
-    for (const wf of s.workflows) {
-      if (wf.accountId !== contact.accountId || !triggerMatches(wf.trigger, e)) continue;
-      // Paused workflows ran until they were paused; drafts never ran.
-      if (wf.status === "draft" || (wf.status === "paused" && e.at > pausedAt) || e.at < wf.createdAt) continue;
-      startRun({ s, now, mode: "replay", depth: 0 }, wf, contact.id, e.label, new Date(e.at));
-    }
-  }
-  // Paused workflows hold their waiting contacts from the moment they were paused.
-  resumeDue(s, now, "replay", now);
-  replayTags.clear();
-}
-
-/* --------------------------------- API -------------------------------- */
-
 export function listWorkflows(now: Date, accountId?: string): Workflow[] {
   const all = live(now).workflows;
   return accountId ? all.filter((w) => w.accountId === accountId) : all;
@@ -464,7 +345,7 @@ export function createWorkflow(now: Date, input: { accountId: string; name: stri
   const client = findClient(now, input.accountId);
   if (!client) return undefined;
   const t = input.templateId ? findWorkflowTemplate(input.templateId) : undefined;
-  const id = `new-wf-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  const id = `new-wf-${stamp()}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   const at = now.toISOString();
   const trigger: WorkflowTrigger = t ? { ...t.trigger } : { type: "contact_created" };
   const wf: Workflow = { id, accountId: client.account.id, name: input.name.trim(), status: "draft", trigger, steps: t ? cloneSteps(t.steps, id) : [], allowReentry: false, templateId: t?.id, createdAt: at, updatedAt: at };
@@ -493,7 +374,7 @@ export function setWorkflowStatus(now: Date, id: string, status: WorkflowStatus)
 export function duplicateWorkflow(now: Date, id: string): Workflow | undefined {
   const wf = findWorkflow(now, id);
   if (!wf) return undefined;
-  const copyId = `new-wf-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  const copyId = `new-wf-${stamp()}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   const at = now.toISOString();
   const copy: Workflow = { ...structuredClone(wf), id: copyId, name: `${wf.name} (copy)`, status: "draft", steps: cloneSteps(wf.steps, copyId), createdAt: at, updatedAt: at };
   store(now).workflows.push(copy);

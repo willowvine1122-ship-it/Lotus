@@ -11,6 +11,7 @@ import type {
   ReviewSource,
 } from "@/lib/types";
 import { cn, formatCount, formatRate, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import {
   averageRating,
   channelLabel,
@@ -212,7 +213,7 @@ export function ReputationBoard({
     dir: "desc",
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const detail = useDetailPanel();
   const clientById = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
     [clients],
@@ -570,11 +571,11 @@ export function ReputationBoard({
                       tabIndex={0}
                       onClick={() => {
                         setSelectedId(r.id);
-                        setPanelOpen(true);
+                        detail.show();
                       }}
                       onKeyDown={keyActivate(() => {
                         setSelectedId(r.id);
-                        setPanelOpen(true);
+                        detail.show();
                       })}
                       className={rowClass(isSelected)}
                     >
@@ -656,11 +657,11 @@ export function ReputationBoard({
                       tabIndex={0}
                       onClick={() => {
                         setSelectedId(r.id);
-                        setPanelOpen(true);
+                        detail.show();
                       }}
                       onKeyDown={keyActivate(() => {
                         setSelectedId(r.id);
-                        setPanelOpen(true);
+                        detail.show();
                       })}
                       className={rowClass(isSelected)}
                     >
@@ -711,10 +712,12 @@ export function ReputationBoard({
 
       {hasPanel && (
         <>
+          {detail.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            {panel()}
+            {panel(detail.close)}
           </aside>
-          {panelOpen && (
+          )}
+          {detail.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -724,11 +727,11 @@ export function ReputationBoard({
               <button
                 type="button"
                 aria-label="Close panel"
-                onClick={() => setPanelOpen(false)}
+                onClick={detail.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                {panel(() => setPanelOpen(false))}
+                {panel(detail.close)}
               </aside>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -30,6 +31,7 @@ async function ClientDetail({ params, searchParams }: { params: Promise<{ slug: 
   const { slug } = await params;
   const { tab: rawTab } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const client = await getClientRecord(now, slug);
   if (!client) notFound();
@@ -111,11 +113,11 @@ async function ClientDetail({ params, searchParams }: { params: Promise<{ slug: 
       <div className={cn("px-5 py-6 md:px-8", tab === "settings" && "px-0 py-0 md:px-0")}>
         {tab === "overview" && <ClientOverview row={row} client={client} nowIso={nowIso} />}
         {tab === "notes" && <NotesTab client={client} nowIso={nowIso} addNote={addNoteAction.bind(null, id)} />}
-        {tab === "tasks" && <TasksTab client={client} team={teamDirectory} nowIso={nowIso} addTask={addTaskAction.bind(null, id)} toggleTask={toggleTaskAction.bind(null, id)} />}
+        {tab === "tasks" && <TasksTab client={client} team={teamDirectory()} nowIso={nowIso} addTask={addTaskAction.bind(null, id)} toggleTask={toggleTaskAction.bind(null, id)} />}
         {tab === "team" && <TeamTab client={client} nowIso={nowIso} invite={inviteMemberAction.bind(null, id)} remove={removeMemberAction.bind(null, id)} />}
         {tab === "settings" && (
           <div className="bg-surface">
-            <ClientForm action={updateClientAction.bind(null, id)} team={teamDirectory} client={client} />
+            <ClientForm action={updateClientAction.bind(null, id)} team={teamDirectory()} client={client} />
           </div>
         )}
       </div>

@@ -27,6 +27,7 @@ import {
   formatRate,
   timeAgo,
 } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { DonorPanel } from "./panel";
 
 /*
@@ -154,7 +155,7 @@ export function Donors({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "health", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
   const [limit, setLimit] = useState(PAGE);
 
   const scoped = useMemo(
@@ -478,7 +479,7 @@ export function Donors({
                     key={r.id}
                     onClick={() => {
                       setSelectedId(r.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     aria-selected={isSel}
                     className={cn(
@@ -497,7 +498,7 @@ export function Donors({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedId(r.id);
-                                setPanelOpen(true);
+                                panel.show();
                               }}
                               className="truncate text-left font-medium hover:underline"
                             >
@@ -624,15 +625,18 @@ export function Donors({
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
             <DonorPanel
               row={selected}
               now={now}
               campaignTitles={campaignTitles}
               showClient={!single}
+              onClose={panel.close}
             />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div
               className="fixed inset-0 z-20 flex lg:hidden"
               role="dialog"
@@ -642,7 +646,7 @@ export function Donors({
               <button
                 type="button"
                 aria-label="Close donor"
-                onClick={() => setPanelOpen(false)}
+                onClick={panel.close}
                 className="flex-1 bg-rail/40"
               />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
@@ -651,7 +655,7 @@ export function Donors({
                   now={now}
                   campaignTitles={campaignTitles}
                   showClient={!single}
-                  onClose={() => setPanelOpen(false)}
+                  onClose={panel.close}
                 />
               </aside>
             </div>

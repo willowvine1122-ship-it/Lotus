@@ -23,7 +23,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Restore the folded rail before first paint so it never jumps. */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem("lotus-nav")==="collapsed")document.documentElement.dataset.nav="collapsed"}catch(e){}` }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

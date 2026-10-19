@@ -1,59 +1,33 @@
+import { stamp } from "@/lib/ids";
 import { randomBytes } from "node:crypto";
 import type { EstimateExtras, EstimateTemplate, LineItem, PriceBookItem } from "@/lib/types";
-import { trades } from "./demo-field";
-import { fieldClients, listEstimates } from "./field-store";
-import { findContact } from "./store";
+import { trades } from "./trades";
+import { fieldClients,} from "./field-store";
+import { defineModule } from "@/lib/server/workspace";
+
 
 /*
  * The estimate builder's kit: each field client's price book, reusable
  * estimate templates, and the extras an estimate carries (optional add-ons,
- * terms, deposit, the customer's signature and deposit payment). Demo store
- * on globalThis, seeded once per day from the trade price books; items made or
- * edited by hand survive the reseed.
+ * terms, deposit, the customer's signature and deposit payment). Saved per
+ * agency in the "estimate-kit" module.
  */
 
 interface KitStore {
-  seededFor: string;
   items: PriceBookItem[];
   templates: EstimateTemplate[];
   extras: Record<string, EstimateExtras>;
 }
 
-const g = globalThis as unknown as { __lotusKit?: KitStore };
+const kitModule = defineModule<KitStore>({ key: "estimate-kit", init: () => ({ items: [], templates: [], extras: {} }) });
 
-const newId = (p: string) => `new-${p}-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`;
+const newId = (p: string) => `new-${p}-${stamp()}-${randomBytes(3).toString("hex")}`;
 
-function kit(now: Date): KitStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusKit || g.__lotusKit.seededFor !== key) {
-    const prev = g.__lotusKit;
-    const s: KitStore = { seededFor: key, items: [], templates: [], extras: {} };
-    seed(now, s);
-    if (prev) {
-      const keep = <T extends { id: string; updatedAt: string }>(next: T[], old: T[], deleted: Set<string>) => {
-        for (const x of old) {
-          if (x.id.startsWith("new-")) next.push(x);
-          else {
-            const i = next.findIndex((y) => y.id === x.id);
-            if (i !== -1 && x.updatedAt > next[i]!.updatedAt) next[i] = x;
-          }
-        }
-        return next.filter((x) => !deleted.has(x.id));
-      };
-      s.items = keep(s.items, prev.items, deletedIds);
-      s.templates = keep(s.templates, prev.templates, deletedIds);
-      // Extras belong to estimates; keep what customers and the team did.
-      s.extras = { ...s.extras, ...prev.extras };
-    }
-    g.__lotusKit = s;
-  }
-  return g.__lotusKit;
+function kit(_now: Date): KitStore {
+  return kitModule.get();
 }
 
-/** Seeded items and templates deleted by hand stay deleted after a reseed. */
-const deletedIds = ((globalThis as unknown as { __lotusKitDeleted?: Set<string> }).__lotusKitDeleted ??= new Set<string>());
-
-/* -------------------------------- seed -------------------------------- */
+/* ---------------------------- starter kit ---------------------------- */
 
 const addOnsByTrade: Record<string, [string, number, string][]> = {
   default: [
@@ -84,14 +58,27 @@ export const DEFAULT_TERMS = [
   "All work carries our one-year workmanship guarantee unless a longer warranty is listed above.",
 ].join("\n\n");
 
-function seed(now: Date, s: KitStore) {
-  const at = new Date(now.getTime() - 30 * 86400000).toISOString();
-  for (const c of fieldClients(now)) {
+/** Whether a client's trade has a starter price book and templates to load. */
+export function hasStarterKit(now: Date, accountId: string) {
+  const c = fieldClients(now).find((x) => x.account.id === accountId);
+  return !!(c && trades[c.industry]);
+}
+
+/**
+ * Load the typical price book and good/better/best templates for the
+ * client's trade, as a starting point the team then edits. Only into a
+ * client whose price book is still empty.
+ */
+export function loadStarterKit(now: Date, accountId: string): number {
+  const s = kit(now);
+  if (s.items.some((i) => i.accountId === accountId)) return 0;
+  const at = now.toISOString();
+  for (const c of fieldClients(now).filter((x) => x.account.id === accountId)) {
     const trade = trades[c.industry];
     if (!trade) continue;
     const acc = c.account.id;
-    const items: PriceBookItem[] = trade.book.map(([name, dollars], i) => ({
-      id: `pb-${acc}-${i + 1}`,
+    const items: PriceBookItem[] = trade.book.map(([name, dollars]) => ({
+      id: newId("pb"),
       accountId: acc,
       name: cleanName(name),
       category: categoryOf(name),
@@ -100,8 +87,8 @@ function seed(now: Date, s: KitStore) {
       kind: "item",
       updatedAt: at,
     }));
-    const addOns = (addOnsByTrade[c.industry] ?? addOnsByTrade.default!).map(([name, dollars, description], i): PriceBookItem => ({
-      id: `pb-${acc}-a${i + 1}`,
+    const addOns = (addOnsByTrade[c.industry] ?? addOnsByTrade.default!).map(([name, dollars, description]): PriceBookItem => ({
+      id: newId("pb"),
       accountId: acc,
       name: cleanName(name),
       description,
@@ -116,7 +103,7 @@ function seed(now: Date, s: KitStore) {
     const li = (uses: [number, number][], k: string): LineItem[] => uses.map(([i, q], j) => ({ id: `${k}-${j}`, name: trade.book[i]![0], quantity: q, unitCents: Math.round(trade.book[i]![1] * 100) }));
     const asLines = (xs: PriceBookItem[], k: string): LineItem[] => xs.map((x, j) => ({ id: `${k}-a${j}`, name: x.name, description: x.description, quantity: 1, unitCents: x.unitCents }));
     for (const [ti, [title, base, plus, best]] of trade.sells.entries()) {
-      const id = `et-${acc}-${ti + 1}`;
+      const id = newId(`et${ti}`);
       s.templates.push({
         id,
         accountId: acc,
@@ -132,13 +119,13 @@ function seed(now: Date, s: KitStore) {
         terms: DEFAULT_TERMS,
         depositPct: 25,
         validDays: 30,
-        uses: 4 + ((ti * 7 + acc.length) % 9),
+        uses: 0,
         updatedAt: at,
       });
     }
     const [jobTitle, jobUses] = trade.jobs[0]!;
     s.templates.push({
-      id: `et-${acc}-q`,
+      id: newId("et-q"),
       accountId: acc,
       name: `${jobTitle} (one price)`,
       title: jobTitle,
@@ -147,23 +134,12 @@ function seed(now: Date, s: KitStore) {
       terms: DEFAULT_TERMS,
       depositPct: 0,
       validDays: 14,
-      uses: 11 + (acc.length % 7),
+      uses: 0,
       updatedAt: at,
     });
 
-    // Give the seeded estimates the same shape a template would have produced.
-    for (const [ei, e] of listEstimates(now, acc).entries()) {
-      if (e.id.startsWith("new-")) continue;
-      const multi = e.options.length > 1;
-      const ex: EstimateExtras = { estimateId: e.id, addOns: multi ? asLines(addOns.slice(0, 2), `${e.id}`) : [], chosenAddOnIds: [], terms: DEFAULT_TERMS, depositPct: multi ? 25 : 0 };
-      if (e.status === "approved" && e.decidedAt) {
-        const ct = findContact(now, e.contactId);
-        if (ei % 2 === 0 && ex.addOns[0]) ex.chosenAddOnIds = [ex.addOns[0].id];
-        ex.signature = { name: ct ? `${ct.firstName} ${ct.lastName}` : "Customer", at: e.decidedAt };
-      }
-      s.extras[e.id] = ex;
-    }
   }
+  return s.items.filter((i) => i.accountId === accountId).length;
 }
 
 /* ----------------------------- price book ----------------------------- */
@@ -191,7 +167,6 @@ export function savePriceItem(now: Date, id: string | null, input: PriceItemInpu
 export function deletePriceItem(now: Date, id: string) {
   const s = kit(now);
   s.items = s.items.filter((i) => i.id !== id);
-  if (!id.startsWith("new-")) deletedIds.add(id);
 }
 
 /* ------------------------------ templates ----------------------------- */
@@ -223,7 +198,6 @@ export function saveTemplate(now: Date, id: string | null, input: TemplateInput)
 export function deleteTemplate(now: Date, id: string) {
   const s = kit(now);
   s.templates = s.templates.filter((t) => t.id !== id);
-  if (!id.startsWith("new-")) deletedIds.add(id);
 }
 
 /* -------------------------------- extras ------------------------------ */

@@ -1,5 +1,6 @@
 "use server";
 
+import { withPublicWorkspace } from "@/lib/server/workspace";
 import { z } from "zod";
 import { findCampaign, recordGift } from "@/lib/data/donors";
 import { countries, feeToCover } from "@/lib/fundraising";
@@ -35,74 +36,77 @@ const schema = z.object({
 });
 
 export async function donateAction(_prev: DonateState, formData: FormData): Promise<DonateState> {
-  const parsed = schema.safeParse({
-    campaign: formData.get("campaign"),
-    frequency: formData.get("frequency"),
-    amount: formData.get("amount") ?? "",
-    coverFees: formData.get("coverFees") === "on",
-    designation: formData.get("designation") ?? "",
-    firstName: formData.get("firstName") ?? "",
-    lastName: formData.get("lastName") ?? "",
-    email: formData.get("email") ?? "",
-    country: formData.get("country") ?? "",
-    anonymous: formData.get("anonymous") === "on",
-  });
-  if (!parsed.success) {
-    const errors: Record<string, string> = {};
-    for (const i of parsed.error.issues) {
-      const k = String(i.path[0] ?? "form");
-      errors[k] ??= i.message;
+  const res = await withPublicWorkspace(`campaign:${String(formData.get("campaign") ?? "")}`, async (): Promise<DonateState> => {
+    const parsed = schema.safeParse({
+      campaign: formData.get("campaign"),
+      frequency: formData.get("frequency"),
+      amount: formData.get("amount") ?? "",
+      coverFees: formData.get("coverFees") === "on",
+      designation: formData.get("designation") ?? "",
+      firstName: formData.get("firstName") ?? "",
+      lastName: formData.get("lastName") ?? "",
+      email: formData.get("email") ?? "",
+      country: formData.get("country") ?? "",
+      anonymous: formData.get("anonymous") === "on",
+    });
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      for (const i of parsed.error.issues) {
+        const k = String(i.path[0] ?? "form");
+        errors[k] ??= i.message;
+      }
+      return { ok: false, errors };
     }
-    return { ok: false, errors };
-  }
-  const d = parsed.data;
-  const now = new Date();
-  const found = findCampaign(now, d.campaign);
-  if (!found || found.campaign.status !== "live") return { ok: false, message: "This campaign is not taking gifts right now." };
-  const designation = found.campaign.designations.includes(d.designation) ? d.designation : found.campaign.designations[0];
+    const d = parsed.data;
+    const now = new Date();
+    const found = findCampaign(now, d.campaign);
+    if (!found || found.campaign.status !== "live") return { ok: false, message: "This campaign is not taking gifts right now." };
+    const designation = found.campaign.designations.includes(d.designation) ? d.designation : found.campaign.designations[0];
 
-  const amountCents = Math.round(d.amount * 100);
-  const feeCoveredCents = d.coverFees ? feeToCover(amountCents) : 0;
-  const charge = await chargeGift({
-    accountId: found.client.account.id,
-    campaignId: found.campaign.id,
-    amountCents: amountCents + feeCoveredCents,
-    frequency: d.frequency,
-    email: d.email,
-    name: `${d.firstName} ${d.lastName}`,
-  });
-  if (!charge.ok) return { ok: false, message: charge.message };
-
-  const receipt = recordGift(now, {
-    campaignSlug: d.campaign,
-    amountCents,
-    feeCoveredCents,
-    frequency: d.frequency,
-    designation,
-    firstName: d.firstName,
-    lastName: d.lastName,
-    email: d.email,
-    countryCode: d.country,
-    anonymous: d.anonymous,
-    paymentRef: charge.ref,
-  });
-  if (!receipt) return { ok: false, message: "We could not record your gift. You have not been charged." };
-  // Gifts that came through a donation element are credited to it.
-  const element = formData.get("element");
-  if (typeof element === "string" && element) creditGift(now, element.slice(0, 120), receipt.donationId, amountCents);
-  if (receipt.contactId) donationReceived(now, receipt.accountId, receipt.contactId, receipt.totalCents, found.campaign.title);
-
-  return {
-    ok: true,
-    receipt: {
-      donationId: receipt.donationId,
-      totalCents: receipt.totalCents,
-      amountCents,
+    const amountCents = Math.round(d.amount * 100);
+    const feeCoveredCents = d.coverFees ? feeToCover(amountCents) : 0;
+    const charge = await chargeGift({
+      accountId: found.client.account.id,
+      campaignId: found.campaign.id,
+      amountCents: amountCents + feeCoveredCents,
       frequency: d.frequency,
-      nextChargeOn: receipt.nextChargeOn,
-      firstName: d.firstName,
       email: d.email,
-      demo: charge.demo,
-    },
-  };
+      name: `${d.firstName} ${d.lastName}`,
+    });
+    if (!charge.ok) return { ok: false, message: charge.message };
+
+    const receipt = recordGift(now, {
+      campaignSlug: d.campaign,
+      amountCents,
+      feeCoveredCents,
+      frequency: d.frequency,
+      designation,
+      firstName: d.firstName,
+      lastName: d.lastName,
+      email: d.email,
+      countryCode: d.country,
+      anonymous: d.anonymous,
+      paymentRef: charge.ref,
+    });
+    if (!receipt) return { ok: false, message: "We could not record your gift. You have not been charged." };
+    // Gifts that came through a donation element are credited to it.
+    const element = formData.get("element");
+    if (typeof element === "string" && element) creditGift(now, element.slice(0, 120), receipt.donationId, amountCents);
+    if (receipt.contactId) donationReceived(now, receipt.accountId, receipt.contactId, receipt.totalCents, found.campaign.title);
+
+    return {
+      ok: true,
+      receipt: {
+        donationId: receipt.donationId,
+        totalCents: receipt.totalCents,
+        amountCents,
+        frequency: d.frequency,
+        nextChargeOn: receipt.nextChargeOn,
+        firstName: d.firstName,
+        email: d.email,
+        demo: charge.demo,
+      },
+    };
+  });
+  return res ?? { ok: false, message: "This campaign is not taking gifts right now." };
 }

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { ClientsTable } from "@/components/clients/clients-table";
@@ -9,6 +10,7 @@ export const metadata = { title: "Clients" };
 
 async function ClientList() {
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = await getClientRecords(now);
   const marketing = clients.filter((c) => c.mode === "marketing").length;

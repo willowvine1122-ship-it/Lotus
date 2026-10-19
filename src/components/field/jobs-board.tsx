@@ -190,7 +190,7 @@ export function JobsBoard({
       </div>
 
       {selected && (
-        <PanelFrame label={selected.title} open={board.panelOpen} onClose={() => board.setPanelOpen(false)}>
+        <PanelFrame label={selected.title} open={board.panelOpen} docked={board.docked} onClose={() => board.setPanelOpen(false)}>
           {(close) => {
             const c = clientById.get(selected.accountId)!;
             return (

@@ -1,3 +1,5 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -17,6 +19,7 @@ export const metadata: Metadata = { title: "Donate", robots: { index: false } };
 async function Element({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  if (!(await openPublicWorkspace(`element:${id}`))) notFound();
   const now = new Date();
   const e = findElement(now, id);
   if (!e || e.status !== "live") return null;

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -15,6 +16,7 @@ async function CampaignView({ params, searchParams }: { params: Promise<{ id: st
   const { id } = await params;
   const { sent } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const campaign = findCampaign(now, id);
   if (!campaign) notFound();

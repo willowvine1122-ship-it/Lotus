@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { receiveWebhook } from "@/lib/data/integrations";
+import { withPublicWorkspace } from "@/lib/server/workspace";
 
 /*
  * Incoming webhooks. Any tool (a website form, Typeform, Zapier, a CRM) can
@@ -28,7 +29,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     const tooLarge = err instanceof Error && err.message === "too_large";
     return NextResponse.json({ ok: false, error: tooLarge ? "Payload is larger than 256 KB" : "Send JSON or form data" }, { status: tooLarge ? 413 : 400 });
   }
-  const r = receiveWebhook(new Date(), token, payload);
+  const r = await withPublicWorkspace(`hook:${token}`, () => receiveWebhook(new Date(), token, payload));
+  if (!r) return NextResponse.json({ ok: false, error: "No webhook at this address. Check the URL in Lotus › Integrations." }, { status: 404 });
   return NextResponse.json(r.body, { status: r.status });
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import { Plus, Search } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import type { RangeDays } from "@/lib/diagnostic";
@@ -66,14 +67,30 @@ function KpiStrip({ rows, mode }: { rows: Row[]; mode: AccountMode }) {
   );
 }
 
-export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIso: string }) {
+function EmptyBoard() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center md:px-6">
+      <h2 className="text-base font-semibold">No clients yet</h2>
+      <p className="mt-1 max-w-[46ch] text-sm text-fg-3">
+        Add a client and their row appears here each morning: spend, leads, cost per lead and pacing for marketing clients, or gifts, donors and goal pacing for fundraising clients.
+      </p>
+      <ButtonLink href="/agency/clients/new" className="mt-5">
+        <Plus className="size-4" strokeWidth={2} />
+        Add your first client
+      </ButtonLink>
+    </div>
+  );
+}
+
+export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[]; nowIso: string; banner?: React.ReactNode }) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
-  const [mode, setMode] = useState<AccountMode>("marketing");
+  // Open on the mode the agency actually runs; marketing when it has both or none.
+  const [mode, setMode] = useState<AccountMode>(() => (!clients.some((c) => c.mode === "marketing") && clients.some((c) => c.mode === "fundraising") ? "fundraising" : "marketing"));
   const [range, setRange] = useState<RangeDays>(30);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "health", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const panel = useDetailPanel();
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -168,33 +185,48 @@ export function Diagnostic({ clients, nowIso }: { clients: ClientRecord[]; nowIs
           </div>
         </header>
 
-        <KpiStrip rows={rows} mode={mode} />
+        {banner}
 
-        <div className="border-y border-line">
-          <DiagnosticTable
-            rows={rows}
-            mode={mode}
-            sort={sort}
-            onSort={setSort}
-            selectedId={selected?.client.account.id ?? null}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setPanelOpen(true);
-            }}
-          />
-        </div>
+        {clients.length === 0 ? (
+          <EmptyBoard />
+        ) : (
+          <>
+            <KpiStrip rows={rows} mode={mode} />
+
+            <div className="border-y border-line">
+              <DiagnosticTable
+                rows={rows}
+                mode={mode}
+                sort={sort}
+                onSort={setSort}
+                selectedId={selected?.client.account.id ?? null}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  panel.show();
+                }}
+              />
+              {rows.length === 0 && (
+                <p className="px-5 py-10 text-center text-sm text-fg-3 md:px-6">
+                  {query ? "No clients match that search." : `No ${mode === "marketing" ? "marketing" : "fundraising"} clients yet.`}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {selected && (
         <>
-          <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <ClientPanel row={selected} now={now} />
+          {panel.docked && (
+          <aside aria-label={`${selected.client.account.name} details`} className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
+            <ClientPanel row={selected} now={now} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.client.account.name}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,400px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <ClientPanel row={selected} now={now} onClose={() => setPanelOpen(false)} />
+                <ClientPanel row={selected} now={now} onClose={panel.close} />
               </aside>
             </div>
           )}

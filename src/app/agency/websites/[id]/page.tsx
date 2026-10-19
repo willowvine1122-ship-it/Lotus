@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { headers } from "next/headers";
@@ -16,6 +17,7 @@ const actions = { save: saveWebsiteAction, setStatus: setWebsiteStatusAction, re
 async function Editor({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const [{ id }, { tab }] = await Promise.all([params, searchParams]);
   await connection();
+  await openWorkspace();
   const now = new Date();
   const site = findWebsite(now, id);
   if (!site) notFound();

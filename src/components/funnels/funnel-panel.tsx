@@ -121,7 +121,7 @@ export function FunnelPanel({
             </p>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={onClose} aria-label="Close panel" title="Close (Esc)" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
             </button>
           )}

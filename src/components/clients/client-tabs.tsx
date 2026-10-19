@@ -198,13 +198,14 @@ export function TeamTab({
         <Field label="Name" htmlFor="invite-name" error={state?.errors?.name}>
           <Input id="invite-name" name="name" placeholder="Mike Summit" aria-invalid={!!state?.errors?.name} />
         </Field>
-        <Field label="Email" htmlFor="invite-email" error={state?.errors?.email} hint="The invite sends once email is connected; until then it is listed as pending.">
+        <Field label="Email" htmlFor="invite-email" error={state?.errors?.email} hint="They get a link to set a password and see this client's dashboard.">
           <Input id="invite-email" name="email" type="email" placeholder="mike@summitroofing.com" aria-invalid={!!state?.errors?.email} />
         </Field>
         <div className="flex items-center gap-3">
           <SubmitButton pendingLabel="Inviting…">Send invite</SubmitButton>
         </div>
         <FormNotice state={state} />
+        {state?.link && <Input readOnly value={state.link} aria-label="Invite link" className="num text-xs" onFocus={(e) => e.currentTarget.select()} />}
       </form>
     </div>
   );

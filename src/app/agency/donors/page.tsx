@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { Donors } from "@/components/donors/donors";
@@ -10,6 +11,7 @@ export const metadata = { title: "Donors" };
 
 async function DonorBoard() {
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fundraisingClients(now);
   const rows: DonorRow[] = [];

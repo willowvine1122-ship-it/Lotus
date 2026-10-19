@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -11,6 +12,7 @@ import { deleteResponseAction } from "../../actions";
 async function Responses({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ r?: string }> }) {
   const [{ id }, { r }] = await Promise.all([params, searchParams]);
   await connection();
+  await openWorkspace();
   const now = new Date();
   const form = findForm(now, id);
   if (!form) notFound();

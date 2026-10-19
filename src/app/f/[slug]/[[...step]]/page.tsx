@@ -1,7 +1,8 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { after, connection } from "next/server";
+import { connection } from "next/server";
 import { BuilderPage } from "@/components/builder/render";
 import { StickVariant } from "@/components/builder/live";
 import { blocksToDoc, chooseVariant, themeOf } from "@/components/builder/model";
@@ -18,6 +19,7 @@ import { submitFunnelAction, submitOrderAction, submitUpsellAction } from "@/app
 async function Page({ params, searchParams }: { params: Promise<{ slug: string; step?: string[] }>; searchParams: Promise<{ sent?: string }> }) {
   const [{ slug, step: stepParts }, sp] = await Promise.all([params, searchParams]);
   await connection();
+  if (!(await openPublicWorkspace(`funnel:${slug}`))) notFound();
   const now = new Date();
   const funnel = findFunnel(now, slug);
   if (!funnel || funnel.status !== "live") notFound();
@@ -38,7 +40,7 @@ async function Page({ params, searchParams }: { params: Promise<{ slug: string; 
   const doc = variant === "b" && step.variant ? step.variant.doc : (step.doc ?? blocksToDoc(step.blocks));
   const i = funnel.steps.indexOf(step);
   const next = funnel.steps[i + 1];
-  after(() => recordStepView(now, funnel.id, step.id, variant));
+  recordStepView(now, funnel.id, step.id, variant);
 
   return (
     <>

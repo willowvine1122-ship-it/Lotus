@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { ContactsBoard } from "@/components/crm/contacts-board";
@@ -10,6 +11,7 @@ export const metadata = { title: "Contacts" };
 async function Board({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = crmClients(now);
   const contacts = listContacts(now);
@@ -20,7 +22,7 @@ async function Board({ searchParams }: { searchParams: Promise<{ client?: string
       activities={crmActivities(now, contacts.map((c) => c.id))}
       clients={clients}
       pipelines={crmPipelines(now, clients)}
-      team={teamDirectory}
+      team={teamDirectory()}
       nowIso={now.toISOString()}
       initialClientId={initial}
       actions={{ moveStage: moveStageAction, logActivity: logActivityAction, toggleDnd: toggleDndAction }}

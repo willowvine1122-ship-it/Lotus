@@ -158,7 +158,7 @@ export function InvoicesBoard({
       </div>
 
       {selected && (
-        <PanelFrame label={selected.title} open={board.panelOpen} onClose={() => board.setPanelOpen(false)}>
+        <PanelFrame label={selected.title} open={board.panelOpen} docked={board.docked} onClose={() => board.setPanelOpen(false)}>
           {(close) => (
             <InvoicePanel
               key={selected.id}

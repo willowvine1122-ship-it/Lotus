@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ const icons = { in_person: MapPin, phone: Phone, video: Video } as const;
 async function Confirmed({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
   await connection();
+  if (!(await openPublicWorkspace(`calendar:${slug}`))) notFound();
   const now = new Date();
   const cal = findCalendar(now, slug);
   const appt = findAppointment(now, id);

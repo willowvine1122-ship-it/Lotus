@@ -1,5 +1,6 @@
 "use server";
 
+import { withPublicWorkspace } from "@/lib/server/workspace";
 import { z } from "zod";
 import { trackElement } from "@/lib/data/elements";
 
@@ -8,7 +9,9 @@ import { trackElement } from "@/lib/data/elements";
 const input = z.object({ id: z.string().min(1).max(120), kind: z.enum(["view", "open"]) });
 
 export async function trackElementAction(id: string, kind: "view" | "open") {
-  const p = input.safeParse({ id, kind });
-  if (!p.success) return;
-  trackElement(new Date(), p.data.id, p.data.kind);
+  await withPublicWorkspace(`element:${id}`, async () => {
+    const p = input.safeParse({ id, kind });
+    if (!p.success) return;
+    trackElement(new Date(), p.data.id, p.data.kind);
+  });
 }

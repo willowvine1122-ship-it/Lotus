@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -13,12 +14,13 @@ export const metadata = { title: "Add contact" };
 async function Form({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = crmClients(now);
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0 bg-surface">
-        <ContactForm action={createContactAction} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory} initialClientId={clients.find((c) => c.id === client || c.slug === client)?.id} />
+        <ContactForm action={createContactAction} clients={clients} pipelines={crmPipelines(now, clients)} team={teamDirectory()} initialClientId={clients.find((c) => c.id === client || c.slug === client)?.id} />
       </div>
         <aside className="border-t border-line px-5 py-6 text-sm leading-relaxed text-fg-2 lg:border-l lg:border-t-0 lg:px-6">
           <h2 className="text-sm font-semibold text-fg">What happens next</h2>

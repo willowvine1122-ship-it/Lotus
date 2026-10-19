@@ -1,3 +1,4 @@
+import { openPublicWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -14,6 +15,7 @@ export const metadata = { title: "Your invoice" };
 async function View({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  if (!(await openPublicWorkspace(`invoice:${id}`))) notFound();
   const now = new Date();
   const inv = findInvoice(now, id);
   const client = inv ? findClient(now, inv.accountId) : undefined;

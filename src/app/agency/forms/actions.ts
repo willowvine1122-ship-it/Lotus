@@ -1,5 +1,7 @@
 "use server";
 
+import { withPublicWorkspace } from "@/lib/server/workspace";
+import { withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -61,81 +63,98 @@ const patch = z.object({
 
 /** Create from a template, then open the builder. */
 export async function createFormAction(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
-  const p = z
-    .object({ accountId: id, name: z.string().trim().min(1, "Give the form a name").max(80), template: z.string().refine((k) => formTemplates.some((t) => t.key === k), "Pick a template") })
-    .safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), template: formData.get("template") });
-  if (!p.success) return fail(p.error);
-  const now = new Date();
-  if (!findClient(now, p.data.accountId)) return { ok: false, errors: { accountId: "Pick a client" }, message: "Pick a client" };
-  const form = createForm(now, p.data.accountId, p.data.name, p.data.template);
-  if (!form) return { ok: false, message: "That client has no pipeline yet." };
-  touch();
-  redirect(`/agency/forms/${form.id}`);
+  return withWorkspace(async () => {
+    const p = z
+      .object({ accountId: id, name: z.string().trim().min(1, "Give the form a name").max(80), template: z.string().refine((k) => formTemplates.some((t) => t.key === k), "Pick a template") })
+      .safeParse({ accountId: formData.get("accountId"), name: formData.get("name"), template: formData.get("template") });
+    if (!p.success) return fail(p.error);
+    const now = new Date();
+    if (!findClient(now, p.data.accountId)) return { ok: false, errors: { accountId: "Pick a client" }, message: "Pick a client" };
+    const form = createForm(now, p.data.accountId, p.data.name, p.data.template);
+    if (!form) return { ok: false, message: "That client has no pipeline yet." };
+    touch();
+    redirect(`/agency/forms/${form.id}`);
+  });
 }
 
 export async function saveFormAction(formId: string, input: unknown): Promise<FormResult> {
-  const p = patch.safeParse(input);
-  if (!p.success) return fail(p.error);
-  const now = new Date();
-  const { form, slugTaken } = saveForm(now, formId, { ...p.data, notify: p.data.notify || undefined });
-  if (slugTaken) return { ok: false, errors: { slug: "Another form already uses this link" }, message: "Another form already uses this link" };
-  if (!form) return { ok: false, message: "That form was deleted." };
-  // A live form that picks up a blocking problem goes back to draft rather than break for visitors.
-  if (form.status === "live" && formIssues(form).some((i) => i.blocking)) {
-    setFormStatus(now, form.id, "draft");
+  return withWorkspace(async () => {
+    const p = patch.safeParse(input);
+    if (!p.success) return fail(p.error);
+    const now = new Date();
+    const { form, slugTaken } = saveForm(now, formId, { ...p.data, notify: p.data.notify || undefined });
+    if (slugTaken) return { ok: false, errors: { slug: "Another form already uses this link" }, message: "Another form already uses this link" };
+    if (!form) return { ok: false, message: "That form was deleted." };
+    // A live form that picks up a blocking problem goes back to draft rather than break for visitors.
+    if (form.status === "live" && formIssues(form).some((i) => i.blocking)) {
+      setFormStatus(now, form.id, "draft");
+      touch(form.id);
+      return { ok: true, message: "Saved. The form has unfinished questions, so it's back in draft." };
+    }
     touch(form.id);
-    return { ok: true, message: "Saved. The form has unfinished questions, so it's back in draft." };
-  }
-  touch(form.id);
-  return { ok: true, message: "Saved" };
+    return { ok: true, message: "Saved" };
+  });
 }
 
 export async function setFormStatusAction(formId: string, status: "draft" | "live" | "closed"): Promise<FormResult> {
-  const now = new Date();
-  const form = findForm(now, formId);
-  if (!form) return { ok: false, message: "That form was deleted." };
-  if (status === "live") {
-    const blocking = formIssues(form).filter((i) => i.blocking);
-    if (blocking.length) return { ok: false, message: blocking.length === 1 ? blocking[0]!.message : `${blocking.length} things to finish before publishing` };
-  }
-  setFormStatus(now, formId, status);
-  touch(formId);
-  return { ok: true, message: status === "live" ? "Published. The link is live." : status === "closed" ? "Closed. The link now says it isn't taking responses." : "Back in draft" };
+  return withWorkspace(async () => {
+    const now = new Date();
+    const form = findForm(now, formId);
+    if (!form) return { ok: false, message: "That form was deleted." };
+    if (status === "live") {
+      const blocking = formIssues(form).filter((i) => i.blocking);
+      if (blocking.length) return { ok: false, message: blocking.length === 1 ? blocking[0]!.message : `${blocking.length} things to finish before publishing` };
+    }
+    setFormStatus(now, formId, status);
+    touch(formId);
+    return { ok: true, message: status === "live" ? "Published. The link is live." : status === "closed" ? "Closed. The link now says it isn't taking responses." : "Back in draft" };
+  });
 }
 
 export async function duplicateFormAction(formId: string): Promise<void> {
-  const copy = duplicateForm(new Date(), formId);
-  touch();
-  if (copy) redirect(`/agency/forms/${copy.id}`);
+  return withWorkspace(async () => {
+    const copy = duplicateForm(new Date(), formId);
+    touch();
+    if (copy) redirect(`/agency/forms/${copy.id}`);
+  });
 }
 
 export async function deleteFormAction(formId: string): Promise<void> {
-  const form = findForm(new Date(), formId);
-  deleteForm(new Date(), formId);
-  touch();
-  redirect(`/agency/forms${form ? `?client=${form.accountId}` : ""}`);
+  return withWorkspace(async () => {
+    const form = findForm(new Date(), formId);
+    deleteForm(new Date(), formId);
+    touch();
+    redirect(`/agency/forms${form ? `?client=${form.accountId}` : ""}`);
+  });
 }
 
 export async function deleteResponseAction(responseId: string, formId: string): Promise<FormResult> {
-  deleteResponse(new Date(), z.string().max(120).parse(responseId));
-  touch(formId);
-  revalidatePath(`/agency/forms/${formId}/responses`);
-  return { ok: true, message: "Response deleted" };
+  return withWorkspace(async () => {
+    deleteResponse(new Date(), z.string().max(120).parse(responseId));
+    touch(formId);
+    revalidatePath(`/agency/forms/${formId}/responses`);
+    return { ok: true, message: "Response deleted" };
+  });
 }
 
 /* ------------------------------ public ------------------------------ */
 
 /** Public: a visitor opened the form. */
 export async function startFormAction(slug: string): Promise<string | undefined> {
-  const now = new Date();
-  const form = findFormBySlug(now, z.string().max(60).parse(slug));
-  return form ? startVisit(now, form.id) : undefined;
+  const res = await withPublicWorkspace(`form:${slug}`, async () => {
+    const now = new Date();
+    const form = findFormBySlug(now, z.string().max(60).parse(slug));
+    return form ? startVisit(now, form.id) : undefined;
+  });
+  return res ?? undefined;
 }
 
 /** Public: the visitor reached a question. Drives the drop-off chart. */
-export async function trackFormAction(visitId: string, questionId: string): Promise<void> {
-  const p = z.object({ visitId: z.string().max(120), questionId: z.string().max(120) }).safeParse({ visitId, questionId });
-  if (p.success) trackVisit(new Date(), p.data.visitId, p.data.questionId);
+export async function trackFormAction(slug: string, visitId: string, questionId: string): Promise<void> {
+  await withPublicWorkspace(`form:${slug}`, async () => {
+    const p = z.object({ visitId: z.string().max(120), questionId: z.string().max(120) }).safeParse({ visitId, questionId });
+    if (p.success) trackVisit(new Date(), p.data.visitId, p.data.questionId);
+  });
 }
 
 const submission = z.object({
@@ -147,15 +166,18 @@ const submission = z.object({
 
 /** Public: the visitor pressed Submit. */
 export async function submitFormAction(slug: string, input: unknown): Promise<SubmitResult> {
-  const p = submission.safeParse(input);
-  if (!p.success) return { ok: false, message: "Something in the answers didn't come through. Please try again." };
-  const now = new Date();
-  const form = findFormBySlug(now, z.string().max(60).parse(slug));
-  if (!form) return { ok: false, message: "This form no longer exists." };
-  const result = submitResponse(now, form.id, p.data);
-  if (result.ok) {
-    touch(form.id);
-    revalidatePath("/agency/contacts");
-  }
-  return result;
+  const res = await withPublicWorkspace(`form:${slug}`, async () => {
+    const p = submission.safeParse(input);
+    if (!p.success) return { ok: false, message: "Something in the answers didn't come through. Please try again." };
+    const now = new Date();
+    const form = findFormBySlug(now, z.string().max(60).parse(slug));
+    if (!form) return { ok: false, message: "This form no longer exists." };
+    const result = submitResponse(now, form.id, p.data);
+    if (result.ok) {
+      touch(form.id);
+      revalidatePath("/agency/contacts");
+    }
+    return result;
+  });
+  return res ?? { ok: false, message: "This form no longer exists." };
 }

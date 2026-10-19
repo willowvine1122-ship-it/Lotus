@@ -11,6 +11,7 @@ import { CloseButton, DataTable, Kpi, KpiStrip, PanelButton, PanelFrame, StatusT
 import { Field, Input, Select } from "@/components/form";
 import type { Funnel, FunnelOrder, FunnelStep, FunnelStepKind, FunnelVariantStats } from "@/lib/types";
 import { cn, formatCount, formatDollars, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { ClientRef } from "./model";
 
 /*
@@ -67,7 +68,7 @@ export function FunnelOverview({ funnel, client, orders, nowIso, origin, actions
   const router = useRouter();
   const now = new Date(nowIso);
   const [selectedId, setSelectedId] = useState<string>(funnel.steps[0]?.id ?? "");
-  const [panelOpen, setPanelOpen] = useState(false);
+  const detail = useDetailPanel();
   const [settings, setSettings] = useState(false);
   const [pending, start] = useTransition();
   const theme = themeOf(funnel.theme, funnel.brandColor);
@@ -187,7 +188,7 @@ export function FunnelOverview({ funnel, client, orders, nowIso, origin, actions
                 <span className="hidden xl:inline">View live</span>
               </a>
             )}
-            <button type="button" onClick={() => { setSettings(true); setPanelOpen(true); }} className="inline-flex h-7 items-center gap-1.5 rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line">
+            <button type="button" onClick={() => { setSettings(true); detail.show(); }} className="inline-flex h-7 items-center gap-1.5 rounded border border-rail-line bg-rail-2 px-2.5 text-xs font-medium text-rail-fg hover:bg-rail-line">
               <Settings2 className="size-3.5" strokeWidth={1.75} />
               <span className="hidden xl:inline">Settings</span>
             </button>
@@ -219,7 +220,7 @@ export function FunnelOverview({ funnel, client, orders, nowIso, origin, actions
           onSelect={(r) => {
             setSelectedId(r.id);
             setSettings(false);
-            setPanelOpen(true);
+            detail.show();
           }}
           empty="No steps yet."
         />
@@ -228,7 +229,7 @@ export function FunnelOverview({ funnel, client, orders, nowIso, origin, actions
           if (id) setSelectedId(id);
         })} />
       </div>
-      <PanelFrame label={settings ? "Funnel settings" : (selected?.name ?? "Step")} open={panelOpen} onClose={() => setPanelOpen(false)}>
+      <PanelFrame label={settings ? "Funnel settings" : (selected?.name ?? "Step")} open={detail.open} docked={detail.docked} onClose={detail.close}>
         {panel}
       </PanelFrame>
     </div>

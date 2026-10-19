@@ -1,4 +1,5 @@
 import { listElements } from "@/lib/data/elements";
+import { withPublicWorkspace } from "@/lib/server/workspace";
 import { isOverlay } from "@/lib/elements";
 
 /*
@@ -19,9 +20,11 @@ export async function GET(req: Request) {
   const origin = `${req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")}://${req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? url.host}`;
   const account = url.searchParams.get("account") ?? "";
   const overlays = account
-    ? listElements(new Date())
-        .filter((e) => e.accountId === account && e.status === "live" && isOverlay(e.type))
-        .map((e) => e.id)
+    ? ((await withPublicWorkspace(`account:${account}`, () =>
+        listElements(new Date())
+          .filter((e) => e.accountId === account && e.status === "live" && isOverlay(e.type))
+          .map((e) => e.id),
+      )) ?? [])
     : [];
   const body = script(origin, overlays);
   return new Response(body, {

@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { DispatchBoard } from "@/components/field/dispatch-board";
@@ -11,6 +12,7 @@ export const metadata = { title: "Dispatch" };
 async function Board({ searchParams }: { searchParams: Promise<{ client?: string; day?: string }> }) {
   const { client: key, day } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fieldClientRefs(now);
   const client = resolveClient(clients, key) ?? clients[0];

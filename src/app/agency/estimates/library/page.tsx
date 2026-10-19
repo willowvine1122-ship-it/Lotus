@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { EstimateLibrary } from "@/components/estimates/library";
@@ -13,6 +14,7 @@ const actions = { saveItem: savePriceItemAction, deleteItem: deletePriceItemActi
 async function Library({ searchParams }: { searchParams: Promise<{ client?: string; tab?: string }> }) {
   const { client, tab } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fieldClientRefs(now);
   const c = resolveClient(clients, client) ?? clients[0];

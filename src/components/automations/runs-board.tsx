@@ -8,6 +8,7 @@ import { MergeText, relativeWhen, when } from "@/components/email/ui";
 import type { AutomationActionState } from "@/app/agency/automations/actions";
 import type { RunStatus, StepType } from "@/lib/types";
 import { cn, formatCount, timeAgo } from "@/lib/utils";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { RunRow } from "./data";
 import { stepLabel } from "./model";
 import { RunStatusTag, RunStepMark, stepIcon } from "./ui";
@@ -30,7 +31,7 @@ export function RunsBoard({ runs, totalSteps, initialRunId, nowIso, stop }: { ru
   const [filter, setFilter] = useState<Filter>(() => (initialRunId && runs.find((r) => r.id === initialRunId)?.test ? "test" : "all"));
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialRunId ?? null);
-  const [panelOpen, setPanelOpen] = useState(!!initialRunId);
+  const panel = useDetailPanel(!!initialRunId);
 
   const count = (f: Filter) => runs.filter((r) => (f === "all" ? !r.test : f === "test" ? r.test : r.status === f && !r.test)).length;
   const visible = useMemo(() => {
@@ -91,7 +92,7 @@ export function RunsBoard({ runs, totalSteps, initialRunId, nowIso, stop }: { ru
                     aria-selected={isSelected}
                     onClick={() => {
                       setSelectedId(r.id);
-                      setPanelOpen(true);
+                      panel.show();
                     }}
                     className={cn("h-[52px] cursor-pointer border-b border-line transition-colors duration-100", isSelected ? "bg-brand-soft/40 shadow-[inset_2px_0_0_var(--brand)]" : "hover:bg-surface-2/60")}
                   >
@@ -130,14 +131,16 @@ export function RunsBoard({ runs, totalSteps, initialRunId, nowIso, stop }: { ru
 
       {selected && (
         <>
+          {panel.docked && (
           <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
-            <RunPanel run={selected} now={now} stop={stop} />
+            <RunPanel run={selected} now={now} stop={stop} onClose={panel.close} />
           </aside>
-          {panelOpen && (
+          )}
+          {panel.open && (
             <div className="fixed inset-0 z-20 flex lg:hidden" role="dialog" aria-modal="true" aria-label={selected.contactName}>
-              <button type="button" aria-label="Close panel" onClick={() => setPanelOpen(false)} className="flex-1 bg-rail/40" />
+              <button type="button" aria-label="Close panel" onClick={panel.close} className="flex-1 bg-rail/40" />
               <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
-                <RunPanel run={selected} now={now} stop={stop} onClose={() => setPanelOpen(false)} />
+                <RunPanel run={selected} now={now} stop={stop} onClose={panel.close} />
               </aside>
             </div>
           )}
@@ -170,7 +173,7 @@ function RunPanel({ run, now, stop, onClose }: { run: RunView; now: Date; stop: 
             <p className="truncate text-xs text-fg-3">{run.contactLine ?? "No email or phone"}</p>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={onClose} aria-label="Close panel" title="Close (Esc)" className="grid size-7 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg">
               <X className="size-4" strokeWidth={2} />
             </button>
           )}

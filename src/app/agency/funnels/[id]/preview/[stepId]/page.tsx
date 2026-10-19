@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -13,6 +14,7 @@ export const metadata = { title: "Preview", robots: { index: false } };
 async function Preview({ params, searchParams }: { params: Promise<{ id: string; stepId: string }>; searchParams: Promise<{ v?: string }> }) {
   const [{ id, stepId }, sp] = await Promise.all([params, searchParams]);
   await connection();
+  await openWorkspace();
   const now = new Date();
   const funnel = findFunnel(now, id);
   const step = funnel?.steps.find((s) => s.id === stepId);

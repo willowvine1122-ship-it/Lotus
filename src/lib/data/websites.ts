@@ -1,15 +1,17 @@
+import { stamp } from "@/lib/ids";
 import { resolve4, resolveCname } from "node:dns/promises";
 import { randomBytes } from "node:crypto";
 import type { BuilderDoc, BuilderTheme, DomainStatus, Website, WebsiteDay, WebsitePage } from "@/lib/types";
 import { SITES_CNAME, siteTemplates } from "@/components/websites/model";
 import { slugify } from "@/components/forms/model";
+import { defineModule } from "@/lib/server/workspace";
 import { listClients } from "./store";
 
 /*
  * Websites: multi-page sites per client with a header, navigation, footer,
- * SEO and an optional custom domain. Demo store on globalThis, seeded once
- * per day; sites made or edited by hand survive the reseed. Seeded sites keep
- * fixed ids and slugs so links stay valid.
+ * SEO and an optional custom domain. Saved per agency in the "websites"
+ * module; a site answers publicly at /s/<slug> and, once connected, on its
+ * own domain.
  *
  * What is real: the public pages at /s/<slug>, the sitemap and robots.txt,
  * leads from contact forms, page-view counts, and the DNS lookup that checks
@@ -18,40 +20,19 @@ import { listClients } from "./store";
  */
 
 interface SiteStore {
-  seededFor: string;
   sites: Website[];
 }
 
-const g = globalThis as unknown as { __lotusSites?: SiteStore };
 const DAY = 86400000;
 
-function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a += 0x6d2b79f5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const sitesModule = defineModule<SiteStore>({
+  key: "websites",
+  init: () => ({ sites: [] }),
+  publicKeys: (s) => s.sites.flatMap((x) => [`site:${x.slug}`, `site-id:${x.id}`, ...(x.domain?.host ? [`host:${x.domain.host}`] : [])]),
+});
 
-function store(now: Date): SiteStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusSites || g.__lotusSites.seededFor !== key) {
-    const prev = g.__lotusSites;
-    const s: SiteStore = { seededFor: key, sites: [] };
-    seed(now, s);
-    for (const site of prev?.sites ?? []) {
-      if (site.id.startsWith("new-")) s.sites.push(site);
-      else {
-        const i = s.sites.findIndex((x) => x.id === site.id);
-        if (i !== -1 && site.updatedAt > s.sites[i]!.updatedAt) s.sites[i] = { ...site, days: s.sites[i]!.days };
-      }
-    }
-    g.__lotusSites = s;
-  }
-  return g.__lotusSites;
+function store(_now: Date): SiteStore {
+  return sitesModule.get();
 }
 
 const today = (now: Date) => now.toISOString().slice(0, 10);
@@ -110,7 +91,7 @@ export function createWebsite(now: Date, accountId: string, name: string, templa
   if (!client) return undefined;
   const at = now.toISOString();
   const site: Website = {
-    id: `new-site-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`,
+    id: `new-site-${stamp()}-${randomBytes(3).toString("hex")}`,
     accountId,
     name: name.trim(),
     slug: uniqueSlug(now, client.account.slug),
@@ -226,58 +207,4 @@ export async function checkDomain(now: Date, id: string) {
   }
   site.domain = { host, status, found, checkedAt: now.toISOString() };
   return site.domain;
-}
-
-/* --------------------------------- seed -------------------------------- */
-
-const cities = ["Denver", "Austin", "Portland", "Raleigh", "Phoenix", "Columbus", "Tampa", "Boise"];
-
-function seed(now: Date, s: SiteStore) {
-  for (const [ci, client] of listClients(now).entries()) {
-    const rand = rng((ci + 3) * 2654435761);
-    const key = client.mode === "fundraising" ? "nonprofit" : ci % 4 === 3 ? "onepage" : "local";
-    const t = siteTemplates.find((x) => x.key === key)!;
-    const built = t.build({ name: client.account.name, city: cities[ci % cities.length] });
-    const id = `site-${client.account.id}`;
-    // Fixed page and block ids so edits made yesterday still line up with today's seed.
-    for (const [pi, p] of built.pages.entries()) {
-      p.id = `${id}-p${pi + 1}`;
-      for (const [bi, blk] of p.blocks.entries()) blk.id = `${p.id}-b${bi + 1}`;
-    }
-    const created = new Date(now.getTime() - (70 + ci * 3) * DAY).toISOString();
-    const live = ci % 5 !== 4;
-    const base = 40 + rand() * 160;
-    const days: WebsiteDay[] = emptyDays(now).map((d, i) => {
-      const dow = new Date(d.day).getUTCDay();
-      const views = live ? Math.round(base * (dow === 0 || dow === 6 ? 0.7 : 1) * (0.8 + rand() * 0.4) * (0.85 + (i / 60) * 0.3)) : 0;
-      return { ...d, views, leads: Math.round(views * (0.02 + rand() * 0.025)) };
-    });
-    const total30 = days.slice(-30).reduce((a, d) => a + d.views, 0);
-    const weights = built.pages.map((_, i) => (i === 0 ? 5 : 1 + rand()));
-    const sum = weights.reduce((a, b) => a + b, 0);
-    const pageViews = Object.fromEntries(built.pages.map((p, i) => [p.id, Math.round((total30 * weights[i]!) / sum)]));
-    const slug = client.account.slug;
-    const domain =
-      ci % 3 === 0 && live
-        ? { host: `www.${slug.replace(/-/g, "")}.com`, status: "connected" as const, checkedAt: new Date(now.getTime() - 9 * DAY).toISOString(), found: `www.${slug.replace(/-/g, "")}.com points to ${SITES_CNAME}.` }
-        : ci % 3 === 1 && live
-          ? { host: `www.${slug.replace(/-/g, "")}.com`, status: "pending" as const }
-          : undefined;
-    s.sites.push({
-      id,
-      accountId: client.account.id,
-      name: `${client.account.name} website`,
-      slug,
-      status: live ? "live" : "draft",
-      template: key,
-      logoText: client.account.name,
-      analytics: ci % 2 === 0 ? { gaId: `G-${(1000000 + ci * 7919).toString(36).toUpperCase().slice(0, 8)}` } : {},
-      ...built,
-      domain,
-      days,
-      pageViews,
-      createdAt: created,
-      updatedAt: created,
-    });
-  }
 }

@@ -24,7 +24,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
     trigger: { type: "contact_created" },
     steps: [
       { id: "1", type: "send_sms", body: "Hi {{first_name}}, thanks for reaching out to {{client_name}}! When's a good time for a quick call to get you a quote?" },
-      { id: "2", type: "notify", to: "Sara", message: "New lead {{first_name}} {{last_name}} just came in. Call within 5 minutes." },
+      { id: "2", type: "notify", to: "Account team", message: "New lead {{first_name}} {{last_name}} just came in. Call within 5 minutes." },
       { id: "3", type: "add_tag", tag: "Follow up" },
       { id: "4", type: "wait", amount: 1, unit: "days" },
       {
@@ -33,7 +33,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
         condition: { field: "stage", op: "is", value: "new" },
         yes: [
           { id: "5y1", type: "send_sms", body: "Hi {{first_name}}, just checking in. Want me to hold a time for you this week?" },
-          { id: "5y2", type: "create_task", title: "Call {{first_name}} {{last_name}}, no reply yet", assigneeName: "Sara", dueInDays: 0 },
+          { id: "5y2", type: "create_task", title: "Call {{first_name}} {{last_name}}, no reply yet", dueInDays: 0 },
         ],
         no: [{ id: "5n1", type: "remove_tag", tag: "Follow up" }],
       },
@@ -62,7 +62,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
       { id: "2", type: "add_tag", tag: "No-show" },
       { id: "3", type: "wait", amount: 1, unit: "days" },
       { id: "4", type: "move_stage", stageId: "contacted" },
-      { id: "5", type: "create_task", title: "Rebook {{first_name}} {{last_name}}", assigneeName: "Mahad", dueInDays: 0 },
+      { id: "5", type: "create_task", title: "Rebook {{first_name}} {{last_name}}", dueInDays: 0 },
     ],
   },
   {
@@ -92,8 +92,8 @@ export const workflowTemplates: WorkflowTemplate[] = [
         condition: { field: "value", op: "gte", value: "500" },
         yes: [
           { id: "3y1", type: "add_tag", tag: "Major donor" },
-          { id: "3y2", type: "create_task", title: "Thank-you call to {{first_name}} {{last_name}}", assigneeName: "Afza", dueInDays: 2 },
-          { id: "3y3", type: "notify", to: "Afza", message: "{{first_name}} {{last_name}} passed $500 in lifetime giving." },
+          { id: "3y2", type: "create_task", title: "Thank-you call to {{first_name}} {{last_name}}", dueInDays: 2 },
+          { id: "3y3", type: "notify", to: "Account team", message: "{{first_name}} {{last_name}} passed $500 in lifetime giving." },
         ],
         no: [],
       },
@@ -146,10 +146,10 @@ export const workflowTemplates: WorkflowTemplate[] = [
         id: "1",
         type: "branch",
         condition: { field: "owner", op: "is", value: "" },
-        yes: [{ id: "1y1", type: "assign_owner", ownerName: "Sara" }],
+        yes: [{ id: "1y1", type: "assign_owner", ownerName: "" }],
         no: [],
       },
-      { id: "2", type: "notify", to: "Sara", message: "{{first_name}} {{last_name}} just replied. Answer in the inbox." },
+      { id: "2", type: "notify", to: "Account team", message: "{{first_name}} {{last_name}} just replied. Answer in the inbox." },
     ],
   },
   {
@@ -159,7 +159,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
     trigger: { type: "email_clicked" },
     steps: [
       { id: "1", type: "add_tag", tag: "Clicked email" },
-      { id: "2", type: "create_task", title: "Call {{first_name}} {{last_name}}, clicked our email", assigneeName: "Mahad", dueInDays: 1 },
+      { id: "2", type: "create_task", title: "Call {{first_name}} {{last_name}}, clicked our email", dueInDays: 1 },
     ],
   },
 ];

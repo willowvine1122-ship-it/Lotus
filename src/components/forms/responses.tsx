@@ -16,6 +16,7 @@ import { Segmented } from "@/components/diagnostic/primitives";
 import type { FormDefinition, FormResponse } from "@/lib/types";
 import { cn, formatCount, formatRate, timeAgo } from "@/lib/utils";
 import type { FormResult } from "@/app/agency/forms/actions";
+import { useDetailPanel } from "@/lib/use-detail-panel";
 import type { FormStats } from "./data";
 import { FormHeader, inkBandButton } from "./header";
 import {
@@ -99,7 +100,7 @@ export function ResponsesView({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialId ?? null,
   );
-  const [panelOpen, setPanelOpen] = useState(!!initialId);
+  const panel = useDetailPanel(!!initialId);
 
   const questions = form.questions.filter((q) => q.type !== "statement");
   const columns = questions
@@ -132,7 +133,7 @@ export function ResponsesView({
 
   const select = (id: string) => {
     setSelectedId(id);
-    setPanelOpen(true);
+    panel.show();
   };
 
   return (
@@ -393,6 +394,7 @@ export function ResponsesView({
 
         {view === "responses" && selected && (
           <>
+            {panel.docked && (
             <aside className="sticky top-0 hidden h-screen w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface lg:block xl:w-[384px] 2xl:w-[420px]">
               <ResponsePanel
                 key={selected.id}
@@ -400,9 +402,11 @@ export function ResponsesView({
                 r={selected}
                 now={now}
                 remove={remove}
+                onClose={panel.close}
               />
             </aside>
-            {panelOpen && (
+            )}
+            {panel.open && (
               <div
                 className="fixed inset-0 z-20 flex lg:hidden"
                 role="dialog"
@@ -412,7 +416,7 @@ export function ResponsesView({
                 <button
                   type="button"
                   aria-label="Close panel"
-                  onClick={() => setPanelOpen(false)}
+                  onClick={panel.close}
                   className="flex-1 bg-rail/40"
                 />
                 <aside className="h-full w-[min(100%,420px)] overflow-y-auto border-l border-line bg-surface shadow-2">
@@ -422,7 +426,7 @@ export function ResponsesView({
                     r={selected}
                     now={now}
                     remove={remove}
-                    onClose={() => setPanelOpen(false)}
+                    onClose={panel.close}
                   />
                 </aside>
               </div>
@@ -474,7 +478,8 @@ function ResponsePanel({
           {onClose && (
             <button
               type="button"
-              aria-label="Close"
+              aria-label="Close panel"
+              title="Close (Esc)"
               onClick={onClose}
               className="grid size-8 shrink-0 place-items-center rounded text-fg-3 hover:bg-surface-2 hover:text-fg"
             >

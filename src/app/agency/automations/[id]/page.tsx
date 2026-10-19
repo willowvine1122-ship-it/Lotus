@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -18,6 +19,7 @@ const DAY = 86400000;
 async function Builder({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const workflow = findWorkflow(now, id);
   if (!workflow) notFound();

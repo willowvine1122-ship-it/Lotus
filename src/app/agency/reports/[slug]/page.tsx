@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -12,6 +13,7 @@ export const metadata = { title: "Edit report" };
 async function Builder({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const client = await getClientRecord(now, slug);
   if (!client) notFound();

@@ -1,5 +1,6 @@
 "use server";
 
+import { actorName, withWorkspace } from "@/lib/server/workspace";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -25,7 +26,6 @@ import type { OpportunityStatus } from "@/lib/types";
 
 export type OppActionState = { ok: boolean; errors?: Record<string, string>; message?: string } | null;
 
-const actor = "Afza"; // until auth lands, every write is attributed to the signed-in demo user
 
 function flatten(e: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
@@ -69,29 +69,31 @@ const newSchema = z.object({
 });
 
 export async function createOpportunityAction(_prev: OppActionState, fd: FormData): Promise<OppActionState> {
-  const parsed = newSchema.safeParse({
-    contactId: fd.get("contactId") ?? "",
-    pipelineId: fd.get("pipelineId") ?? "",
-    stageId: fd.get("stageId") || undefined,
-    name: fd.get("name") ?? "",
-    value: fd.get("value") ?? "",
-    ownerName: fd.get("ownerName") || undefined,
-    source: fd.get("source") || undefined,
-    closeOn: fd.get("closeOn") ?? "",
+  return withWorkspace(async () => {
+    const parsed = newSchema.safeParse({
+      contactId: fd.get("contactId") ?? "",
+      pipelineId: fd.get("pipelineId") ?? "",
+      stageId: fd.get("stageId") || undefined,
+      name: fd.get("name") ?? "",
+      value: fd.get("value") ?? "",
+      ownerName: fd.get("ownerName") || undefined,
+      source: fd.get("source") || undefined,
+      closeOn: fd.get("closeOn") ?? "",
+    });
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error), message: "Fix the highlighted fields." };
+    const now = new Date();
+    const d = parsed.data;
+    const contact = findContact(now, d.contactId);
+    const p = findPipeline(now, d.pipelineId);
+    if (!contact || !p) return { ok: false, message: "That contact or pipeline no longer exists." };
+    if (contact.accountId !== p.accountId) return { ok: false, errors: { contactId: "This contact belongs to another client" } };
+    const o = createOpportunity(now, { contactId: d.contactId, pipelineId: d.pipelineId, stageId: d.stageId, name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, tags: tags(fd.get("tags")), closeOn: d.closeOn || undefined }, actorName());
+    if (!o) return { ok: false, message: "Could not create it. Try again." };
+    opportunityCreated(now, o);
+    refresh();
+    const client = findClient(now, o.accountId);
+    redirect(`/agency/opportunities?client=${client?.account.slug ?? ""}&pipeline=${o.pipelineId}&opp=${o.id}`);
   });
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error), message: "Fix the highlighted fields." };
-  const now = new Date();
-  const d = parsed.data;
-  const contact = findContact(now, d.contactId);
-  const p = findPipeline(now, d.pipelineId);
-  if (!contact || !p) return { ok: false, message: "That contact or pipeline no longer exists." };
-  if (contact.accountId !== p.accountId) return { ok: false, errors: { contactId: "This contact belongs to another client" } };
-  const o = createOpportunity(now, { contactId: d.contactId, pipelineId: d.pipelineId, stageId: d.stageId, name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, tags: tags(fd.get("tags")), closeOn: d.closeOn || undefined }, actor);
-  if (!o) return { ok: false, message: "Could not create it. Try again." };
-  opportunityCreated(now, o);
-  refresh();
-  const client = findClient(now, o.accountId);
-  redirect(`/agency/opportunities?client=${client?.account.slug ?? ""}&pipeline=${o.pipelineId}&opp=${o.id}`);
 }
 
 const editSchema = z.object({
@@ -103,89 +105,101 @@ const editSchema = z.object({
 });
 
 export async function updateOpportunityAction(id: string, _prev: OppActionState, fd: FormData): Promise<OppActionState> {
-  const parsed = editSchema.safeParse({
-    name: fd.get("name") ?? "",
-    value: fd.get("value") ?? "",
-    ownerName: fd.get("ownerName") || undefined,
-    source: fd.get("source") ?? "manual",
-    closeOn: fd.get("closeOn") ?? "",
+  return withWorkspace(async () => {
+    const parsed = editSchema.safeParse({
+      name: fd.get("name") ?? "",
+      value: fd.get("value") ?? "",
+      ownerName: fd.get("ownerName") || undefined,
+      source: fd.get("source") ?? "manual",
+      closeOn: fd.get("closeOn") ?? "",
+    });
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
+    const d = parsed.data;
+    const o = updateOpportunity(new Date(), id, { name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, closeOn: d.closeOn || undefined, tags: tags(fd.get("tags")) }, actorName());
+    if (!o) return { ok: false, message: "That opportunity no longer exists." };
+    refresh();
+    return { ok: true, message: "Saved" };
   });
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error) };
-  const d = parsed.data;
-  const o = updateOpportunity(new Date(), id, { name: d.name, valueCents: Math.round(d.value * 100), ownerName: d.ownerName, source: d.source, closeOn: d.closeOn || undefined, tags: tags(fd.get("tags")) }, actor);
-  if (!o) return { ok: false, message: "That opportunity no longer exists." };
-  refresh();
-  return { ok: true, message: "Saved" };
 }
 
 export async function moveOpportunityAction(id: string, stageId: string): Promise<void> {
-  const now = new Date();
-  opportunityChanged(now, moveOpportunity(now, id, stageId, actor));
-  refresh();
+  return withWorkspace(async () => {
+    const now = new Date();
+    opportunityChanged(now, moveOpportunity(now, id, stageId, actorName()));
+    refresh();
+  });
 }
 
 export async function setOpportunityStatusAction(id: string, status: OpportunityStatus, lostReason?: string): Promise<OppActionState> {
-  if (status === "lost" && !lostReason?.trim()) return { ok: false, errors: { lostReason: "Pick a reason" } };
-  const now = new Date();
-  const move = setOpportunityStatus(now, id, status, actor, lostReason?.trim().slice(0, 80));
-  if (!move) return { ok: false, message: "That opportunity no longer exists." };
-  opportunityChanged(now, move);
-  refresh();
-  return { ok: true };
+  return withWorkspace(async () => {
+    if (status === "lost" && !lostReason?.trim()) return { ok: false, errors: { lostReason: "Pick a reason" } };
+    const now = new Date();
+    const move = setOpportunityStatus(now, id, status, actorName(), lostReason?.trim().slice(0, 80));
+    if (!move) return { ok: false, message: "That opportunity no longer exists." };
+    opportunityChanged(now, move);
+    refresh();
+    return { ok: true };
+  });
 }
 
 export async function addOpportunityNoteAction(id: string, _prev: OppActionState, fd: FormData): Promise<OppActionState> {
-  const body = String(fd.get("body") ?? "").trim();
-  if (body.length < 2) return { ok: false, errors: { body: "Write the note" } };
-  if (!addOpportunityNote(new Date(), id, body.slice(0, 2000), actor)) return { ok: false, message: "That opportunity no longer exists." };
-  refresh();
-  return { ok: true };
+  return withWorkspace(async () => {
+    const body = String(fd.get("body") ?? "").trim();
+    if (body.length < 2) return { ok: false, errors: { body: "Write the note" } };
+    if (!addOpportunityNote(new Date(), id, body.slice(0, 2000), actorName())) return { ok: false, message: "That opportunity no longer exists." };
+    refresh();
+    return { ok: true };
+  });
 }
 
 export async function deleteOpportunityAction(id: string): Promise<void> {
-  deleteOpportunity(new Date(), id);
-  refresh();
+  return withWorkspace(async () => {
+    deleteOpportunity(new Date(), id);
+    refresh();
+  });
 }
 
 export type BulkOp = { type: "stage"; stageId: string } | { type: "status"; status: OpportunityStatus; lostReason?: string } | { type: "owner"; ownerName: string } | { type: "delete" };
 
 /** One change across many selected opportunities. Returns how many it touched. */
 export async function bulkOpportunityAction(ids: string[], op: BulkOp): Promise<{ ok: boolean; count: number; message?: string }> {
-  const now = new Date();
-  if (op.type === "status" && op.status === "lost" && !op.lostReason) return { ok: false, count: 0, message: "Pick a reason for marking them lost." };
-  let count = 0;
-  for (const id of ids.slice(0, 500)) {
-    const o = findOpportunity(now, id);
-    if (!o) continue;
-    switch (op.type) {
-      case "stage":
-        if (o.stageId !== op.stageId && findPipeline(now, o.pipelineId)?.stages.some((s) => s.id === op.stageId)) {
-          opportunityChanged(now, moveOpportunity(now, id, op.stageId, actor));
-          count++;
+  return withWorkspace(async () => {
+    const now = new Date();
+    if (op.type === "status" && op.status === "lost" && !op.lostReason) return { ok: false, count: 0, message: "Pick a reason for marking them lost." };
+    let count = 0;
+    for (const id of ids.slice(0, 500)) {
+      const o = findOpportunity(now, id);
+      if (!o) continue;
+      switch (op.type) {
+        case "stage":
+          if (o.stageId !== op.stageId && findPipeline(now, o.pipelineId)?.stages.some((s) => s.id === op.stageId)) {
+            opportunityChanged(now, moveOpportunity(now, id, op.stageId, actorName()));
+            count++;
+          }
+          break;
+        case "status":
+          if (o.status !== op.status) {
+            opportunityChanged(now, setOpportunityStatus(now, id, op.status, actorName(), op.lostReason));
+            count++;
+          }
+          break;
+        case "owner": {
+          const owner = op.ownerName || undefined;
+          if (o.ownerName !== owner) {
+            updateOpportunity(now, id, { ownerName: owner }, actorName());
+            count++;
+          }
+          break;
         }
-        break;
-      case "status":
-        if (o.status !== op.status) {
-          opportunityChanged(now, setOpportunityStatus(now, id, op.status, actor, op.lostReason));
+        case "delete":
+          deleteOpportunity(now, id);
           count++;
-        }
-        break;
-      case "owner": {
-        const owner = op.ownerName || undefined;
-        if (o.ownerName !== owner) {
-          updateOpportunity(now, id, { ownerName: owner }, actor);
-          count++;
-        }
-        break;
+          break;
       }
-      case "delete":
-        deleteOpportunity(now, id);
-        count++;
-        break;
     }
-  }
-  refresh();
-  return { ok: true, count };
+    refresh();
+    return { ok: true, count };
+  });
 }
 
 /* ------------------------------ pipelines ----------------------------- */
@@ -210,33 +224,39 @@ const pipelineSchema = z
 export type PipelineDraft = z.input<typeof pipelineSchema>;
 
 export async function savePipelineAction(accountId: string, id: string | null, draft: PipelineDraft): Promise<OppActionState & { id?: string }> {
-  const parsed = pipelineSchema.safeParse(draft);
-  if (!parsed.success) return { ok: false, errors: flatten(parsed.error), message: parsed.error.issues[0]?.message };
-  const now = new Date();
-  if (!findClient(now, accountId)) return { ok: false, message: "That client no longer exists." };
-  if (id) {
-    const r = updatePipeline(now, id, parsed.data, actor);
-    if (!r.ok) return { ok: false, message: r.message };
+  return withWorkspace(async () => {
+    const parsed = pipelineSchema.safeParse(draft);
+    if (!parsed.success) return { ok: false, errors: flatten(parsed.error), message: parsed.error.issues[0]?.message };
+    const now = new Date();
+    if (!findClient(now, accountId)) return { ok: false, message: "That client no longer exists." };
+    if (id) {
+      const r = updatePipeline(now, id, parsed.data, actorName());
+      if (!r.ok) return { ok: false, message: r.message };
+      refresh();
+      return { ok: true, message: "Saved", id };
+    }
+    const p = createPipeline(now, accountId, parsed.data.name, parsed.data.stages, parsed.data.staleDays);
+    if (!p) return { ok: false, message: "Could not create it." };
     refresh();
-    return { ok: true, message: "Saved", id };
-  }
-  const p = createPipeline(now, accountId, parsed.data.name, parsed.data.stages, parsed.data.staleDays);
-  if (!p) return { ok: false, message: "Could not create it." };
-  refresh();
-  return { ok: true, message: "Pipeline created", id: p.id };
+    return { ok: true, message: "Pipeline created", id: p.id };
+  });
 }
 
 export async function deletePipelineAction(id: string): Promise<OppActionState> {
-  const r = deletePipeline(new Date(), id);
-  if (!r.ok) return { ok: false, message: r.message };
-  refresh();
-  return { ok: true, message: "Pipeline deleted" };
+  return withWorkspace(async () => {
+    const r = deletePipeline(new Date(), id);
+    if (!r.ok) return { ok: false, message: r.message };
+    refresh();
+    return { ok: true, message: "Pipeline deleted" };
+  });
 }
 
 export async function saveLostReasonsAction(accountId: string, reasons: string[]): Promise<OppActionState> {
-  const clean = [...new Set(reasons.map((r) => r.trim().slice(0, 40)).filter(Boolean))].slice(0, 20);
-  if (!clean.length) return { ok: false, message: "Keep at least one reason." };
-  setLostReasons(new Date(), accountId, clean);
-  refresh();
-  return { ok: true, message: "Saved" };
+  return withWorkspace(async () => {
+    const clean = [...new Set(reasons.map((r) => r.trim().slice(0, 40)).filter(Boolean))].slice(0, 20);
+    if (!clean.length) return { ok: false, message: "Keep at least one reason." };
+    setLostReasons(new Date(), accountId, clean);
+    refresh();
+    return { ok: true, message: "Saved" };
+  });
 }

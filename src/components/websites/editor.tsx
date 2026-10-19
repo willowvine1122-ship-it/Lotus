@@ -43,7 +43,7 @@ import type {
   WebsitePage,
 } from "@/lib/types";
 import { cn, timeAgo } from "@/lib/utils";
-import { newBlock } from "@/lib/data/demo-funnels";
+import { newBlock } from "@/lib/data/funnel-blocks";
 import {
   SITES_CNAME,
   blockId as newBlockId,

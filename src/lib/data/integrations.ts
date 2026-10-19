@@ -1,13 +1,16 @@
+import { stamp } from "@/lib/ids";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import type { ApiKey, Contact, ContactSource, IncomingWebhook, IntegrationConnection, IntegrationLog, IntegrationLogKind, OutgoingWebhook } from "@/lib/types";
 import { appAction, appEvent, apps, extractContact, fillDone, findApp, type ContactFieldKey } from "@/components/integrations/catalog";
 import { appEventReceived, contactCreated, webhookReceived } from "./automation-events";
-import { addActivity, createContact, findClient, findContact, listActivities, listClients, listContacts, updateContact } from "./store";
+import { defineModule } from "@/lib/server/workspace";
+import { addActivity, createContact, findClient, findContact, listContacts, updateContact } from "./store";
 
 /*
  * Integrations: which apps each client has connected, the webhooks in and
- * out, API keys, and a log of everything that crossed the boundary. Demo
- * store on globalThis, seeded once per day like the other modules.
+ * out, API keys, and a log of everything that crossed the boundary. Saved
+ * per agency in the "integrations" module; webhook tokens and API key
+ * hashes are public keys so an outside call finds its agency.
  *
  * What is real: incoming webhooks (POST /api/hooks/{token}) create and
  * update contacts and start workflows; outgoing webhooks POST signed JSON
@@ -17,7 +20,6 @@ import { addActivity, createContact, findClient, findContact, listActivities, li
  */
 
 interface IntegrationStore {
-  seededFor: string;
   connections: IntegrationConnection[];
   hooksIn: IncomingWebhook[];
   hooksOut: OutgoingWebhook[];
@@ -25,41 +27,20 @@ interface IntegrationStore {
   logs: IntegrationLog[];
 }
 
-const g = globalThis as unknown as { __lotusIntegrations?: IntegrationStore };
-const DAY = 86400000;
-const MAX_LOGS = 4000;
+const MAX_LOGS = 1000;
 
-function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a += 0x6d2b79f5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const integrationsModule = defineModule<IntegrationStore>({
+  key: "integrations",
+  init: () => ({ connections: [], hooksIn: [], hooksOut: [], keys: [], logs: [] }),
+  publicKeys: (s) => [...s.hooksIn.map((h) => `hook:${h.token}`), ...s.keys.filter((k) => !k.revokedAt).map((k) => `apikey:${k.hash}`)],
+});
 
-const uid = (p: string) => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+const uid = (p: string) => `${p}-${stamp()}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 const token = (bytes = 18) => randomBytes(bytes).toString("base64url");
 export const hashKey = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
-function store(now: Date): IntegrationStore {
-  const key = now.toISOString().slice(0, 10);
-  if (!g.__lotusIntegrations || g.__lotusIntegrations.seededFor !== key) {
-    // Anything made by hand survives the daily reseed; hooks keep their tokens so posted URLs keep working.
-    const prev = g.__lotusIntegrations;
-    const mine = <T extends { id: string }>(xs: T[] | undefined) => xs?.filter((x) => x.id.startsWith("new-")) ?? [];
-    g.__lotusIntegrations = { seededFor: key, connections: [], hooksIn: [], hooksOut: [], keys: [], logs: [] };
-    seed(now, g.__lotusIntegrations);
-    const s = g.__lotusIntegrations;
-    s.connections.push(...mine(prev?.connections));
-    s.hooksIn.push(...mine(prev?.hooksIn));
-    s.hooksOut.push(...mine(prev?.hooksOut));
-    s.keys.push(...mine(prev?.keys));
-    s.logs.push(...mine(prev?.logs));
-  }
-  return g.__lotusIntegrations;
+function store(_now: Date): IntegrationStore {
+  return integrationsModule.get();
 }
 
 function pretty(payload: unknown) {
@@ -431,6 +412,12 @@ export function revokeKey(now: Date, id: string) {
 }
 
 /** The client a bearer key belongs to, or undefined. Marks the key used. */
+/** The public address an API key is filed under, so a request can find its agency before opening it. */
+export function apiKeyAddress(header: string | null) {
+  const raw = header?.match(/^Bearer\s+(\S+)$/i)?.[1];
+  return raw ? `apikey:${hashKey(raw)}` : null;
+}
+
 export function authenticate(now: Date, header: string | null) {
   const raw = header?.match(/^Bearer\s+(\S+)$/i)?.[1];
   if (!raw) return undefined;
@@ -460,94 +447,6 @@ export function listLogs(now: Date, accountId?: string): IntegrationLog[] {
 
 export function logKinds(): IntegrationLogKind[] {
   return ["app_event", "app_action", "webhook_in", "webhook_out", "api", "import"];
-}
-
-/* -------------------------------- seeding ------------------------------- */
-
-const marketingApps = ["meta_lead_ads", "google_ads", "slack", "google_sheets", "google_calendar", "quickbooks", "stripe", "gmail", "calendly"];
-const fundraisingApps = ["stripe", "mailchimp", "slack", "google_sheets", "quickbooks", "gmail"];
-
-function seed(now: Date, s: IntegrationStore) {
-  for (const c of listClients(now)) {
-    if (c.account.id.startsWith("new-")) continue;
-    const r = rng([...c.account.id].reduce((a, ch) => a * 33 + ch.charCodeAt(0), 7));
-    const domain = (c.website ?? `https://${c.account.slug}.example.com`).replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-    const pool = c.mode === "marketing" ? marketingApps : fundraisingApps;
-    // The first two in each list are what nearly every client of that kind connects first.
-    const picked = pool.filter((_, i) => (i < 2 ? r() < 0.9 : r() < 0.35));
-    for (const appId of picked) {
-      const at = new Date(now.getTime() - (20 + Math.floor(r() * 120)) * DAY).toISOString();
-      const label =
-        appId === "slack" ? `${c.account.slug.replace(/-/g, "")}.slack.com` : appId === "meta_lead_ads" ? c.account.name : appId === "google_ads" ? `${100 + Math.floor(r() * 899)}-${100 + Math.floor(r() * 899)}-${1000 + Math.floor(r() * 8999)}` : appId === "stripe" ? `${c.account.name} (live)` : appId === "quickbooks" ? `${c.account.name} LLC` : appId === "mailchimp" ? c.account.slug : `ops@${domain}`;
-      s.connections.push({ id: `${c.account.id}-conn-${appId}`, accountId: c.account.id, appId, accountLabel: label, connectedAt: at, connectedBy: c.assignees[0]?.name ?? "Afza" });
-    }
-
-    if (r() < 0.55) {
-      s.hooksIn.push({
-        id: `${c.account.id}-in-1`,
-        accountId: c.account.id,
-        name: c.mode === "marketing" ? "Old website contact form" : "Event sign-up sheet",
-        token: createHash("sha256").update(`${c.account.id}-in-1`).digest("base64url").slice(0, 24),
-        mapping: {},
-        tags: [c.mode === "marketing" ? "Website form" : "Event"],
-        createdAt: new Date(now.getTime() - 60 * DAY).toISOString(),
-      });
-    }
-    if (r() < 0.4) {
-      s.hooksOut.push({
-        id: `${c.account.id}-out-1`,
-        accountId: c.account.id,
-        name: c.mode === "marketing" ? "Ops dashboard" : "Donor data warehouse",
-        url: `https://hooks.${domain}/lotus`,
-        secret: `whsec_${createHash("sha256").update(`${c.account.id}-out`).digest("base64url").slice(0, 32)}`,
-        createdAt: new Date(now.getTime() - 45 * DAY).toISOString(),
-      });
-    }
-    if (r() < 0.3) {
-      const raw = `lts_${createHash("sha256").update(`${c.account.id}-key`).digest("base64url").slice(0, 32)}`;
-      s.keys.push({ id: `${c.account.id}-key-1`, accountId: c.account.id, label: "Reporting script", prefix: raw.slice(0, 8), hash: hashKey(raw), createdAt: new Date(now.getTime() - 90 * DAY).toISOString(), createdBy: c.assignees[0]?.name ?? "Afza", lastUsedAt: new Date(now.getTime() - Math.floor(r() * 3) * DAY - 3600000).toISOString() });
-    }
-
-    // Two weeks of history, drawn from the client's real contacts so every log line links somewhere.
-    const contacts = listContacts(now, c.account.id);
-    const since = new Date(now.getTime() - 14 * DAY).toISOString();
-    for (const ct of contacts) {
-      if (ct.createdAt < since) continue;
-      const formAct = listActivities(now, ct.id).find((a) => a.kind === "form");
-      const at = formAct?.at ?? ct.createdAt;
-      if (ct.source === "meta" && picked.includes("meta_lead_ads")) {
-        s.logs.push({ id: `${ct.id}-lg-meta`, accountId: c.account.id, kind: "app_event", ref: "meta_lead_ads", title: "New lead", status: "ok", detail: `Created ${ct.firstName} ${ct.lastName}`, payload: pretty({ first_name: ct.firstName, last_name: ct.lastName, email: ct.email, phone: ct.phone, form: "Lead form" }), contactId: ct.id, at });
-      }
-      if (ct.source === "google" && picked.includes("google_ads")) {
-        s.logs.push({ id: `${ct.id}-lg-gads`, accountId: c.account.id, kind: "app_event", ref: "google_ads", title: "New lead form lead", status: "ok", detail: `Created ${ct.firstName} ${ct.lastName}`, payload: pretty({ first_name: ct.firstName, last_name: ct.lastName, email: ct.email, phone: ct.phone }), contactId: ct.id, at });
-      }
-      const later = new Date(new Date(at).getTime() + 4000).toISOString();
-      if (picked.includes("slack") && r() < 0.8) {
-        s.logs.push({ id: `${ct.id}-lg-slack`, accountId: c.account.id, kind: "app_action", ref: "slack", title: "Post a message", status: "ok", detail: `Posted to #${c.mode === "marketing" ? "leads" : "gifts"}`, payload: pretty({ channel: c.mode === "marketing" ? "#leads" : "#gifts", message: `New ${c.mode === "marketing" ? "lead" : "donor"}: ${ct.firstName} ${ct.lastName}` }), contactId: ct.id, at: later });
-      }
-      if (picked.includes("google_sheets") && r() < 0.6) {
-        s.logs.push({ id: `${ct.id}-lg-sheet`, accountId: c.account.id, kind: "app_action", ref: "google_sheets", title: "Add a row", status: "ok", detail: `Added a row to ${c.mode === "marketing" ? "Leads 2026" : "Donors 2026"} › Sheet1`, payload: pretty({ values: [ct.firstName, ct.lastName, ct.email ?? "", ct.phone ?? ""].join(", ") }), contactId: ct.id, at: later });
-      }
-      const hookOut = s.hooksOut.find((h) => h.accountId === c.account.id);
-      if (hookOut && r() < 0.7) {
-        const failed = r() < 0.06;
-        s.logs.push({ id: `${ct.id}-lg-out`, accountId: c.account.id, kind: "webhook_out", ref: hookOut.id, title: hookOut.name, status: failed ? "failed" : "ok", code: failed ? 502 : 200, detail: failed ? "Rejected: HTTP 502 in 3012 ms" : `Delivered: HTTP 200 in ${90 + Math.floor(r() * 260)} ms`, payload: pretty({ event: "workflow.step", sent_at: later, data: { contact: { id: ct.id, first_name: ct.firstName, last_name: ct.lastName, email: ct.email ?? null } } }), contactId: ct.id, at: later });
-      }
-      const hookIn = s.hooksIn.find((h) => h.accountId === c.account.id);
-      if (hookIn && ct.source === "website" && r() < 0.5) {
-        s.logs.push({ id: `${ct.id}-lg-in`, accountId: c.account.id, kind: "webhook_in", ref: hookIn.id, title: hookIn.name, status: "ok", code: 200, detail: `Updated ${ct.firstName} ${ct.lastName}`, payload: pretty({ name: `${ct.firstName} ${ct.lastName}`, email: ct.email, phone: ct.phone, page: "/contact" }), contactId: ct.id, at });
-      }
-    }
-    const key = s.keys.find((k) => k.accountId === c.account.id);
-    if (key) {
-      for (let d = 13; d >= 0; d--) {
-        const at = new Date(now.getTime() - d * DAY - 6 * 3600000).toISOString();
-        if (at > now.toISOString()) continue;
-        s.logs.push({ id: `${key.id}-lg-${d}`, accountId: c.account.id, kind: "api", ref: key.id, title: "GET /api/v1/contacts", status: "ok", code: 200, detail: `Listed ${Math.min(contacts.length, 100)} contacts`, at });
-      }
-    }
-  }
-  s.logs.sort((a, b) => a.at.localeCompare(b.at));
 }
 
 /** Contact ids the logs point at that still exist, for linking in the UI. */

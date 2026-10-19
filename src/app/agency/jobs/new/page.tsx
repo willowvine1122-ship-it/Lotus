@@ -1,3 +1,4 @@
+import { openWorkspace } from "@/lib/server/workspace";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -14,6 +15,7 @@ export const metadata = { title: "New job" };
 async function Form({ searchParams }: { searchParams: Promise<{ client?: string; contact?: string }> }) {
   const { client, contact } = await searchParams;
   await connection();
+  await openWorkspace();
   const now = new Date();
   const clients = fieldClientRefs(now);
   return (
