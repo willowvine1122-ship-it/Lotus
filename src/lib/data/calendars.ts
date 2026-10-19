@@ -3,6 +3,7 @@ import type { Appointment, AppointmentStatus, AppointmentType, Calendar, Contact
 import { busyFrom, isSlotOpen, zonedTime } from "@/lib/calendars";
 import { defineModule } from "@/lib/server/workspace";
 import { addActivity, createContact, listClients, listContacts, slugify } from "./store";
+import { bookingEmails } from "./notify";
 
 /*
  * Calendars and bookings, saved per agency in the "calendars" module. A
@@ -188,6 +189,7 @@ export function bookAppointment(now: Date, input: BookingInput): BookingResult {
   s.appointments.push(appointment);
   const when = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: cal.timeZone, timeZoneName: "short" }).format(start);
   addActivity(now, contact.id, { kind: "appointment", title: `Booked ${type.name}`, body: `${when} on ${cal.name}`, by: "Booking page" });
+  bookingEmails(now, cal, type, appointment);
   return { ok: true, appointment };
 }
 

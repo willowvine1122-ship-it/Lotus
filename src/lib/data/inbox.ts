@@ -3,6 +3,7 @@ import { messageReceived } from "./automation-events";
 import type { Channel, Contact, Conversation, InboxMessage, InboxThread } from "@/lib/types";
 import { defineModule } from "@/lib/server/workspace";
 import { addActivity, findClient, findContact, getPipeline, listContacts } from "./store";
+import { messageEmail } from "./notify";
 
 /*
  * Inbox conversations, saved per agency in the "inbox" module. Every
@@ -81,6 +82,10 @@ export function sendMessage(
     sentAt: now.toISOString(),
   };
   conv.messages.push(m);
+  if (input.kind === "message" && input.channel === "email") {
+    const contact = contactFor(now, conv.contactId);
+    if (contact) messageEmail(now, contact, m.subject, m.body);
+  }
   if (input.kind === "message") {
     conv.unread = 0;
     if (!conv.assigneeName) conv.assigneeName = input.authorName;

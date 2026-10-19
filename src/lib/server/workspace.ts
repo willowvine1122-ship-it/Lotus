@@ -4,6 +4,8 @@ import { cache as reactCache } from "react";
 import { after } from "next/server";
 import { db } from "./db";
 import { requireStaff, type Session } from "./auth";
+import { origin } from "./invites";
+import { sendMail, type OutgoingMail } from "./mailer";
 
 /*
  * Each agency's data is a set of modules (clients, crm, calendars, ...),
@@ -60,6 +62,8 @@ export interface WorkspaceCtx {
   opened: Map<string, Open>;
   docs: Map<string, Loaded>;
   members: TeamMember[];
+  /** Emails the work queued; sent once its changes are saved. */
+  outbox: OutgoingMail[];
 }
 
 const registry = new Map<string, ModuleDef<unknown>>();
@@ -114,6 +118,16 @@ export function currentSession(): Session | null {
   return activeCtx()?.session ?? null;
 }
 
+/**
+ * Queue an email from inside a store call. It goes out after the change
+ * that caused it is saved, so a failed save never sends a confirmation for
+ * something that didn't happen. "{{app}}" in the text becomes the address
+ * Lotus is being used at. Outside a workspace (tests, scripts) it is dropped.
+ */
+export function queueMail(mail: OutgoingMail) {
+  activeCtx()?.outbox.push(mail);
+}
+
 /** Everyone with a login on this agency: staff and client logins. */
 export function workspaceMembers(): TeamMember[] {
   return activeCtx()?.members ?? [];
@@ -158,16 +172,20 @@ async function run<T>(agencyId: string, session: Session | null, fn: () => T | P
   const outer = als.getStore();
   if (outer && outer.agencyId === agencyId) return fn();
   const [docs, members] = await Promise.all([loadDocs(agencyId), loadMembers(agencyId)]);
-  const ctx: WorkspaceCtx = { agencyId, session, opened: new Map(), docs, members };
+  const ctx: WorkspaceCtx = { agencyId, session, opened: new Map(), docs, members, outbox: [] };
   let result: T;
   try {
     result = await als.run(ctx, fn);
   } catch (e) {
     // A redirect or notFound after a successful change still keeps the change.
-    if (isNavigation(e)) await commit(ctx);
+    if (isNavigation(e)) {
+      await commit(ctx);
+      await scheduleOutbox(ctx);
+    }
     throw e;
   }
   await commit(ctx);
+  await scheduleOutbox(ctx);
   return result;
 }
 
@@ -177,10 +195,14 @@ async function openForRender(resolve: () => Promise<{ agencyId: string; session:
     const who = await resolve();
     if (!who) return null;
     const [docs, members] = await Promise.all([loadDocs(who.agencyId), loadMembers(who.agencyId)]);
-    const ctx: WorkspaceCtx = { agencyId: who.agencyId, session: who.session, opened: new Map(), docs, members };
+    const ctx: WorkspaceCtx = { agencyId: who.agencyId, session: who.session, opened: new Map(), docs, members, outbox: [] };
     slot.ctx = ctx;
+    const app = await appOrigin();
     // Reads can fill in defaults (a client's first pipeline, a scheduled email that came due); keep them.
-    after(() => commit(ctx));
+    after(async () => {
+      await commit(ctx);
+      await flushOutbox(ctx, app);
+    });
     return ctx;
   })();
   return slot.opening;
@@ -228,6 +250,36 @@ export async function withPublicWorkspace<T>(key: string, fn: () => T | Promise<
 /** Resolve a public key to its agency without opening the workspace. */
 export async function agencyForKey(key: string) {
   return db<string | null>("keys.get", { key });
+}
+
+async function appOrigin() {
+  try {
+    return await origin();
+  } catch {
+    return "";
+  }
+}
+
+/** Send what the saved work queued, after the response so a slow mail server never holds up the page. */
+async function scheduleOutbox(ctx: WorkspaceCtx) {
+  if (!ctx.outbox.length) return;
+  const app = await appOrigin();
+  try {
+    after(() => flushOutbox(ctx, app));
+  } catch {
+    await flushOutbox(ctx, app);
+  }
+}
+
+async function flushOutbox(ctx: WorkspaceCtx, app: string) {
+  const mails = ctx.outbox.splice(0);
+  await Promise.all(
+    mails.map(async (m) => {
+      const fill = (v: string) => v.replaceAll("{{app}}", app);
+      const res = await sendMail({ ...m, text: fill(m.text), html: m.html && fill(m.html) });
+      if (!res.sent && res.error !== "Email is not connected.") console.error(`Email to ${m.to} not sent: ${res.error}`);
+    }),
+  );
 }
 
 async function commit(ctx: WorkspaceCtx) {
