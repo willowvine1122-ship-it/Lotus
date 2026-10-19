@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cache } from "react";
 import { cookies } from "next/headers";
@@ -157,3 +157,41 @@ export async function currentTokenHash() {
 export function normalEmail(email: string) {
   return email.trim().toLowerCase();
 }
+
+/*
+ * Password reset links carry no database row: the token is the email and an
+ * expiry, signed with the server key and the account's current password
+ * hash. Setting a new password changes that hash, so a link works once and
+ * every older link dies with it.
+ */
+const RESET_MINUTES = 60;
+
+function resetSignature(body: string, passwordHash: string) {
+  return createHmac("sha256", process.env.LOTUS_SERVER_KEY ?? "").update(`${body}.${passwordHash}`).digest("base64url");
+}
+
+export function resetToken(user: { email: string; password_hash: string }) {
+  const body = Buffer.from(JSON.stringify({ e: user.email, x: Date.now() + RESET_MINUTES * 60000 })).toString("base64url");
+  return `${body}.${resetSignature(body, user.password_hash)}`;
+}
+
+/** The email a reset link was issued for, when the link is genuine and unexpired. */
+export function resetTokenEmail(token: string): string | null {
+  const body = token.split(".")[0] ?? "";
+  try {
+    const v = JSON.parse(Buffer.from(body, "base64url").toString()) as { e?: unknown; x?: unknown };
+    return typeof v.e === "string" && typeof v.x === "number" && v.x > Date.now() ? v.e : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resetTokenMatches(token: string, passwordHash: string) {
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return false;
+  const expected = Buffer.from(resetSignature(body, passwordHash));
+  const given = Buffer.from(sig);
+  return expected.length === given.length && timingSafeEqual(expected, given);
+}
+
+export const RESET_LINK_MINUTES = RESET_MINUTES;

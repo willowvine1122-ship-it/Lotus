@@ -3,9 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { canManageTeam, currentTokenHash, endSession, getSession, hashPassword, homeFor, normalEmail, requireSession, requireStaff, sha256, startSession, verifyPassword, type Role } from "@/lib/server/auth";
+import { canManageTeam, currentTokenHash, endSession, getSession, hashPassword, homeFor, normalEmail, requireSession, RESET_LINK_MINUTES, resetToken, resetTokenEmail, resetTokenMatches, requireStaff, sha256, startSession, verifyPassword, type Role } from "@/lib/server/auth";
 import { db, isDatabaseConfigured } from "@/lib/server/db";
-import { issueInvite } from "@/lib/server/invites";
+import { issueInvite, origin } from "@/lib/server/invites";
+import { mailerLive, sendMail } from "@/lib/server/mailer";
 import { forgetMembers } from "@/lib/server/workspace";
 
 /*
@@ -89,6 +90,50 @@ export async function signInAction(_prev: AccountState, formData: FormData): Pro
 export async function signOutAction() {
   await endSession();
   redirect("/login");
+}
+
+/* ----------------------------- password reset ----------------------------- */
+
+/**
+ * Always answers the same way, so the form can't be used to find out who has
+ * an account. Requests share the sign-in attempt counter, which caps how many
+ * emails one address can be sent.
+ */
+export async function requestResetAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  if (!isDatabaseConfigured()) return notReady();
+  const values = typed(formData, "email");
+  const p = email.safeParse(String(formData.get("email") ?? "").trim());
+  if (!p.success) return { ok: false, errors: { email: "Enter a valid email" }, values };
+  if (!mailerLive()) return { ok: false, message: "Email isn't connected yet, so reset links can't be sent. Ask your agency owner to reset your access.", values };
+  const addr = normalEmail(p.data);
+  const done: AccountState = { ok: true, message: `If ${addr} has a Lotus account, a reset link is on its way. It works for ${RESET_LINK_MINUTES} minutes.`, values };
+  const key = `reset:${addr}`;
+  if ((await db<number>("attempts.count", { email: key, minutes: 60 })) >= 3) return done;
+  await db("attempts.add", { email: key });
+  const user = await db<UserRow | null>("user.by_email", { email: addr });
+  if (!user) return done;
+  const link = `${await origin()}/reset/${resetToken(user)}`;
+  await sendMail({
+    to: user.email,
+    subject: "Reset your Lotus password",
+    text: `Hi ${user.name},\n\nSomeone asked to reset the password for your Lotus account. Choose a new one here:\n\n${link}\n\nThe link works for ${RESET_LINK_MINUTES} minutes and only once. If you didn't ask, ignore this email and your password stays the same.`,
+  });
+  return done;
+}
+
+export async function resetPasswordAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  if (!isDatabaseConfigured()) return notReady();
+  const token = String(formData.get("token") ?? "");
+  const addr = resetTokenEmail(token);
+  const user = addr ? await db<UserRow | null>("user.by_email", { email: addr }) : null;
+  if (!user || !resetTokenMatches(token, user.password_hash)) return { ok: false, message: "This reset link has expired or was already used. Ask for a new one." };
+  const p = password.safeParse(String(formData.get("password") ?? ""));
+  if (!p.success) return { ok: false, errors: { password: p.error.issues[0]?.message ?? "Choose a longer password" } };
+  await db("user.update", { id: user.id, password_hash: await hashPassword(p.data) });
+  await db("session.delete_others", { user_id: user.id, keep: "" });
+  await db("attempts.clear", { email: user.email });
+  const home = await startSession(user.id);
+  redirect(home);
 }
 
 /** Someone signed in with no agency yet (their invite was withdrawn, or they signed up from an invite they then left) starts their own. */
