@@ -14,7 +14,7 @@ import {
   endSplitTestAction,
   moveStepAction,
   removeStepAction,
-  renameFunnelAction,
+  saveFunnelSettingsAction,
   setFunnelStatusAction,
   setSplitAction,
   startSplitTestAction,
@@ -44,7 +44,7 @@ async function Overview({ params }: { params: Promise<{ id: string }> }) {
       origin={origin}
       actions={{
         setStatus: setFunnelStatusAction,
-        rename: renameFunnelAction,
+        rename: saveFunnelSettingsAction,
         addStep: addStepAction,
         updateStep: updateStepAction,
         duplicateStep: duplicateStepAction,

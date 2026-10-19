@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: { default: "Lotus", template: "%s · Lotus" },
   description:
     "Agency operating system: CRM, funnels, automations and a daily diagnostic for every client.",
+  // In metadata rather than app/favicon.ico so a client site's own favicon replaces it.
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

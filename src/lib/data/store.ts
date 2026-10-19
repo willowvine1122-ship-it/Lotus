@@ -391,7 +391,7 @@ export function createFunnel(now: Date, input: { accountId: string; name: string
   return f;
 }
 
-export function updateFunnel(now: Date, id: string, patch: Partial<Pick<Funnel, "name" | "status" | "brandColor" | "slug" | "theme">>): Funnel | undefined {
+export function updateFunnel(now: Date, id: string, patch: Partial<Pick<Funnel, "name" | "status" | "brandColor" | "slug" | "theme" | "site">>): Funnel | undefined {
   const f = findFunnel(now, id);
   if (!f) return undefined;
   Object.assign(f, patch, { updatedAt: now.toISOString() });

@@ -1,7 +1,9 @@
 "use server";
 
 import { withPublicWorkspace } from "@/lib/server/workspace";
-import { withWorkspace } from "@/lib/server/workspace";
+import { currentSession, withWorkspace } from "@/lib/server/workspace";
+import { canManageTeam } from "@/lib/server/auth";
+import { IMAGE_URL } from "@/lib/assets";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -87,6 +89,43 @@ export async function renameFunnelAction(funnelId: string, name: string, brandCo
     if (!/^#[0-9a-fA-F]{6}$/.test(brandColor)) return { ok: false, message: "Brand colour must be a hex like #6d28d9." };
     updateFunnel(new Date(), funnelId, { name: name.trim(), brandColor });
     revalidatePath(`/agency/funnels/${funnelId}`);
+    revalidatePath("/agency/funnels");
+    return { ok: true, message: "Saved" };
+  });
+}
+
+const image = z.union([z.string().trim().regex(IMAGE_URL, "Use an uploaded image or a full https:// link"), z.literal("")]).optional();
+const code = z.string().max(20000, "Keep pasted code under 20,000 characters").optional();
+const funnelSite = z.object({
+  title: z.string().trim().max(70).optional(),
+  description: z.string().trim().max(170).optional(),
+  favicon: image,
+  shareImage: image,
+  gaId: z.union([z.string().regex(/^G-[A-Z0-9]{4,12}$/, "Google Analytics IDs look like G-XXXXXXX"), z.literal("")]).optional(),
+  metaPixelId: z.union([z.string().regex(/^\d{8,20}$/, "Meta Pixel IDs are 8 to 20 digits"), z.literal("")]).optional(),
+  headCode: code,
+  bodyCode: code,
+});
+
+export type FunnelSiteInput = z.infer<typeof funnelSite>;
+
+/** The funnel's name and colour, plus what browsers and link previews show and the tracking every page carries. */
+export async function saveFunnelSettingsAction(funnelId: string, name: string, brandColor: string, site: FunnelSiteInput): Promise<ActionState> {
+  return withWorkspace(async () => {
+    if (name.trim().length < 2) return { ok: false, message: "Give the funnel a name." };
+    if (!/^#[0-9a-fA-F]{6}$/.test(brandColor)) return { ok: false, message: "Brand colour must be a hex like #6d28d9." };
+    const p = funnelSite.safeParse(site);
+    if (!p.success) return { ok: false, message: p.error.issues[0]?.message ?? "Check the settings." };
+    const now = new Date();
+    const before = findFunnel(now, funnelId);
+    if (!before) return { ok: false, message: "That funnel was deleted." };
+    // Pasted code runs on the funnel's pages, so only owners and admins may change it.
+    const codeChanged = (before.site?.headCode ?? "") !== (p.data.headCode ?? "") || (before.site?.bodyCode ?? "") !== (p.data.bodyCode ?? "");
+    if (codeChanged && !canManageTeam(currentSession()?.role ?? null)) return { ok: false, message: "Only the owner or an admin can change pasted code." };
+    const clean = Object.fromEntries(Object.entries(p.data).filter(([, v]) => v)) as FunnelSiteInput;
+    updateFunnel(now, funnelId, { name: name.trim(), brandColor, site: clean });
+    revalidatePath(`/agency/funnels/${funnelId}`);
+    revalidatePath(`/f/${before.slug}`, "layout");
     revalidatePath("/agency/funnels");
     return { ok: true, message: "Saved" };
   });

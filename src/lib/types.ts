@@ -444,9 +444,22 @@ export interface Funnel {
   /** Fonts, colours and corners shared by every step built in the visual builder. */
   theme?: BuilderTheme;
   steps: FunnelStep[];
+  /** What the browser and link previews show, and the tags every page carries. */
+  site?: FunnelSite;
   days: FunnelDay[]; // oldest first
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FunnelSite {
+  title?: string;
+  description?: string;
+  favicon?: string;
+  shareImage?: string;
+  gaId?: string;
+  metaPixelId?: string;
+  headCode?: string;
+  bodyCode?: string;
 }
 
 export interface FunnelSubmission {
@@ -1072,10 +1085,14 @@ export interface Website {
   theme?: BuilderTheme;
   /** Wordmark text in the header; the client's name by default. */
   logoText: string;
+  /** Uploaded logo shown instead of the wordmark when set. */
+  logoImage?: string;
+  /** Browser tab icon. */
+  favicon?: string;
   header: { ctaLabel?: string; ctaHref?: string; phone?: string };
   footer: { tagline?: string; phone?: string; email?: string; address?: string; hours?: string };
   seo: { siteTitle: string; description: string; ogImage?: string };
-  analytics: { gaId?: string; metaPixelId?: string };
+  analytics: { gaId?: string; metaPixelId?: string; /** Pasted tracking or chat code, owners and admins only. */ headCode?: string; bodyCode?: string };
   domain?: WebsiteDomain;
   pages: WebsitePage[];
   days: WebsiteDay[];

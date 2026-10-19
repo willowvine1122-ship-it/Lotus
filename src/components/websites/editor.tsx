@@ -1,5 +1,6 @@
 "use client";
 
+import { ImagePicker } from "@/components/image-picker";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -82,6 +83,8 @@ type Draft = Pick<
   | "slug"
   | "brandColor"
   | "logoText"
+  | "logoImage"
+  | "favicon"
   | "header"
   | "footer"
   | "seo"
@@ -95,6 +98,8 @@ const draftOf = (s: Website): Draft => ({
   slug: s.slug,
   brandColor: s.brandColor,
   logoText: s.logoText,
+  logoImage: s.logoImage ?? "",
+  favicon: s.favicon ?? "",
   header: s.header,
   footer: s.footer,
   seo: s.seo,
@@ -1106,10 +1111,29 @@ export function WebsiteEditor({
                   </div>
                 </Field>
                 <Group title="Brand">
+                  <Field label="Logo" htmlFor="st-logo-img" error={err("logoImage")}>
+                    <ImagePicker
+                      label="Logo"
+                      shape="logo"
+                      value={draft.logoImage}
+                      onChange={(v) => set("logoImage", v)}
+                      hint="PNG or SVG with a transparent background looks best. Without one, the logo text below is used."
+                    />
+                  </Field>
+                  <Field label="Favicon" htmlFor="st-favicon" error={err("favicon")}>
+                    <ImagePicker
+                      label="Favicon"
+                      shape="icon"
+                      value={draft.favicon}
+                      onChange={(v) => set("favicon", v)}
+                      accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
+                      hint="The little icon in the browser tab. A square PNG, 512 × 512."
+                    />
+                  </Field>
                   <Field
                     label="Logo text"
                     htmlFor="st-logo"
-                    hint="Shown top left and in the footer."
+                    hint="Used for the site name, and in the header when there's no logo."
                   >
                     <Input
                       id="st-logo"
@@ -1325,14 +1349,10 @@ export function WebsiteEditor({
                     error={err("seo.ogImage")}
                     hint="Shown when a link is shared on Facebook, LinkedIn or iMessage. 1200 × 630 works best."
                   >
-                    <Input
-                      id="st-og"
-                      type="url"
-                      value={draft.seo.ogImage ?? ""}
-                      placeholder="https://…"
-                      onChange={(e) =>
-                        set("seo", { ...draft.seo, ogImage: e.target.value })
-                      }
+                    <ImagePicker
+                      label="Share image"
+                      value={draft.seo.ogImage}
+                      onChange={(v) => set("seo", { ...draft.seo, ogImage: v })}
                     />
                   </Field>
                   <p className="text-xs text-fg-3">
@@ -1383,6 +1403,35 @@ export function WebsiteEditor({
                         })
                       }
                       className="num"
+                    />
+                  </Field>
+                  <Field
+                    label="Code in the page head"
+                    htmlFor="st-head-code"
+                    error={err("analytics.headCode")}
+                    hint="Paste tracking, verification or chat-widget code exactly as the provider gives it. Owners and admins only."
+                  >
+                    <Textarea
+                      id="st-head-code"
+                      value={draft.analytics.headCode ?? ""}
+                      spellCheck={false}
+                      placeholder={"<script>…</script>"}
+                      onChange={(e) => set("analytics", { ...draft.analytics, headCode: e.target.value })}
+                      className="min-h-[96px] font-mono text-xs"
+                    />
+                  </Field>
+                  <Field
+                    label="Code at the end of the page"
+                    htmlFor="st-body-code"
+                    error={err("analytics.bodyCode")}
+                    hint="For code that asks to go before the closing body tag."
+                  >
+                    <Textarea
+                      id="st-body-code"
+                      value={draft.analytics.bodyCode ?? ""}
+                      spellCheck={false}
+                      onChange={(e) => set("analytics", { ...draft.analytics, bodyCode: e.target.value })}
+                      className="min-h-[72px] font-mono text-xs"
                     />
                   </Field>
                 </Group>

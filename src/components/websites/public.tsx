@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { TrackingTags } from "@/components/tracking-tags";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import Script from "next/script";
 import type { Website } from "@/lib/types";
 import { submitSiteFormAction } from "@/app/agency/websites/actions";
 import { listForms } from "@/lib/data/forms";
@@ -76,6 +76,7 @@ export async function siteMetadata(
       type: "website",
       images: site.seo.ogImage ? [site.seo.ogImage] : undefined,
     },
+    icons: site.favicon ? { icon: site.favicon, apple: site.favicon } : undefined,
     twitter: {
       card: site.seo.ogImage ? "summary_large_image" : "summary",
       title,
@@ -109,7 +110,6 @@ export async function SiteRoute({
   }));
   const back = pageHref(site, page, { base });
   recordView(now, site.id, page.id);
-  const { gaId, metaPixelId } = site.analytics;
   return (
     <div className="min-h-dvh">
       <SitePage
@@ -121,24 +121,7 @@ export async function SiteRoute({
         sent={sent}
         formAction={submitSiteFormAction.bind(null, site.id, page.id, back)}
       />
-      {gaId && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script
-            id="ga"
-            strategy="afterInteractive"
-          >{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});`}</Script>
-        </>
-      )}
-      {metaPixelId && (
-        <Script
-          id="meta-pixel"
-          strategy="afterInteractive"
-        >{`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',${JSON.stringify(metaPixelId)});fbq('track','PageView');`}</Script>
-      )}
+      <TrackingTags {...site.analytics} />
     </div>
   );
 }

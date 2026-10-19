@@ -109,7 +109,7 @@ export function createWebsite(now: Date, accountId: string, name: string, templa
   return site;
 }
 
-export type WebsitePatch = Pick<Website, "name" | "slug" | "brandColor" | "logoText" | "header" | "footer" | "seo" | "analytics" | "pages">;
+export type WebsitePatch = Pick<Website, "name" | "slug" | "brandColor" | "logoText" | "logoImage" | "favicon" | "header" | "footer" | "seo" | "analytics" | "pages">;
 
 export function saveWebsite(now: Date, id: string, patch: WebsitePatch): { site?: Website; slugTaken?: boolean } {
   const site = findWebsite(now, id);

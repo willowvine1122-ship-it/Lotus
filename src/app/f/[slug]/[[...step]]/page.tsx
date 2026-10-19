@@ -9,6 +9,8 @@ import { blocksToDoc, chooseVariant, themeOf } from "@/components/builder/model"
 import { builderRefs } from "@/components/builder/refs";
 import { findFunnel, recordStepView } from "@/lib/data/store";
 import { submitFunnelAction, submitOrderAction, submitUpsellAction } from "@/app/agency/funnels/actions";
+import { TrackingTags } from "@/components/tracking-tags";
+import type { Metadata } from "next";
 
 /*
  * Public funnel pages: /f/<funnel-slug>/<step-path>. The first step is the
@@ -45,6 +47,7 @@ async function Page({ params, searchParams }: { params: Promise<{ slug: string; 
   return (
     <>
       {fresh && <StickVariant stepId={step.id} variant={variant} />}
+      <TrackingTags {...funnel.site} />
       <BuilderPage
         doc={doc}
         theme={themeOf(funnel.theme, funnel.brandColor)}
@@ -65,6 +68,23 @@ async function Page({ params, searchParams }: { params: Promise<{ slug: string; 
       />
     </>
   );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  await connection();
+  if (!(await openPublicWorkspace(`funnel:${slug}`))) return { title: "Page not found", robots: { index: false } };
+  const funnel = findFunnel(new Date(), slug);
+  if (!funnel || funnel.status !== "live") return { title: "Page not found", robots: { index: false } };
+  const s = funnel.site ?? {};
+  const title = s.title || funnel.name;
+  return {
+    title: { absolute: title },
+    description: s.description,
+    icons: s.favicon ? { icon: s.favicon, apple: s.favicon } : undefined,
+    openGraph: { title, description: s.description, type: "website", images: s.shareImage ? [s.shareImage] : undefined },
+    twitter: { card: s.shareImage ? "summary_large_image" : "summary", title, description: s.description },
+  };
 }
 
 export default function PublicFunnelPage(props: { params: Promise<{ slug: string; step?: string[] }>; searchParams: Promise<{ sent?: string }> }) {
