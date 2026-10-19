@@ -630,3 +630,15 @@ Funnel steps and website pages are now designed in one visual builder, modelled 
 - Visitors are split A/B by the step's split and kept on their version with a cookie; conversions count against the version they saw. Ending a test keeps the winner and folds its numbers into the step.
 - Orders are recorded in test mode until Stripe keys are added. An upsell adds to the visitor's order; taking it skips the downsell that follows.
 - Pages saved before the builder keep rendering from their blocks until someone opens them in the builder, which converts them.
+
+## Revision 18: the Lotus mark and the grouped rail (2026-10-19)
+
+**Mark.** Five petals opening from one point (`src/components/brand/lotus-mark.tsx`). Outer petals `#6d3df2`, inner `#a855f7`, the heart a vertical gradient `#f5d0fe` to `#8b5cf6`. Petals are outlined in the colour behind them so the outline reads as a gap: pass `on` for the surface (`var(--rail)` by default, `var(--surface)` on paper). `LotusLogo` pairs it with the wordmark (Geist 600, 17px, -0.03em). The app icon is the mark on an ink tile with 7/32 corner radius (`public/brand/icon.svg`, PNGs at 16 to 512, `public/favicon.ico`). Client-facing pages (portal, booking, customer views) keep the client's initial, not the Lotus mark.
+
+**Icons in metadata, not file conventions.** The favicon and Apple icon are declared in the root layout's `metadata.icons`, so a client website's own favicon replaces them instead of being listed beside them. The web app manifest is declared only under `/agency`.
+
+**Rail.** 240px, folds to 56px. Header: logo and a fold button. Then a "Jump to…" button (⌘K / Ctrl K opens a page switcher). Nav is grouped: the daily tools without a heading, then Clients and CRM, Marketing, Field service, Workspace. Group headings are 11px, `rail-fg-2` at 60%. Items are 30px tall, 13px; the active item gets a white 8% fill, a violet icon (`#c4b5fd`) and a 3px violet bar at the rail edge. The nav fades at the bottom when it scrolls. Account footer: gradient avatar with initials, name, agency, sign out.
+
+**Sign-in.** Ink half with the logo, one headline, three capability rows in outlined icon tiles, and a large 12%-opacity mark with a soft violet glow bottom right; paper half with the form, the paper panel's left edge rounded 16px.
+
+**Lotus emails.** Invites, password resets and team alerts use `lotusEmailHtml` (`src/lib/server/email-layout.ts`): logo row, white card on paper, one violet button. Emails a client sends to their own contacts stay plain text.

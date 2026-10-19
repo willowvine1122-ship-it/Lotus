@@ -6,6 +6,7 @@ import { z } from "zod";
 import { canManageTeam, currentTokenHash, endSession, getSession, hashPassword, homeFor, normalEmail, requireSession, RESET_LINK_MINUTES, resetToken, resetTokenEmail, resetTokenMatches, requireStaff, sha256, startSession, verifyPassword, type Role } from "@/lib/server/auth";
 import { db, isDatabaseConfigured } from "@/lib/server/db";
 import { issueInvite, origin } from "@/lib/server/invites";
+import { lotusEmailHtml } from "@/lib/server/email-layout";
 import { mailerLive, sendMail } from "@/lib/server/mailer";
 import { forgetMembers } from "@/lib/server/workspace";
 
@@ -112,11 +113,19 @@ export async function requestResetAction(_prev: AccountState, formData: FormData
   await db("attempts.add", { email: key });
   const user = await db<UserRow | null>("user.by_email", { email: addr });
   if (!user) return done;
-  const link = `${await origin()}/reset/${resetToken(user)}`;
+  const home = await origin();
+  const link = `${home}/reset/${resetToken(user)}`;
+  const text = `Hi ${user.name},\n\nSomeone asked to reset the password for your Lotus account. Choose a new one here:\n\n${link}\n\nThe link works for ${RESET_LINK_MINUTES} minutes and only once. If you didn't ask, ignore this email and your password stays the same.`;
   await sendMail({
     to: user.email,
     subject: "Reset your Lotus password",
-    text: `Hi ${user.name},\n\nSomeone asked to reset the password for your Lotus account. Choose a new one here:\n\n${link}\n\nThe link works for ${RESET_LINK_MINUTES} minutes and only once. If you didn't ask, ignore this email and your password stays the same.`,
+    text,
+    html: lotusEmailHtml({
+      origin: home,
+      text: `Hi ${user.name},\n\nSomeone asked to reset the password for your Lotus account.`,
+      action: { label: "Choose a new password", url: link },
+      note: `The link works for ${RESET_LINK_MINUTES} minutes and only once. If you didn't ask, ignore this email and your password stays the same.`,
+    }),
   });
   return done;
 }

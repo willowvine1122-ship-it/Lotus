@@ -7,6 +7,7 @@ import { AddButton, Area, Color, Group, MiniButtons, Money, Num, Pick, Row, Seg,
 import { fonts, rowLayouts, setRowLayout, uid, videoEmbed, type NodeKind } from "./model";
 import type { RenderRefs } from "./render";
 import { photos } from "./templates";
+import { ImagePicker } from "@/components/image-picker";
 
 /* The right-hand panel: what the selected thing says, and how it looks. */
 
@@ -128,9 +129,7 @@ export function ContentPanel({ e, onChange, refs, context }: { e: BuilderElement
     case "image":
       return (
         <Group title="Image">
-          <Row label="Image address" hint="Paste any https image link, or pick one below.">
-            <Text label="Image address" value={e.src} placeholder="https://" onChange={(src) => set({ src })} />
-          </Row>
+          <ImagePicker label="Image" value={e.src} onChange={(src) => set({ src })} hint="Upload your own, paste a link, or pick a stock photo below." />
           <div className="grid grid-cols-4 gap-1.5">
             {Object.entries(photos).map(([k, url]) => (
               <button key={k} type="button" onClick={() => set({ src: url })} className={cn("aspect-square overflow-hidden rounded border border-line", e.src === url && "ring-2 ring-brand ring-offset-1")} aria-label={`Use photo ${k}`}>
@@ -264,7 +263,7 @@ export function ContentPanel({ e, onChange, refs, context }: { e: BuilderElement
             <Text label="Detail" value={e.detail ?? ""} placeholder="Homeowner, Austin" onChange={(detail) => set({ detail: detail || undefined })} />
           </Row>
           <Row label="Photo" hint="Optional. Initials show without one.">
-            <Text label="Photo" value={e.avatar ?? ""} placeholder="https://" onChange={(avatar) => set({ avatar: avatar || undefined })} />
+            <ImagePicker label="Photo" shape="icon" value={e.avatar} onChange={(avatar) => set({ avatar: avatar || undefined })} />
           </Row>
         </Group>
       );
@@ -559,7 +558,7 @@ export function StylePanel({ kind, node, device, theme, onChange, elType }: { ki
         {elType !== "button" && (
           <>
             <Row label="Background image">
-              <Text label="Background image" value={st.bgImage ?? ""} placeholder="https://" onChange={(bgImage) => set({ bgImage: bgImage || undefined })} />
+              <ImagePicker label="Background image" value={st.bgImage} onChange={(bgImage) => set({ bgImage: bgImage || undefined })} />
             </Row>
             {st.bgImage && (
               <Row label={`Darken the image · ${Math.round((st.overlay ?? 0) * 100)}%`}>

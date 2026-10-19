@@ -1,7 +1,9 @@
 "use server";
 
 import { withPublicWorkspace } from "@/lib/server/workspace";
-import { withWorkspace } from "@/lib/server/workspace";
+import { currentSession, withWorkspace } from "@/lib/server/workspace";
+import { canManageTeam } from "@/lib/server/auth";
+import { IMAGE_URL } from "@/lib/assets";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -58,6 +60,9 @@ const page = z.object({
   seo: z.object({ title: opt(70), description: opt(170), noindex: z.boolean().optional() }),
 });
 
+/** An uploaded image (/assets/…) or any https image link. */
+const imageUrl = z.union([z.string().trim().regex(IMAGE_URL, "Use an uploaded image or a full https:// link"), z.literal("")]).optional();
+
 const patch = z.object({
   name: z.string().trim().min(1, "Give the site a name").max(80),
   slug: z
@@ -68,12 +73,16 @@ const patch = z.object({
     .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a hex colour like #1f6fd1"),
   logoText: z.string().trim().max(60),
+  logoImage: imageUrl,
+  favicon: imageUrl,
   header: z.object({ ctaLabel: opt(40), ctaHref: href, phone: opt(30) }),
   footer: z.object({ tagline: opt(240), phone: opt(30), email: z.union([z.email("That email doesn't look right"), z.literal("")]).optional(), address: opt(160), hours: opt(160) }),
   seo: z.object({ siteTitle: z.string().trim().min(1, "Give the site a title for search").max(70), description: t(170), ogImage: z.union([z.url("Use a full https:// image link"), z.literal("")]).optional() }),
   analytics: z.object({
     gaId: z.union([z.string().regex(/^G-[A-Z0-9]{4,12}$/, "Google Analytics IDs look like G-XXXXXXX"), z.literal("")]).optional(),
     metaPixelId: z.union([z.string().regex(/^\d{8,20}$/, "Meta Pixel IDs are 8 to 20 digits"), z.literal("")]).optional(),
+    headCode: z.string().max(20000, "Keep pasted code under 20,000 characters").optional(),
+    bodyCode: z.string().max(20000, "Keep pasted code under 20,000 characters").optional(),
   }),
   pages: z.array(page).min(1, "A site needs a home page").max(30),
 });
@@ -103,6 +112,10 @@ export async function saveWebsiteAction(siteId: string, input: unknown): Promise
       const i = p.data.pages.findIndex((x) => x.id === firstBad[0]);
       return { ok: false, errors: { [`pages.${i}.path`]: firstBad[1] }, message: `${p.data.pages[i]!.title}: ${firstBad[1].toLowerCase()}` };
     }
+    // Pasted code runs on the site's pages, so only owners and admins may change it.
+    const before = findWebsite(new Date(), siteId);
+    const codeChanged = (before?.analytics.headCode ?? "") !== (p.data.analytics.headCode ?? "") || (before?.analytics.bodyCode ?? "") !== (p.data.analytics.bodyCode ?? "");
+    if (codeChanged && !canManageTeam(currentSession()?.role ?? null)) return { ok: false, errors: { "analytics.headCode": "Only the owner or an admin can change pasted code." }, message: "Only the owner or an admin can change pasted code." };
     const { site, slugTaken } = saveWebsite(new Date(), siteId, p.data);
     if (slugTaken) return { ok: false, errors: { slug: "Another site already uses this address" }, message: "Another site already uses this address" };
     if (!site) return { ok: false, message: "That site was deleted." };

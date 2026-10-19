@@ -60,6 +60,7 @@ export function opportunityChanged(now: Date, move: StageMove | undefined) {
 import type { Channel, Contact as CrmContact } from "@/lib/types";
 import { formatDollars } from "@/lib/utils";
 import { autoReviewRequest } from "./reputation-send";
+import { formAlert } from "./notify";
 
 /** A visitor booked through a booking page. The contact may be new. */
 export function appointmentBooked(now: Date, contactId: string, typeName: string) {
@@ -87,6 +88,7 @@ export function messageReceived(now: Date, contactId: string, channel: Channel, 
 export function formSubmitted(now: Date, contact: CrmContact, formName: string, isNew: boolean, formId?: string) {
   if (isNew) contactCreated(now, contact);
   fireTrigger(now, { type: "form_submitted", contactId: contact.id, source: contact.source, formId, label: `Filled in ${formName}` });
+  formAlert(now, contact, formName, isNew);
 }
 
 /** A job was marked completed. Fires the trigger and, when switched on, a review request. */

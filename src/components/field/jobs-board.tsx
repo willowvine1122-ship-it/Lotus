@@ -166,8 +166,8 @@ export function JobsBoard({
           <InkLink href={client ? `/agency/jobs/dispatch?client=${client.slug}` : "/agency/jobs/dispatch"} icon={CalendarRange} label="Dispatch" />
           <ButtonLink href={client ? `/agency/jobs/new?client=${client.slug}` : "/agency/jobs/new"} className="h-7 whitespace-nowrap px-2.5 text-xs">
             <Plus className="size-3.5" strokeWidth={2.25} />
-            <span className="hidden 2xl:inline">New job</span>
-            <span className="sr-only 2xl:hidden">New job</span>
+            <span className="hidden xl:inline">New job</span>
+            <span className="sr-only xl:hidden">New job</span>
           </ButtonLink>
         </TopBar>
 

@@ -152,8 +152,8 @@ export function WorkflowsBoard({ rows, clients, pipelines, nowIso, initialClient
             </select>
             <ButtonLink href={newHref} className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
-              <span className="hidden 2xl:inline">New workflow</span>
-              <span className="sr-only 2xl:hidden">New workflow</span>
+              <span className="hidden xl:inline">New workflow</span>
+              <span className="sr-only xl:hidden">New workflow</span>
             </ButtonLink>
           </div>
         </header>

@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Copy, ExternalLink, FlaskConical, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
-import type { ActionState } from "@/app/agency/funnels/actions";
+import type { ActionState, FunnelSiteInput } from "@/app/agency/funnels/actions";
+import { ImagePicker } from "@/components/image-picker";
 import { BuilderPage } from "@/components/builder/render";
 import { stepKindLabel, stepKinds, themeOf } from "@/components/builder/model";
 import { CloseButton, DataTable, Kpi, KpiStrip, PanelButton, PanelFrame, StatusTag, type Column } from "@/components/field/ui";
-import { Field, Input, Select } from "@/components/form";
+import { Field, Input, Select, Textarea } from "@/components/form";
 import type { Funnel, FunnelOrder, FunnelStep, FunnelStepKind, FunnelVariantStats } from "@/lib/types";
 import { cn, formatCount, formatDollars, timeAgo } from "@/lib/utils";
 import { useDetailPanel } from "@/lib/use-detail-panel";
@@ -22,7 +23,7 @@ import type { ClientRef } from "./model";
 
 export interface OverviewActions {
   setStatus: (id: string, status: "draft" | "live") => Promise<void>;
-  rename: (id: string, name: string, brandColor: string) => Promise<ActionState>;
+  rename: (id: string, name: string, brandColor: string, site: FunnelSiteInput) => Promise<ActionState>;
   addStep: (id: string, name: string, kind: FunnelStepKind) => Promise<string | null>;
   updateStep: (id: string, stepId: string, patch: { name?: string; path?: string; kind?: FunnelStepKind }) => Promise<ActionState>;
   duplicateStep: (id: string, stepId: string) => Promise<string | null>;
@@ -543,9 +544,15 @@ function IconBtn({ label, icon: Icon, onClick, disabled }: { label: string; icon
   );
 }
 
+function SettingsHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="-mb-1 mt-2 border-t border-line pt-4 text-2xs font-medium uppercase tracking-[0.06em] text-fg-3">{children}</h3>;
+}
+
 function FunnelSettings({ funnel, actions, onClose, onDone }: { funnel: Funnel; actions: OverviewActions; onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState(funnel.name);
   const [color, setColor] = useState(funnel.brandColor);
+  const [site, setSite] = useState<FunnelSiteInput>(funnel.site ?? {});
+  const put = (patch: Partial<FunnelSiteInput>) => setSite((s) => ({ ...s, ...patch }));
   const [msg, setMsg] = useState<ActionState>(null);
   const [pending, start] = useTransition();
   const ok = useMemo(() => /^#[0-9a-fA-F]{6}$/.test(color), [color]);
@@ -563,7 +570,7 @@ function FunnelSettings({ funnel, actions, onClose, onDone }: { funnel: Funnel; 
         onSubmit={(e) => {
           e.preventDefault();
           start(async () => {
-            const r = await actions.rename(funnel.id, name, color);
+            const r = await actions.rename(funnel.id, name, color, site);
             setMsg(r);
             if (r?.ok) onDone();
           });
@@ -578,7 +585,33 @@ function FunnelSettings({ funnel, actions, onClose, onDone }: { funnel: Funnel; 
             <Input id="f-color" value={color} onChange={(e) => setColor(e.target.value)} className="num" />
           </div>
         </Field>
-        <div className="flex items-center gap-2">
+        <SettingsHeading>Browser tab and link previews</SettingsHeading>
+        <Field label="Page title" htmlFor="f-title" hint="Shown in the browser tab and on Google. Empty uses the funnel name.">
+          <Input id="f-title" value={site.title ?? ""} maxLength={70} onChange={(e) => put({ title: e.target.value })} />
+        </Field>
+        <Field label="Description" htmlFor="f-desc" hint="The line under the title on Google and in shared links.">
+          <Textarea id="f-desc" value={site.description ?? ""} maxLength={170} onChange={(e) => put({ description: e.target.value })} className="min-h-[64px] text-sm" />
+        </Field>
+        <Field label="Favicon" htmlFor="f-favicon" hint="The little icon in the browser tab. A square PNG, 512 × 512.">
+          <ImagePicker label="Favicon" shape="icon" value={site.favicon} onChange={(v) => put({ favicon: v })} accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml" />
+        </Field>
+        <Field label="Share image" htmlFor="f-share" hint="Shown when the link is shared on Facebook, WhatsApp or iMessage. 1200 × 630 works best.">
+          <ImagePicker label="Share image" value={site.shareImage} onChange={(v) => put({ shareImage: v })} />
+        </Field>
+        <SettingsHeading>Tracking</SettingsHeading>
+        <Field label="Meta Pixel ID" htmlFor="f-pixel" hint="Find it in Meta Events Manager. Page views are sent on every step.">
+          <Input id="f-pixel" inputMode="numeric" value={site.metaPixelId ?? ""} onChange={(e) => put({ metaPixelId: e.target.value.replace(/\D/g, "") })} className="num" />
+        </Field>
+        <Field label="Google Analytics ID" htmlFor="f-ga">
+          <Input id="f-ga" value={site.gaId ?? ""} placeholder="G-XXXXXXXXXX" onChange={(e) => put({ gaId: e.target.value.trim().toUpperCase() })} className="num" />
+        </Field>
+        <Field label="Code in the page head" htmlFor="f-head" hint="Paste tracking, verification or chat-widget code exactly as the provider gives it. Owners and admins only.">
+          <Textarea id="f-head" value={site.headCode ?? ""} spellCheck={false} placeholder={"<script>…</script>"} onChange={(e) => put({ headCode: e.target.value })} className="min-h-[88px] font-mono text-xs" />
+        </Field>
+        <Field label="Code at the end of the page" htmlFor="f-body">
+          <Textarea id="f-body" value={site.bodyCode ?? ""} spellCheck={false} onChange={(e) => put({ bodyCode: e.target.value })} className="min-h-[64px] font-mono text-xs" />
+        </Field>
+        <div className="sticky bottom-0 -mx-5 flex items-center gap-2 border-t border-line bg-surface px-5 py-3">
           <PanelButton type="submit" tone="ink" disabled={pending}>
             Save
           </PanelButton>

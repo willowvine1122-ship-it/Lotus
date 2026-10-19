@@ -1,7 +1,7 @@
 import type { Website, WebsiteBlock, WebsitePage } from "@/lib/types";
 import { Block, FormCard } from "@/components/funnels/renderer";
 import { BuilderPage, type RenderRefs } from "@/components/builder/render";
-import { themeOf } from "@/components/builder/model";
+import { safeSrc, themeOf } from "@/components/builder/model";
 import { cn } from "@/lib/utils";
 import { pageHref } from "./model";
 
@@ -25,6 +25,7 @@ type SiteShape = Pick<
   | "name"
   | "brandColor"
   | "logoText"
+  | "logoImage"
   | "header"
   | "footer"
   | "pages"
@@ -241,7 +242,7 @@ export function SiteHeader({
           href={home}
           className="truncate text-[17px] font-semibold tracking-tight text-[#0f1221]"
         >
-          {site.logoText || site.name}
+          <Wordmark site={site} />
         </a>
         <nav
           aria-label="Main"
@@ -323,6 +324,14 @@ export function SiteHeader({
   );
 }
 
+/** The uploaded logo when there is one, otherwise the logo text. */
+function Wordmark({ site }: { site: SiteShape }) {
+  const name = site.logoText || site.name;
+  const src = safeSrc(site.logoImage);
+  // eslint-disable-next-line @next/next/no-img-element
+  return src ? <img src={src} alt={name} className="block h-9 w-auto max-w-[200px] object-contain" /> : <>{name}</>;
+}
+
 export function SiteFooter({ site, base }: { site: SiteShape; base: string }) {
   const nav = site.pages.filter((p) => p.inNav);
   const year = new Date().getFullYear();
@@ -331,7 +340,7 @@ export function SiteFooter({ site, base }: { site: SiteShape; base: string }) {
       <div className="mx-auto grid max-w-[1120px] gap-8 px-6 py-12 @3xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div>
           <p className="text-[17px] font-semibold tracking-tight">
-            {site.logoText || site.name}
+            <Wordmark site={site} />
           </p>
           {site.footer.tagline && (
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-[#4b4f63]">

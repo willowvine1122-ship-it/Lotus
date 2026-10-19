@@ -142,8 +142,8 @@ export function InvoicesBoard({
           />
           <ButtonLink href={clientId === "all" ? "/agency/invoices/new" : `/agency/invoices/new?client=${clientById.get(clientId)?.slug ?? ""}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
             <Plus className="size-3.5" strokeWidth={2.25} />
-            <span className="hidden 2xl:inline">New invoice</span>
-            <span className="sr-only 2xl:hidden">New invoice</span>
+            <span className="hidden xl:inline">New invoice</span>
+            <span className="sr-only xl:hidden">New invoice</span>
           </ButtonLink>
         </TopBar>
 
