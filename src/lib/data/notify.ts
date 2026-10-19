@@ -1,3 +1,4 @@
+import { lotusEmailHtml } from "@/lib/server/email-layout";
 import type { Appointment, AppointmentType, Calendar, Contact } from "@/lib/types";
 import { locationLabel } from "@/lib/calendars";
 import { queueMail, workspaceMembers } from "@/lib/server/workspace";
@@ -20,7 +21,9 @@ function replyToStaff() {
 }
 
 function alertStaff(subject: string, text: string) {
-  for (const m of alertRecipients()) queueMail({ to: m.email, subject, text, fromName: "Lotus" });
+  // {{app}} becomes the app's address when the outbox is sent.
+  const html = lotusEmailHtml({ origin: "{{app}}", text });
+  for (const m of alertRecipients()) queueMail({ to: m.email, subject, text, html, fromName: "Lotus" });
 }
 
 function lines(rows: [string, string | undefined][]) {

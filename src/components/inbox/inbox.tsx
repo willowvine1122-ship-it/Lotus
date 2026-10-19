@@ -146,7 +146,7 @@ export function Inbox({
   const filtered = Boolean(filters.clientId || filters.channel || q || view !== "all" || filters.status !== "open");
 
   return (
-    <div className="flex flex-col lg:h-[calc(100dvh-50px)]">
+    <div className="flex flex-col lg:h-dvh">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-3 bg-rail px-5 py-3 text-rail-fg md:flex-nowrap md:px-6">
         <div className="min-w-0 md:shrink-0">
           <h1 className="text-lg font-semibold leading-6 tracking-tight">Inbox</h1>

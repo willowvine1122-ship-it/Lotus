@@ -243,3 +243,10 @@ th > button {
   from { transform: translateX(-100%); }
   to { transform: translateX(0); }
 }
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+}

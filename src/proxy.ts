@@ -38,5 +38,5 @@ function isAppHost(request: NextRequest) {
 
 export const config = {
   // Next's own assets, the form embeds and the donation elements a site page loads stay on their real paths.
-  matcher: ["/((?!_next/|api/|assets/|form/|e/|embed/|elements/|favicon.ico).*)"],
+  matcher: ["/((?!_next/|api/|assets/|form/|e/|embed/|elements/|brand/|manifest.webmanifest|favicon.ico).*)"],
 };

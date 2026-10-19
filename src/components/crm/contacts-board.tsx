@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronsUpDown, KanbanSquare, Plus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, KanbanSquare, Plus, Search, Users } from "lucide-react";
 import { ButtonLink } from "@/components/page-header";
 import { Avatar, Tag } from "@/components/diagnostic/primitives";
 import type { Assignee, Contact, ContactActivity, Pipeline } from "@/lib/types";
@@ -167,8 +167,8 @@ export function ContactsBoard({
             </Link>
             <ButtonLink href={clientId === "all" ? "/agency/contacts/new" : `/agency/contacts/new?client=${clientId}`} className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
-              <span className="hidden 2xl:inline">Add contact</span>
-              <span className="sr-only 2xl:hidden">Add contact</span>
+              <span className="hidden xl:inline">Add contact</span>
+              <span className="sr-only xl:hidden">Add contact</span>
             </ButtonLink>
           </div>
         </header>
@@ -240,8 +240,24 @@ export function ContactsBoard({
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length} className="px-5 py-10 text-center text-sm text-fg-3">
-                    No contacts match.
+                  <td colSpan={columns.length} className="px-5 py-16 text-center">
+                    {contacts.length === 0 ? (
+                      <div className="mx-auto flex max-w-[360px] flex-col items-center">
+                        <span className="grid size-11 place-items-center rounded-xl border border-line bg-surface-2">
+                          <Users className="size-5 text-fg-2" strokeWidth={1.75} />
+                        </span>
+                        <p className="mt-4 text-[15px] font-semibold text-fg">No contacts yet</p>
+                        <p className="mt-1 text-sm leading-relaxed text-fg-3">
+                          Leads from forms, funnels, bookings and the inbox land here on their own. You can also add people by hand.
+                        </p>
+                        <ButtonLink href="/agency/contacts/new" className="mt-5 h-8 px-3 text-[13px]">
+                          <Plus className="size-3.5" strokeWidth={2.25} />
+                          Add contact
+                        </ButtonLink>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-fg-3">No contacts match these filters.</span>
+                    )}
                   </td>
                 </tr>
               )}

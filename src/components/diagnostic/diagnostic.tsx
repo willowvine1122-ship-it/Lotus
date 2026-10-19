@@ -179,8 +179,8 @@ export function Diagnostic({ clients, nowIso, banner }: { clients: ClientRecord[
             </select>
             <ButtonLink href="/agency/clients/new" className="h-7 whitespace-nowrap px-2.5 text-xs">
               <Plus className="size-3.5" strokeWidth={2.25} />
-              <span className="hidden 2xl:inline">Add client</span>
-              <span className="sr-only 2xl:hidden">Add client</span>
+              <span className="hidden xl:inline">Add client</span>
+              <span className="sr-only xl:hidden">Add client</span>
             </ButtonLink>
           </div>
         </header>

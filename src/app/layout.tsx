@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,8 +17,16 @@ export const metadata: Metadata = {
   description:
     "Agency operating system: CRM, funnels, automations and a daily diagnostic for every client.",
   // In metadata rather than app/favicon.ico so a client site's own favicon replaces it.
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/brand/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/brand/apple-touch-icon.png",
+  },
 };
+
+export const viewport: Viewport = { themeColor: "#0b1220" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
