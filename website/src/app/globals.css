@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/*
+  Lotus brand v2 tokens (approved 11 Oct 2026), ported from lotus-v2-tokens.css.
+  Shared neutrals + one theme per section. Set data-section on <body> or any wrapper.
+  Design-thread tokens land in /website/design/ later; until then the brand book governs.
+*/
+:root {
+  /* shared */
+  --lotus-ink: #0f2a2e;
+  --lotus-paper: #f8f5ef;
+  --lotus-white: #ffffff;
+  --lotus-mist: #e6eceb;
+  --lotus-stone: #5b6b6e;
+  --lotus-success: #1e7a4f;
+  --lotus-warning: #9a6100;
+  --lotus-error: #b42318;
+
+  /* fonts come from next/font (self-hosted), see app/layout.tsx */
+  --font-primary: var(--font-manrope), system-ui, sans-serif;
+  --font-secondary: var(--font-inter), system-ui, sans-serif;
+  --lotus-accent: var(--font-primary);
+
+  /* master (default): Pond Ink + Lotus Rose */
+  --primary: #0f2a2e;
+  --secondary: #c8326a;
+  --action: #c8326a;
+  --on-action: #ffffff;
+  --tint-deep: #4a1f45;
+  --tint-light: #f6c9d8;
+  --tint-mist: #fbeaf0;
+  --gradient-hero: linear-gradient(160deg, #0f2a2e 0%, #0f2a2e 35%, #4a1f45 70%, #c8326a 100%);
+  --gradient-soft: linear-gradient(90deg, #c8326a 0%, #f6c9d8 100%);
+
+  /* motion: "calm rise". Long soft ease-outs, nothing bounces. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 600ms;
+}
+
+[data-section="fundraising"] {
+  --primary: #0f6e52; /* Leaf Green */
+  --secondary: #f2b33d; /* Dawn Gold: ink text only */
+  --action: #0f6e52;
+  --on-action: #ffffff;
+  --tint-deep: #0a4a38;
+  --tint-light: #f8d98c;
+  --tint-mist: #e2f0e9;
+  --gradient-hero: linear-gradient(160deg, #0a4a38 0%, #0f6e52 55%, #22936b 100%);
+  --gradient-night: linear-gradient(180deg, #0f2a2e 0%, #0a4a38 100%);
+  --gradient-soft: linear-gradient(90deg, #f2b33d 0%, #f8d98c 100%);
+  --lotus-accent: var(--font-fraunces), Georgia, serif;
+}
+
+[data-section="marketing"] {
+  --primary: #1769c9; /* Clear Blue */
+  --secondary: #ff6b4a; /* Warm Coral: ink text only */
+  --action: #1769c9;
+  --on-action: #ffffff;
+  --tint-deep: #123c99;
+  --tint-light: #ffd3c2;
+  --tint-mist: #e4eefb;
+  --gradient-hero: linear-gradient(160deg, #123c99 0%, #1769c9 55%, #4d8df7 100%);
+  --gradient-soft: linear-gradient(90deg, #ff6b4a 0%, #ffd3c2 100%);
+}
+
+[data-section="builds"] {
+  --primary: #6a3fe0; /* Build Violet */
+  --secondary: #d8ccff; /* Lilac: ink text only */
+  --action: #6a3fe0;
+  --on-action: #ffffff;
+  --tint-deep: #3e1fa3;
+  --tint-light: #9c82f5;
+  --tint-mist: #efeaff;
+  --gradient-hero: linear-gradient(160deg, #3e1fa3 0%, #6a3fe0 55%, #9c82f5 100%);
+  --gradient-soft: linear-gradient(90deg, #d8ccff 0%, #efeaff 100%);
+  --lotus-accent: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/* Tailwind v4 theme: utilities read the tokens above (inline keeps the var references, so data-section cascades). */
+@theme inline {
+  --color-ink: var(--lotus-ink);
+  --color-paper: var(--lotus-paper);
+  --color-white: var(--lotus-white);
+  --color-mist: var(--lotus-mist);
+  --color-stone: var(--lotus-stone);
+  --color-success: var(--lotus-success);
+  --color-warning: var(--lotus-warning);
+  --color-error: var(--lotus-error);
+
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-action: var(--action);
+  --color-on-action: var(--on-action);
+  --color-tint-deep: var(--tint-deep);
+  --color-tint-light: var(--tint-light);
+  --color-tint-mist: var(--tint-mist);
+
+  /* section colors by name, for places that must show all three at once (the three ways) */
+  --color-rose: #c8326a;
+  --color-plum: #4a1f45;
+  --color-leaf: #0f6e52;
+  --color-leaf-light: #22936b;
+  --color-gold: #f2b33d;
+  --color-blue: #1769c9;
+  --color-blue-light: #4d8df7;
+  --color-coral: #ff6b4a;
+  --color-violet: #6a3fe0;
+  --color-violet-light: #9c82f5;
+  --color-lilac: #d8ccff;
+
+  --font-sans: var(--font-secondary);
+  --font-display: var(--font-primary);
+  --font-accent: var(--lotus-accent);
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+
+  --radius-card: 1.5rem;
+  --radius-pill: 999px;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: auto; /* Lenis owns smooth scrolling; reduced motion gets native */
+  }
+  body {
+    background: var(--lotus-paper);
+    color: var(--lotus-ink);
+    font-family: var(--font-secondary);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-primary);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--tint-light); color: var(--lotus-ink); }
+  :focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+}
+
+@layer components {
+  /* Big numbers are a motif everywhere; tabular so they tick without jitter. */
+  .numeral {
+    font-family: var(--font-primary);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  /* Visible marker on placeholder copy, so nothing reads as final before the copy thread lands. */
+  .placeholder-chip {
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+/* Lenis */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
